@@ -1,0 +1,17 @@
+{
+  "name": "otfjs",
+  "version": "1.0.0",
+  "author": "Brian Schlenker <bschlenk@umich.edu>",
+  "description": "",
+  "keywords": [],
+  "license": "MIT",
+  "type": "module",
+  "exports": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
