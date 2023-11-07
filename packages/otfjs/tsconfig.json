@@ -1,19 +1,23 @@
 {
   "compilerOptions": {
+    // build
     "target": "es2020",
     "lib": ["es2020"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
 
+    // output
     "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
 
+    // interop
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
 
+    // strictness
     "strict": true,
-
     "skipLibCheck": true
   },
   "include": ["src"]

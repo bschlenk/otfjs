@@ -8,6 +8,7 @@
   "type": "module",
   "exports": "./dist/index.js",
   "scripts": {
+    "dev": "tsc --watch --incremental",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
