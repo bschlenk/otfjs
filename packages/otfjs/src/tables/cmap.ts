@@ -1,3 +1,4 @@
+import { toHex } from '../utils.js'
 import { Reader } from './buffer.js'
 
 export interface CmapTable {
@@ -81,6 +82,15 @@ function readCmapSubtable(view: Reader) {
       const startCodes = view.array(segs, () => view.u16())
       const idDeltas = view.array(segs, () => view.i16())
       const idRangeOffsets = view.array(segs, () => view.u16())
+
+      for (let i = 0; i < segs; ++i) {
+        const start = toHex(startCodes[i])
+        const end = toHex(endCodes[i])
+        const delta = idDeltas[i]
+        const offset = idRangeOffsets[i]
+
+        console.log({ start, end, delta, offset })
+      }
 
       break
     }
