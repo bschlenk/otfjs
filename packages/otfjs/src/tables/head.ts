@@ -1,7 +1,7 @@
-import { fromLongDateTime, toHex } from '../utils.js'
+import { toHex } from '../utils.js'
 import { Reader } from './buffer.js'
 
-interface HeadTable {
+export interface HeadTable {
   // Major version number of the font header table — set to 1.
   majorVersion: number
   // Minor version number of the font header table — set to 0.

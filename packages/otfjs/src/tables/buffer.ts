@@ -2,51 +2,51 @@ import { fromLongDateTime } from '../utils.js'
 
 export class Reader {
   private view: DataView
-  private offset: number = 0
+  public offset: number = 0
 
   constructor(public readonly data: ArrayBuffer, offset = 0, length?: number) {
     this.view = new DataView(data, offset, length)
   }
 
-  public u8(): number {
-    const val = this.view.getUint8(this.offset)
-    this.offset += 1
+  public u8(offset?: number): number {
+    const val = this.view.getUint8(offset ?? this.offset)
+    if (offset == null) this.offset += 1
     return val
   }
 
-  public i8(): number {
-    const val = this.view.getInt8(this.offset)
-    this.offset += 1
+  public i8(offset?: number): number {
+    const val = this.view.getInt8(offset ?? this.offset)
+    if (offset == null) this.offset += 1
     return val
   }
 
-  public u16(): number {
-    const val = this.view.getUint16(this.offset)
-    this.offset += 2
+  public u16(offset?: number): number {
+    const val = this.view.getUint16(offset ?? this.offset)
+    if (offset == null) this.offset += 2
     return val
   }
 
-  public i16(): number {
-    const val = this.view.getInt16(this.offset)
-    this.offset += 2
+  public i16(offset?: number): number {
+    const val = this.view.getInt16(offset ?? this.offset)
+    if (offset == null) this.offset += 2
     return val
   }
 
-  public u24(): number {
-    const val = this.view.getUint32(this.offset) & 0xffffff
-    this.offset += 3
+  public u24(offset?: number): number {
+    const val = this.view.getUint32(offset ?? this.offset) & 0xffffff
+    if (offset == null) this.offset += 3
     return val
   }
 
-  public u32(): number {
-    const val = this.view.getUint32(this.offset)
-    this.offset += 4
+  public u32(offset?: number): number {
+    const val = this.view.getUint32(offset ?? this.offset)
+    if (offset == null) this.offset += 4
     return val
   }
 
-  public i32(): number {
-    const val = this.view.getInt32(this.offset)
-    this.offset += 4
+  public i32(offset?: number): number {
+    const val = this.view.getInt32(offset ?? this.offset)
+    if (offset == null) this.offset += 4
     return val
   }
 
@@ -82,6 +82,10 @@ export class Reader {
       arr.push(fn())
     }
     return arr
+  }
+
+  public dataview(offset: number, length: number): DataView {
+    return new DataView(this.view.buffer, this.view.byteOffset + offset, length)
   }
 
   public subtable(offset: number, length?: number): Reader {

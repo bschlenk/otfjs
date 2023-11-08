@@ -1,19 +1,58 @@
-import { toHex } from '../utils.js'
+import { PlatformId } from '../enums.js'
 import { Reader } from './buffer.js'
 
-export interface CmapTable {
-  /** Table version number (0). */
-  version: number
-  /** Number of encoding tables that follow. */
-  encodingRecords: EncodingRecord[]
-}
+export class CmapTable {
+  constructor(
+    private view: Reader,
+    /** Table version number (0). */
+    public readonly version: number,
+    /** Number of encoding tables that follow. */
+    public readonly encodingRecords: EncodingRecord[],
+  ) {}
 
-const enum PlatformId {
-  Unicode = 0,
-  Macintosh = 1,
-  ISO = 2,
-  Windows = 3,
-  Custom = 4,
+  public getGlyphIndex(
+    platformId: PlatformId,
+    encodingId: number,
+    codePoint: number,
+  ) {
+    if (codePoint > 0xffff) throw new Error('Codepoint out of range')
+
+    const record = this.encodingRecords.find(
+      (record) =>
+        record.platformId === platformId && record.encodingId === encodingId,
+    )
+
+    // TODO: throw?
+    if (!record) {
+      console.error(
+        `Encoding record not found for platformId = ${platformId}, encodingId = ${encodingId}`,
+      )
+      return 0
+    }
+
+    const subtableView = this.view.subtable(record.offset)
+    const subtable = readCmapSubtable(subtableView)
+
+    let i = 0
+    while (subtable.endCodes![i] < codePoint) ++i
+
+    // Codepoint is out of range, return 0 (missing glyph)
+    if (subtable.startCodes![i] > codePoint) return 0
+
+    if (subtable.idRangeOffsets![i] === 0) {
+      return (codePoint + subtable.idDeltas![i]) & 0xffff
+    }
+
+    const glyphIndexOffset =
+      subtable.idRangeOffsets![i] + (codePoint - subtable.startCodes![i]) * 2
+
+    // need to start from the offset of idRangeOffsets[i], which is going to be
+    // the start of the glyphIdArray - segCountX2 + i * 2
+
+    return subtableView.u16(
+      subtableView.offset + glyphIndexOffset - subtable.segCountX2! + i * 2,
+    )
+  }
 }
 
 interface EncodingRecord {
@@ -23,7 +62,11 @@ interface EncodingRecord {
   encodingId: number
   /** Byte offset from beginning of table to the subtable for this encoding. */
   offset: number
+
+  // subtable: CmapSubtable
 }
+
+type CmapSubtable = any
 
 export function readCmapTable(view: Reader) {
   const version = view.u16()
@@ -38,20 +81,18 @@ export function readCmapTable(view: Reader) {
       platformId,
       encodingId,
       offset: subtableOffset,
+      // subtable,
     }
-
-    const subtable = readCmapSubtable(view.subtable(subtableOffset))
-    console.log(subtable)
 
     return encodingRecord
   })
 
-  const cmapTable: CmapTable = { version, encodingRecords }
-  return cmapTable
+  return new CmapTable(view, version, encodingRecords)
 }
 
 function readCmapSubtable(view: Reader) {
   const format = view.u16()
+  console.log('format', format)
 
   switch (format) {
     case 0: {
@@ -83,13 +124,27 @@ function readCmapSubtable(view: Reader) {
       const idDeltas = view.array(segs, () => view.i16())
       const idRangeOffsets = view.array(segs, () => view.u16())
 
+      /*
       for (let i = 0; i < segs; ++i) {
         const start = toHex(startCodes[i])
         const end = toHex(endCodes[i])
         const delta = idDeltas[i]
         const offset = idRangeOffsets[i]
+      }
+      */
 
-        console.log({ start, end, delta, offset })
+      return {
+        format,
+        length,
+        language,
+        segCountX2,
+        searchRange,
+        entrySelector,
+        rangeShift,
+        endCodes,
+        startCodes,
+        idDeltas,
+        idRangeOffsets,
       }
 
       break

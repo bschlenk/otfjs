@@ -1,35 +1,56 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import styles from './app.module.css'
+import { FontView } from './components/font-view/font-view'
 
-function App() {
-  const [count, setCount] = useState(0)
+function preventDefault(e: React.SyntheticEvent) {
+  e.preventDefault()
+}
+
+export function App() {
+  const [font, setFont] = useState<ArrayBuffer | null>(null)
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div
+      className={styles.app}
+      onDragOver={preventDefault}
+      onDrop={preventDefault}
+    >
+      {!font ? (
+        <DropZone onLoad={setFont}>
+          <p>Drag font here to load it on the page.</p>
+        </DropZone>
+      ) : (
+        <FontView font={font} />
+      )}
+    </div>
   )
 }
 
-export default App
+function DropZone({
+  children,
+  onLoad,
+}: {
+  children: React.ReactNode
+  onLoad: (file: ArrayBuffer) => void
+}) {
+  return (
+    <div className={styles.fullCenter}>
+      <div
+        className={styles.dropZone}
+        onDragOver={preventDefault}
+        onDrop={(e) => {
+          e.preventDefault()
+          const file = e.dataTransfer.files[0]
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            const buffer = e.target?.result
+            onLoad(buffer as ArrayBuffer)
+          }
+          reader.readAsArrayBuffer(file)
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}

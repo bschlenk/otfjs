@@ -1,11 +1,11 @@
 import { Reader } from './tables/buffer.js'
 import { readCmapTable } from './tables/cmap.js'
 import { readHeadTable } from './tables/head.js'
+import { readNameTable } from './tables/name.js'
 import { Header, TableRecord } from './types.js'
-import { toHex } from './utils.js'
 import { validateHeader } from './validation.js'
 
-export function load(data: ArrayBuffer) {
+export function parseFont(data: ArrayBuffer) {
   const view = new Reader(data)
 
   const sfntVersion = view.u32()
@@ -25,8 +25,6 @@ export function load(data: ArrayBuffer) {
   validateHeader(header)
   console.log(header)
 
-  const tablesByTag: Record<string, TableRecord> = {}
-
   // loop over table records
   const tables = view.array(numTables, () => {
     const tag = view.tag()
@@ -39,18 +37,21 @@ export function load(data: ArrayBuffer) {
 
     // validateTable(data, tableRecord)
 
-    tablesByTag[tag] = tableRecord
     return tableRecord
   })
 
+  return { header, tables }
+
+  /*
   const headTable = readTable(data, tablesByTag['head'])
   console.log(headTable)
 
   const cmapTable = readTable(data, tablesByTag['cmap'])
   console.log(cmapTable)
+  */
 }
 
-function readTable(data: ArrayBuffer, table: TableRecord) {
+export function readTable(data: ArrayBuffer, table: TableRecord) {
   const view = new Reader(data, table.offset, table.length)
 
   switch (table.tag) {
@@ -58,5 +59,7 @@ function readTable(data: ArrayBuffer, table: TableRecord) {
       return readCmapTable(view)
     case 'head':
       return readHeadTable(view)
+    case 'name':
+      return readNameTable(view)
   }
 }

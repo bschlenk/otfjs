@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   font-family: Inter, sans-serif;
   line-height: 1.5;
@@ -18,10 +24,11 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100dvh;
+  height: 100dvh;
+}
+
+#root {
+  height: 100%;
 }
 
 a {
@@ -46,8 +53,6 @@ button {
   font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
 }
 button:hover {
   border-color: #646cff;
@@ -67,5 +72,12 @@ button:focus-visible {
   }
   button {
     background-color: #f9f9f9;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    animation: none;
+    transition: none;
   }
 }

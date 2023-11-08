@@ -1,0 +1,45 @@
+.wrapper {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px;
+  height: 100%;
+  overflow: hidden;
+
+  & > * {
+    min-width: 0;
+  }
+}
+
+.tablesList {
+  border-right: 1px solid #333;
+  overflow: scroll;
+
+  & ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  & li {
+    display: block;
+  }
+
+  & button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border-radius: 0;
+
+    &:not(.active) {
+      background: unset;
+    }
+  }
+}
+
+.tableView {
+  overflow: scroll;
+}
+
+.cmapTable {
+  display: flex;
+  flex-direction: column;
+}

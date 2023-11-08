@@ -1,0 +1,28 @@
+.app {
+  height: 100%;
+}
+
+.fullCenter {
+  display: grid;
+  place-content: center;
+  height: 100%;
+}
+
+.dropZone {
+  padding: 16px 32px;
+  border: 2px dashed white;
+  border-radius: 13px;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
