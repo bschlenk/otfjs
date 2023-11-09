@@ -1,7 +1,9 @@
 import { Reader } from './tables/buffer.js'
-import { readCmapTable } from './tables/cmap.js'
-import { readHeadTable } from './tables/head.js'
-import { readNameTable } from './tables/name.js'
+import { CmapTable, readCmapTable } from './tables/cmap.js'
+import { HeadTable, readHeadTable } from './tables/head.js'
+import { readLocaTable } from './tables/loca.js'
+import { MaxpTable, readMaxpTable } from './tables/maxp.js'
+import { NameTable, readNameTable } from './tables/name.js'
 import { Header, TableRecord } from './types.js'
 import { validateHeader } from './validation.js'
 
@@ -59,7 +61,21 @@ export function readTable(data: ArrayBuffer, table: TableRecord) {
       return readCmapTable(view)
     case 'head':
       return readHeadTable(view)
+    case 'loca': {
+      // TODO: how does this one get the right info?
+      // might not mkae sense to just read all the tables blindly at this point
+      return readLocaTable(view)
+    }
+    case 'maxp':
+      return readMaxpTable(view)
     case 'name':
       return readNameTable(view)
   }
+}
+
+export interface TableMap {
+  cmap: CmapTable
+  head: HeadTable
+  maxp: MaxpTable
+  name: NameTable
 }
