@@ -151,8 +151,12 @@ function GlyfView({ font }: { font: Font }) {
   )
   */
 
+  let i = 0
   for (const glyph of font.glyphs()) {
-    if (!glyph.points) continue
+    if (!glyph.points) {
+      ++i
+      continue
+    }
 
     const width = glyph.xMax - glyph.xMin
     const height = glyph.yMax - glyph.yMin
@@ -163,7 +167,7 @@ function GlyfView({ font }: { font: Font }) {
     // implied, so we need to make sure we handle this
 
     let first = true
-    const cStart = glyph.points[0]
+    let cStart = glyph.points[0]
     for (let i = 0; i < glyph.points.length; ++i) {
       const { x, y, onCurve } = glyph.points[i]
       const isEnd = glyph.endPtsOfContours.includes(i)
@@ -172,39 +176,46 @@ function GlyfView({ font }: { font: Font }) {
         // assuming the first point can't be off the curve but let's see
         if (!onCurve) throw new Error('first point is off the curve')
         d += `M${x} ${y}`
+        cStart = glyph.points[i]
         first = false
-      } else {
-        if (onCurve) {
-          d += `L${x} ${y}`
-        } else {
-          const next = glyph.points[i + 1]
-          d += `Q${x} ${y} `
-
-          if (isEnd) {
-            // the last point
-            d += `${cStart.x} ${cStart.y}`
-          } else if (next.onCurve) {
-            d += `${next.x} ${next.y}`
-            ++i
-          } else {
-            // implied by the midpoint
-            d += `${(x + next.x) / 2} ${(y + next.y) / 2}`
-          }
-        }
+        continue
       }
 
-      if (isEnd) {
-        d += 'Z'
-        first = true
+      if (onCurve) {
+        d += `L${x} ${y}`
+
+        if (isEnd) {
+          d += `L${cStart.x} ${cStart.y}`
+          first = true
+        }
+      } else {
+        const next = glyph.points[i + 1]
+        d += `Q${x} ${y} `
+
+        if (isEnd) {
+          // the last point
+          d += `${cStart.x} ${cStart.y}`
+          first = true
+        } else if (next.onCurve) {
+          d += `${next.x} ${next.y}`
+          ++i
+        } else {
+          // implied by the midpoint
+          d += `${(x + next.x) / 2} ${(y + next.y) / 2}`
+        }
       }
     }
 
     svgs.push(
       <svg
-        width="100"
-        viewBox={`${glyph.xMin} ${glyph.yMin} ${width} ${height}`}
+        data-glyph-index={i++}
+        height="100"
+        viewBox={`0 0 ${width} ${height}`}
+        style={{ overflow: 'visible' }}
       >
-        <path fillRule="nonzero" d={d} fill="white" />
+        <g transform={`matrix(1 0 0 -1 0 ${glyph.yMax})`}>
+          <path d={d} fill="white" />
+        </g>
       </svg>,
     )
   }
