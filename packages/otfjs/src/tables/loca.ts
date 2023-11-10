@@ -2,13 +2,13 @@
 
 import { Reader } from './buffer.js'
 
-// index 0 always points to the "missing character" glyph.
+export type LocaTable = number[]
 
 export function readLocaTable(
   view: Reader,
   indexToLocFormat: number,
   numGlyphs: number,
-) {
+): LocaTable {
   if (indexToLocFormat === 0) {
     // short version
     return view.array(numGlyphs + 1, () => view.u16() * 2)

@@ -3,6 +3,15 @@ import styles from './font-view.module.css'
 import { JSXElementConstructor, useMemo, useState } from 'react'
 import clsx from 'clsx'
 
+const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
+  cmap: CmapView,
+  glyf: GlyfView,
+  head: jsonView('head'),
+  maxp: jsonView('maxp', { version: toHex }),
+  loca: jsonView('loca'),
+  name: jsonView('name'),
+}
+
 interface FontViewProps {
   font: ArrayBuffer
 }
@@ -138,15 +147,6 @@ function GlyfView({ font }: { font: Font }) {
   }
 
   return <div>{svgs}</div>
-}
-
-const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
-  cmap: CmapView,
-  glyf: GlyfView,
-  head: jsonView('head'),
-  maxp: jsonView('maxp', { version: toHex }),
-  loca: jsonView('loca'),
-  name: jsonView('name'),
 }
 
 function toHex(n: unknown) {
