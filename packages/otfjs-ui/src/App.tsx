@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import styles from './app.module.css'
 import { FontView } from './components/font-view/font-view'
+import styles from './app.module.css'
+import { srOnly } from './styles/utils.module.css'
 
 function preventDefault(e: React.SyntheticEvent) {
   e.preventDefault()
@@ -35,22 +36,24 @@ function DropZone({
 }) {
   return (
     <div className={styles.fullCenter}>
-      <div
+      <label
         className={styles.dropZone}
         onDragOver={preventDefault}
         onDrop={(e) => {
           e.preventDefault()
-          const file = e.dataTransfer.files[0]
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            const buffer = e.target?.result
-            onLoad(buffer as ArrayBuffer)
-          }
-          reader.readAsArrayBuffer(file)
+          e.dataTransfer.files[0].arrayBuffer().then(onLoad)
         }}
       >
+        <input
+          type="file"
+          accept=".otf,.ttf"
+          className={srOnly}
+          onChange={(e) => {
+            e.target.files![0].arrayBuffer().then(onLoad)
+          }}
+        />
         {children}
-      </div>
+      </label>
     </div>
   )
 }

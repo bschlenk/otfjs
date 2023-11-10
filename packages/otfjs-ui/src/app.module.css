@@ -12,6 +12,11 @@
   padding: 16px 32px;
   border: 2px dashed white;
   border-radius: 13px;
+
+  &:focus-within {
+    border: 2px solid #87dbff;
+    box-shadow: 0px 0px 8px 4px hsl(198 100% 76% / 50%);
+  }
 }
 
 .logo {

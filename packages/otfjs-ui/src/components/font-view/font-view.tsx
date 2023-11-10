@@ -40,9 +40,11 @@ export function FontView(props: FontViewProps) {
 function DocLink({ tag }: { tag: string }) {
   const url = `https://learn.microsoft.com/en-us/typography/opentype/spec/${tag}`
   return (
-    <a href={url} target="_blank" rel="noreferrer">
-      {url}
-    </a>
+    <div style={{ padding: '16px 8px' }}>
+      <a href={url} target="_blank" rel="noreferrer">
+        {url}
+      </a>
+    </div>
   )
 }
 
@@ -128,7 +130,7 @@ function GlyfView({ font }: { font: Font }) {
         viewBox={`0 0 ${width} ${height}`}
         style={{ overflow: 'visible' }}
       >
-        <path d={d} fill="white" />
+        <path d={d} fill="currentcolor" />
       </svg>,
     )
   }
