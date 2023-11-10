@@ -1,55 +1,51 @@
 import { Matrix } from './matrix.js'
-import { Glyph } from './tables/glyf.js'
+import { Glyph, Point } from './tables/glyf.js'
 
 export function glyphToSvgPath(glyph: Glyph, capHeight: number) {
   const path = new PathBuilder(new Matrix(1, 0, 0, -1, 0, capHeight))
 
-  let first = true
-  let cStart = glyph.points[0]
-  for (let i = 0; i < glyph.points.length; ++i) {
-    const point = glyph.points[i]
-    const isEnd = glyph.endPtsOfContours.includes(i)
+  let i = 0
+  for (const endIndex of glyph.endPtsOfContours) {
+    let start = glyph.points[i++]
 
-    if (first) {
-      // assuming the first point can't be off the curve but let's see
-      if (!point.onCurve) throw new Error('first point is off the curve')
-      path.moveTo(point)
-      cStart = point
-      first = false
-      continue
+    if (!start.onCurve) {
+      const last = glyph.points[endIndex]
+      if (last.onCurve) {
+        start = last
+      } else {
+        start = midpoint(start, last)
+      }
+      // walk i back so we handle the off curve point as we enter the loop
+      --i
     }
 
-    if (point.onCurve) {
-      path.lineTo(point)
+    path.moveTo(start)
 
-      if (isEnd) {
-        path.closePath()
-        first = true
+    while (i <= endIndex) {
+      const point = glyph.points[i++]
+
+      if (point.onCurve) {
+        path.lineTo(point)
+        continue
       }
 
-      continue
-    }
+      const next = glyph.points[i]
+      let end = next
 
-    const next = glyph.points[i + 1]
-    let end = next
-
-    if (isEnd) {
-      // the last point
-      end = cStart
-      first = true
-    } else if (next.onCurve) {
-      end = next
-      ++i
-    } else {
-      // implied by the midpoint
-      end = {
-        x: (point.x + next.x) / 2,
-        y: (point.y + next.y) / 2,
-        onCurve: true,
+      if (i > endIndex) {
+        // the last point
+        end = start
+      } else if (next.onCurve) {
+        end = next
+        ++i
+      } else {
+        end = midpoint(point, next)
       }
+
+      path.quadraticCurveTo(point, end)
     }
 
-    path.quadraticCurveTo(point, end)
+    path.closePath()
   }
 
   return path.toString()
@@ -95,6 +91,14 @@ function join(...nums: number[]) {
     n += nums[i]
   }
   return n
+}
+
+function midpoint(p1: Point, p2: Point) {
+  return {
+    x: (p1.x + p2.x) / 2,
+    y: (p1.y + p2.y) / 2,
+    onCurve: true,
+  }
 }
 
 interface IPoint {
