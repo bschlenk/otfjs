@@ -1,14 +1,26 @@
-import { TableMap, parseFont, readTable } from './parser.js'
+import { parseFont } from './parser.js'
 import { Reader } from './tables/buffer.js'
+import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { readGlyf } from './tables/glyf.js'
-import { readLocaTable } from './tables/loca.js'
+import { HeadTable, readHeadTable } from './tables/head.js'
+import { LocaTable, readLocaTable } from './tables/loca.js'
+import { MaxpTable, readMaxpTable } from './tables/maxp.js'
+import { NameTable, readNameTable } from './tables/name.js'
 import { TableRecord } from './types.js'
-import { assert } from './utils.js'
+
+export interface TableMap {
+  cmap: CmapTable
+  head: HeadTable
+  loca: LocaTable
+  maxp: MaxpTable
+  name: NameTable
+}
 
 export class Font {
   public readonly sfntVersion: number
   #data: ArrayBuffer
   #tables: Record<string, TableRecord>
+  #tableCache = new Map<string, any>()
 
   constructor(data: ArrayBuffer) {
     this.#data = data
@@ -29,10 +41,17 @@ export class Font {
   public getTable<T extends string>(
     tag: T,
   ): T extends keyof TableMap ? TableMap[T] : any {
-    const table = this.#tables[tag]
-    if (!table) throw new Error(`table ${tag} not found`)
+    let table = this.#tableCache.get(tag)
 
-    return readTable(this.#data, table) as any
+    if (!table) {
+      const tableRec = this.#tables[tag]
+      if (!tableRec) throw new Error(`table ${tag} not found`)
+
+      table = this.readTable(tableRec)
+      this.#tableCache.set(tag, table)
+    }
+
+    return table
   }
 
   public getTableReader(tag: string): Reader {
@@ -42,46 +61,19 @@ export class Font {
   }
 
   public getGlyph(index: number) {
-    const headTable = this.getTable('head')
-    const maxpTable = this.getTable('maxp')
-
-    const numGlyphs = maxpTable.numGlyphs
-    const locaTable = readLocaTable(
-      this.getTableReader('loca'),
-      headTable.indexToLocFormat,
-      numGlyphs,
-    )
-
-    assert(
-      locaTable.length === numGlyphs + 1,
-      `expected loca table length ${numGlyphs + 1}, got ${locaTable.length}`,
-    )
-
-    const glyfTableRecord = this.#tables['glyf']
-
+    const locaTable = this.getTable('loca')
     const offset = locaTable[index]
     const length = locaTable[index + 1] - offset
 
+    const glyfTableRecord = this.#tables['glyf']
     const view = new Reader(this.#data, glyfTableRecord.offset + offset, length)
 
     return readGlyf(view)
   }
 
   public *glyphs() {
-    const headTable = this.getTable('head')
-    const maxpTable = this.getTable('maxp')
-
-    const numGlyphs = maxpTable.numGlyphs
-    const locaTable = readLocaTable(
-      this.getTableReader('loca'),
-      headTable.indexToLocFormat,
-      numGlyphs,
-    )
-
-    assert(
-      locaTable.length === numGlyphs + 1,
-      `expected loca table length ${numGlyphs + 1}, got ${locaTable.length}`,
-    )
+    const locaTable = this.getTable('loca')
+    const numGlyphs = locaTable.length - 1
 
     const glyfTableRecord = this.#tables['glyf']
 
@@ -96,6 +88,26 @@ export class Font {
       )
 
       yield readGlyf(view)
+    }
+  }
+
+  private readTable(table: TableRecord) {
+    const view = new Reader(this.#data, table.offset, table.length)
+
+    switch (table.tag) {
+      case 'cmap':
+        return readCmapTable(view)
+      case 'head':
+        return readHeadTable(view)
+      case 'loca': {
+        const head = this.getTable('head')
+        const maxp = this.getTable('maxp')
+        return readLocaTable(view, head.indexToLocFormat, maxp.numGlyphs)
+      }
+      case 'maxp':
+        return readMaxpTable(view)
+      case 'name':
+        return readNameTable(view)
     }
   }
 }
