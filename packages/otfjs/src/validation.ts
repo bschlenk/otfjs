@@ -7,7 +7,8 @@ export function validateHeader(header: Header) {
 
   if (
     header.sfntVersion !== SfntVersion.TRUE_TYPE_OUTLINES &&
-    header.sfntVersion !== SfntVersion.CCF_DATA
+    header.sfntVersion !== SfntVersion.CCF_DATA &&
+    header.sfntVersion !== SfntVersion.APPLE_TRUE_TYPE
   ) {
     errors.push(`invalid sfntVersion: ${toHex(header.sfntVersion)}`)
   }
