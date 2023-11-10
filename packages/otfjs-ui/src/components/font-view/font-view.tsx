@@ -136,6 +136,7 @@ function GlyfView({ font }: { font: Font }) {
 
     svgs.push(
       <svg
+        onClick={() => console.log(glyph)}
         data-glyph-index={i++}
         height="100"
         viewBox={`0 0 ${width} ${height}`}
