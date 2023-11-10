@@ -37,6 +37,8 @@ interface Flag {
  * @param view
  */
 export function readGlyf(view: Reader): Glyph {
+  if (view.length === 0) return emptyGlyph()
+
   const numberOfContours = view.i16()
   const isComposite = numberOfContours < 0
 
@@ -176,4 +178,17 @@ function combinePoints(
   }
 
   return points
+}
+
+function emptyGlyph(): Glyph {
+  return {
+    xMin: 0,
+    yMin: 0,
+    xMax: 0,
+    yMax: 0,
+    endPtsOfContours: [],
+    instructions: [],
+    points: [],
+    contoursOverlap: false,
+  }
 }

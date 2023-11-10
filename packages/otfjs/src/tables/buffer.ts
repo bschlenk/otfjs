@@ -8,6 +8,10 @@ export class Reader {
     this.view = new DataView(data, offset, length)
   }
 
+  get length(): number {
+    return this.view.byteLength
+  }
+
   public u8(offset?: number): number {
     const val = this.view.getUint8(offset ?? this.offset)
     if (offset == null) this.offset += 1

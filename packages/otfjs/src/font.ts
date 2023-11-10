@@ -60,14 +60,8 @@ export class Font {
     const glyfTableRecord = this.#tables['glyf']
 
     const offset = locaTable[index]
+    const length = locaTable[index + 1] - offset
 
-    let nextOffset = offset
-    let next = index
-    while (nextOffset === offset) {
-      nextOffset = locaTable[++next]
-    }
-
-    const length = nextOffset - offset
     const view = new Reader(this.#data, glyfTableRecord.offset + offset, length)
 
     return readGlyf(view)
@@ -93,14 +87,8 @@ export class Font {
 
     for (let i = 0; i < numGlyphs; ++i) {
       const offset = locaTable[i]
+      const length = locaTable[i + 1] - offset
 
-      let nextOffset = offset
-      let next = i
-      while (nextOffset === offset) {
-        nextOffset = locaTable[++next]
-      }
-
-      const length = nextOffset - offset
       const view = new Reader(
         this.#data,
         glyfTableRecord.offset + offset,
