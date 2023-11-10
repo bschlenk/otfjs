@@ -7,6 +7,7 @@ const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   cmap: CmapView,
   glyf: GlyfView,
   head: jsonView('head'),
+  hhea: jsonView('hhea'),
   maxp: jsonView('maxp', { version: toHex }),
   loca: jsonView('loca'),
   name: jsonView('name'),

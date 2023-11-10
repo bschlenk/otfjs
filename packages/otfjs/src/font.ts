@@ -3,6 +3,7 @@ import { Reader } from './tables/buffer.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { readGlyf } from './tables/glyf.js'
 import { HeadTable, readHeadTable } from './tables/head.js'
+import { HheaTable, readHheaTable } from './tables/hhea.js'
 import { LocaTable, readLocaTable } from './tables/loca.js'
 import { MaxpTable, readMaxpTable } from './tables/maxp.js'
 import { NameTable, readNameTable } from './tables/name.js'
@@ -11,6 +12,7 @@ import { TableRecord } from './types.js'
 export interface TableMap {
   cmap: CmapTable
   head: HeadTable
+  hhea: HheaTable
   loca: LocaTable
   maxp: MaxpTable
   name: NameTable
@@ -99,6 +101,8 @@ export class Font {
         return readCmapTable(view)
       case 'head':
         return readHeadTable(view)
+      case 'hhea':
+        return readHheaTable(view)
       case 'loca': {
         const head = this.getTable('head')
         const maxp = this.getTable('maxp')
