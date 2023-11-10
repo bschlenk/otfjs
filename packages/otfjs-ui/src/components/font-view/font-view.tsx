@@ -9,7 +9,9 @@ interface FontViewProps {
 
 export function FontView(props: FontViewProps) {
   const font = useMemo(() => new Font(props.font), [props.font])
-  const [tag, setTag] = useState('head')
+  const [tag, setTag] = useState(() =>
+    font.tables.includes('head') ? 'head' : font.tables[0],
+  )
 
   const TableComponent = TABLE_MAP[tag] ?? null
 
