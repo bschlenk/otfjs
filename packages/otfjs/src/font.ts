@@ -10,6 +10,7 @@ import { MaxpTable, readMaxpTable } from './tables/maxp.js'
 import { NameTable, readNameTable } from './tables/name.js'
 import { TableRecord } from './types.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
+import { PostTable, readPostTable } from './tables/post.js'
 
 export interface TableMap {
   cmap: CmapTable
@@ -20,6 +21,7 @@ export interface TableMap {
   maxp: MaxpTable
   name: NameTable
   'OS/2': OS2Table
+  post: PostTable
 }
 
 export class Font {
@@ -122,6 +124,8 @@ export class Font {
         return readNameTable(view)
       case 'OS/2':
         return readOS2Table(view)
+      case 'post':
+        return readPostTable(view)
     }
   }
 }

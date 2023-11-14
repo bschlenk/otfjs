@@ -13,6 +13,7 @@ const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   loca: jsonView('loca'),
   name: jsonView('name'),
   'OS/2': jsonView('OS/2'),
+  post: jsonView('post', { version: toHex }),
 }
 
 interface FontViewProps {

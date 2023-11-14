@@ -88,7 +88,14 @@ export class Reader {
     return arr
   }
 
-  public dataview(offset: number, length: number): DataView {
+  public dataview(offset?: number, length?: number): DataView {
+    if (offset == null) {
+      return new DataView(
+        this.view.buffer,
+        this.view.byteOffset + this.offset,
+        this.view.byteLength - this.offset,
+      )
+    }
     return new DataView(this.view.buffer, this.view.byteOffset + offset, length)
   }
 
