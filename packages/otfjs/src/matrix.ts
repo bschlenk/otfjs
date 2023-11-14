@@ -45,10 +45,7 @@ export class Matrix {
     return new Matrix(cos, sin, -sin, cos, 0, 0)
   }
 
-  static withScale(val: number): Matrix
-  static withScale(x: number, y: number): Matrix
-  static withScale(x: number, y?: number): Matrix {
-    if (y === undefined) y = x
+  static withScale(x: number, y = x): Matrix {
     return new Matrix(x, 0, 0, y, 0, 0)
   }
 
@@ -86,17 +83,11 @@ export class Matrix {
     return Matrix.withRotation(angle).mult(this)
   }
 
-  scale(val: number): Matrix
-  scale(x: number, y: number): Matrix
-  scale(x: number, y?: number): Matrix {
-    if (y === undefined) y = x
+  scale(x: number, y = x): Matrix {
     return this.mult(Matrix.withScale(x, y))
   }
 
-  preScale(val: number): Matrix
-  preScale(x: number, y: number): Matrix
-  preScale(x: number, y?: number): Matrix {
-    if (y === undefined) y = x
+  preScale(x: number, y = x): Matrix {
     return Matrix.withScale(x, y).mult(this)
   }
 
