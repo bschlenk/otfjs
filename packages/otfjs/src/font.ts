@@ -9,6 +9,7 @@ import { LocaTable, readLocaTable } from './tables/loca.js'
 import { MaxpTable, readMaxpTable } from './tables/maxp.js'
 import { NameTable, readNameTable } from './tables/name.js'
 import { TableRecord } from './types.js'
+import { OS2Table, readOS2Table } from './tables/os-2.js'
 
 export interface TableMap {
   cmap: CmapTable
@@ -18,6 +19,7 @@ export interface TableMap {
   loca: LocaTable
   maxp: MaxpTable
   name: NameTable
+  'OS/2': OS2Table
 }
 
 export class Font {
@@ -118,6 +120,8 @@ export class Font {
         return readMaxpTable(view)
       case 'name':
         return readNameTable(view)
+      case 'OS/2':
+        return readOS2Table(view)
     }
   }
 }
