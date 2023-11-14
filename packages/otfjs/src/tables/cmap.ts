@@ -1,5 +1,5 @@
 import { PlatformId } from '../enums.js'
-import { Reader } from './buffer.js'
+import { Reader } from '../buffer.js'
 
 export class CmapTable {
   constructor(

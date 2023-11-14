@@ -1,4 +1,4 @@
-import { Reader } from './buffer.js'
+import { Reader } from '../buffer.js'
 
 export interface HmtxTable {
   longHorMetric: { advanceWidth: number; lsb: number }[]

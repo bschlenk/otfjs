@@ -1,4 +1,4 @@
-import { fromLongDateTime } from '../utils.js'
+import { fromLongDateTime } from './utils.js'
 
 export class Reader {
   private view: DataView

@@ -1,5 +1,5 @@
 import { parseFont } from './parser.js'
-import { Reader } from './tables/buffer.js'
+import { Reader } from './buffer.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { readGlyf } from './tables/glyf.js'
 import { HeadTable, readHeadTable } from './tables/head.js'

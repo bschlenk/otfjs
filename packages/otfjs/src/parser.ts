@@ -1,4 +1,4 @@
-import { Reader } from './tables/buffer.js'
+import { Reader } from './buffer.js'
 import { Header, TableRecord } from './types.js'
 import { validateHeader } from './validation.js'
 

@@ -1,5 +1,5 @@
 import { NameId, PlatformId } from '../enums.js'
-import { Reader } from './buffer.js'
+import { Reader } from '../buffer.js'
 
 export interface NameTable {}
 

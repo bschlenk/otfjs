@@ -1,6 +1,6 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/hhea
 
-import { Reader } from './buffer.js'
+import { Reader } from '../buffer.js'
 
 export interface HheaTable {
   /** Typically set to 0x00010000 */

@@ -1,7 +1,7 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/maxp
 
 import { assert, toHex } from '../utils.js'
-import { Reader } from './buffer.js'
+import { Reader } from '../buffer.js'
 
 export type MaxpTable = MaxpTable05 | MaxpTable10
 

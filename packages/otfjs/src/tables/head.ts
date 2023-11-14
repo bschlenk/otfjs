@@ -1,5 +1,5 @@
 import { toHex } from '../utils.js'
-import { Reader } from './buffer.js'
+import { Reader } from '../buffer.js'
 
 export interface HeadTable {
   // Major version number of the font header table — set to 1.
