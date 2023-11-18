@@ -24,7 +24,7 @@ interface PostTableV2
   stringData: DataView
 }
 
-type PostTable = PostTableV1 | PostTableV2
+export type PostTable = PostTableV1 | PostTableV2
 
 export function readPostTable(view: Reader) {
   const version = view.u32()
