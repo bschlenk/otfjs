@@ -1,7 +1,8 @@
-import { Font, glyphToSvgPath } from 'otfjs'
-import styles from './font-view.module.css'
 import { JSXElementConstructor, useMemo, useState } from 'react'
+import { Font } from 'otfjs'
 import clsx from 'clsx'
+import { GlyfView } from './glyf-view'
+import styles from './font-view.module.css'
 
 const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   cmap: CmapView,
@@ -122,37 +123,6 @@ function CmapView({ font }: { font: Font }) {
       ))}
     </div>
   )
-}
-
-function GlyfView({ font }: { font: Font }) {
-  const svgs: JSX.Element[] = []
-
-  let i = 0
-  for (const glyph of font.glyphs()) {
-    if (!glyph.points) {
-      ++i
-      continue
-    }
-
-    const width = glyph.xMax - glyph.xMin
-    const height = glyph.yMax - glyph.yMin
-
-    const d = glyphToSvgPath(glyph, glyph.yMax)
-
-    svgs.push(
-      <svg
-        onClick={() => console.log(glyph)}
-        data-glyph-index={i++}
-        height="100"
-        viewBox={`0 0 ${width} ${height}`}
-        style={{ overflow: 'visible' }}
-      >
-        <path d={d} fill="currentcolor" />
-      </svg>,
-    )
-  }
-
-  return <div>{svgs}</div>
 }
 
 function toHex(n: unknown) {
