@@ -11,9 +11,11 @@ import { NameTable, readNameTable } from './tables/name.js'
 import { TableRecord } from './types.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
 import { PostTable, readPostTable } from './tables/post.js'
+import { GposTable, readGposTable } from './tables/gpos.js'
 
 export interface TableMap {
   cmap: CmapTable
+  GPOS: GposTable
   head: HeadTable
   hhea: HheaTable
   hmtx: HmtxTable
@@ -105,6 +107,8 @@ export class Font {
     switch (table.tag) {
       case 'cmap':
         return readCmapTable(view)
+      case 'GPOS':
+        return readGposTable(view)
       case 'head':
         return readHeadTable(view)
       case 'hhea':

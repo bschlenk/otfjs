@@ -6,6 +6,7 @@ import clsx from 'clsx'
 const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   cmap: CmapView,
   glyf: GlyfView,
+  GPOS: jsonView('GPOS', { version: toHex }),
   head: jsonView('head'),
   hhea: jsonView('hhea'),
   hmtx: jsonView('hmtx'),
