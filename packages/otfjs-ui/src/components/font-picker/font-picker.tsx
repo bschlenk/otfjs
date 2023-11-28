@@ -1,4 +1,5 @@
 import { useState } from 'react'
+
 import fontsList from '/fonts.json?url'
 
 export type FontsList = typeof import('../../../public/fonts.json')

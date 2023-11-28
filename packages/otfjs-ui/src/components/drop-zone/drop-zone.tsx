@@ -1,6 +1,7 @@
-import styles from './drop-zone.module.css'
-import { srOnly } from '../../styles/utils.module.css'
 import { preventDefault } from '../../utils/event'
+
+import { srOnly } from '../../styles/utils.module.css'
+import styles from './drop-zone.module.css'
 
 export function DropZone({
   children,

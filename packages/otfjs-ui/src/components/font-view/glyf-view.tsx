@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Font, glyphToSvgPath } from 'otfjs'
+
 import styles from './glyf-view.module.css'
 
 export function GlyfView({ font }: { font: Font }) {

@@ -1,7 +1,9 @@
 import { JSXElementConstructor, useMemo, useState } from 'react'
-import { Font } from 'otfjs'
 import clsx from 'clsx'
+import { Font } from 'otfjs'
+
 import { GlyfView } from './glyf-view'
+
 import styles from './font-view.module.css'
 
 const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {

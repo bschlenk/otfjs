@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { FontView } from './components/font-view/font-view'
-import styles from './app.module.css'
+
 import { DropZone } from './components/drop-zone/drop-zone'
-import { preventDefault } from './utils/event'
 import { FontPicker } from './components/font-picker/font-picker'
+import { FontView } from './components/font-view/font-view'
+import { preventDefault } from './utils/event'
+
+import styles from './app.module.css'
 
 export function App() {
   const [font, setFont] = useState<ArrayBuffer | null>(null)
