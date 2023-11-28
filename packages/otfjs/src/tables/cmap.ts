@@ -1,5 +1,5 @@
-import { PlatformId } from '../enums.js'
 import { Reader } from '../buffer.js'
+import { PlatformId } from '../enums.js'
 
 export class CmapTable {
   constructor(
@@ -66,7 +66,7 @@ interface EncodingRecord {
   // subtable: CmapSubtable
 }
 
-type CmapSubtable = any
+// type CmapSubtable = any
 
 export function readCmapTable(view: Reader) {
   const version = view.u16()

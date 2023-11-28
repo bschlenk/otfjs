@@ -1,17 +1,17 @@
-import { parseFont } from './parser.js'
 import { Reader } from './buffer.js'
+import { parseFont } from './parser.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { readGlyf } from './tables/glyf.js'
+import { GposTable, readGposTable } from './tables/gpos.js'
 import { HeadTable, readHeadTable } from './tables/head.js'
 import { HheaTable, readHheaTable } from './tables/hhea.js'
 import { HmtxTable, readHmtxTable } from './tables/hmtx.js'
 import { LocaTable, readLocaTable } from './tables/loca.js'
 import { MaxpTable, readMaxpTable } from './tables/maxp.js'
 import { NameTable, readNameTable } from './tables/name.js'
-import { TableRecord } from './types.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
 import { PostTable, readPostTable } from './tables/post.js'
-import { GposTable, readGposTable } from './tables/gpos.js'
+import { TableRecord } from './types.js'
 
 export interface TableMap {
   cmap: CmapTable
@@ -113,10 +113,11 @@ export class Font {
         return readHeadTable(view)
       case 'hhea':
         return readHheaTable(view)
-      case 'hmtx':
+      case 'hmtx': {
         const hhea = this.getTable('hhea')
         const maxp = this.getTable('maxp')
         return readHmtxTable(view, hhea.numberOfHMetrics, maxp.numGlyphs)
+      }
       case 'loca': {
         const head = this.getTable('head')
         const maxp = this.getTable('maxp')

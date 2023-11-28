@@ -1,5 +1,5 @@
-import { assert } from '../utils.js'
 import { Reader } from '../buffer.js'
+import { assert } from '../utils.js'
 
 enum GposLookupType {
   Single = 1,

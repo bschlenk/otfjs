@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 const REQUIRED_TABLES = [
   'cmap', // Character to glyph mapping
   'head', // Font header

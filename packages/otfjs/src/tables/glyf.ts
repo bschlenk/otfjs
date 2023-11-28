@@ -1,7 +1,7 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/glyf
 
-import { assert } from '../utils.js'
 import { Reader } from '../buffer.js'
+import { assert } from '../utils.js'
 
 export interface Glyph {
   xMin: number
