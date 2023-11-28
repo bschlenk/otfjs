@@ -4,7 +4,9 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "dev": "pnpm --recursive --parallel dev"
+    "dev": "pnpm --recursive --parallel dev",
+    "lint": "pnpm --recursive lint",
+    "lint:fix": "pnpm --recursive lint --fix"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.0.0",
