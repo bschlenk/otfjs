@@ -10,25 +10,23 @@ export function DropZone({
   onLoad: (file: ArrayBuffer) => void
 }) {
   return (
-    <div className={styles.fullCenter}>
-      <label
-        className={styles.dropZone}
-        onDragOver={preventDefault}
-        onDrop={(e) => {
-          e.preventDefault()
-          e.dataTransfer.files[0].arrayBuffer().then(onLoad)
+    <label
+      className={styles.dropZone}
+      onDragOver={preventDefault}
+      onDrop={(e) => {
+        e.preventDefault()
+        e.dataTransfer.files[0].arrayBuffer().then(onLoad)
+      }}
+    >
+      <input
+        type="file"
+        accept=".otf,.ttf"
+        className={srOnly}
+        onChange={(e) => {
+          e.target.files![0].arrayBuffer().then(onLoad)
         }}
-      >
-        <input
-          type="file"
-          accept=".otf,.ttf"
-          className={srOnly}
-          onChange={(e) => {
-            e.target.files![0].arrayBuffer().then(onLoad)
-          }}
-        />
-        {children}
-      </label>
-    </div>
+      />
+      {children}
+    </label>
   )
 }
