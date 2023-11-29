@@ -42,7 +42,7 @@ export class Reader {
   }
 
   public u24(offset?: number): number {
-    const val = this.view.getUint32(offset ?? this.offset) & 0xffffff
+    const val = this.view.getUint32(offset ?? this.offset) >> 8
     if (offset == null) this.offset += 3
     return val
   }
@@ -110,8 +110,8 @@ export class Reader {
 }
 
 export class Writer {
-  private data: ArrayBuffer
-  private view: DataView
+  public data: ArrayBuffer
+  public view: DataView
   public offset: number = 0
 
   constructor() {
