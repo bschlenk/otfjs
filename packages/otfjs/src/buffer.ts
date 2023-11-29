@@ -105,13 +105,13 @@ export class Reader {
 }
 
 export class Writer {
-  private buffer: ArrayBuffer
+  private data: ArrayBuffer
   private view: DataView
   public offset: number = 0
 
   constructor() {
-    this.buffer = new ArrayBuffer(1024)
-    this.view = new DataView(this.buffer)
+    this.data = new ArrayBuffer(1024)
+    this.view = new DataView(this.data)
   }
 
   get length(): number {
@@ -119,7 +119,7 @@ export class Writer {
   }
 
   get capacity(): number {
-    return this.buffer.byteLength
+    return this.data.byteLength
   }
 
   public u8(val: number) {
@@ -194,16 +194,36 @@ export class Writer {
     this.offset += n
   }
 
-  private maybeResize(n: number) {
-    if (this.offset + n > this.buffer.byteLength) {
-      this.resize()
+  public buffer(val: Writer | ArrayBuffer, align = 0) {
+    let size = 0
+    if (val instanceof Writer) {
+      size = val.offset
+      val = val.data
+    } else {
+      size = val.byteLength
+    }
+
+    this.maybeResize(val.byteLength)
+    new Uint8Array(this.data).set(new Uint8Array(val, 0, size), this.offset)
+    this.offset += val.byteLength
+
+    if (align) {
+      const padding = (align - (this.offset % align)) % align
+      this.offset += padding
     }
   }
 
-  private resize() {
-    const newBuffer = new ArrayBuffer(this.buffer.byteLength * 2)
-    new Uint8Array(newBuffer).set(new Uint8Array(this.buffer))
-    this.buffer = newBuffer
-    this.view = new DataView(this.buffer)
+  private maybeResize(n: number) {
+    let size = this.capacity
+    if (this.offset + n <= size) return
+
+    while (this.offset + n > size) {
+      size *= 2
+    }
+
+    const newBuffer = new ArrayBuffer(size)
+    new Uint8Array(newBuffer).set(new Uint8Array(this.data))
+    this.data = newBuffer
+    this.view = new DataView(this.data)
   }
 }
