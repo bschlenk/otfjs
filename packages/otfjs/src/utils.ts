@@ -9,6 +9,11 @@ export function fromLongDateTime(val: bigint) {
   return new Date(epochTimestamp * 1000)
 }
 
+export function toLongDateTime(val: Date) {
+  const epochTimestamp = Math.round(val.getTime() / 1000)
+  return BigInt(epochTimestamp) + SECONDS_BETWEEN_1904_AND_1970
+}
+
 export function assert(condition: boolean, msg: string): asserts condition {
   if (!condition) {
     throw new Error(msg)
