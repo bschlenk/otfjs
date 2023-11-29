@@ -1,4 +1,9 @@
-import { assert, fromLongDateTime, toLongDateTime } from './utils.js'
+import {
+  assert,
+  fromLongDateTime,
+  getAlignPadding,
+  toLongDateTime,
+} from './utils.js'
 
 export class Reader {
   private view: DataView
@@ -208,7 +213,7 @@ export class Writer {
     this.offset += val.byteLength
 
     if (align) {
-      const padding = (align - (this.offset % align)) % align
+      const padding = getAlignPadding(this.offset, align)
       this.offset += padding
     }
   }

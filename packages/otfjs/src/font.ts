@@ -12,6 +12,8 @@ import { NameTable, readNameTable } from './tables/name.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
 import { PostTable, readPostTable } from './tables/post.js'
 import { TableRecord } from './types.js'
+import { toObject } from './utils.js'
+import { validateHeader, validateTable } from './validation.js'
 
 export interface TableMap {
   cmap: CmapTable
@@ -36,12 +38,13 @@ export class Font {
     this.#data = data
 
     const { header, tables } = parseFont(data)
+    validateHeader(header)
+    for (const table of tables) {
+      validateTable(data, table)
+    }
 
     this.sfntVersion = header.sfntVersion
-    this.#tables = tables.reduce<Record<string, TableRecord>>((acc, table) => {
-      acc[table.tag] = table
-      return acc
-    }, {})
+    this.#tables = toObject(tables, (table) => table.tag)
   }
 
   public get tables() {

@@ -1,14 +1,15 @@
 import { Header, SfntVersion, TableRecord } from './types.js'
-import { toHex } from './utils.js'
+import { getAlignPadding, toHex } from './utils.js'
 
 export function validateHeader(header: Header) {
   const errors: string[] = []
   const warnings: string[] = []
 
   if (
-    header.sfntVersion !== SfntVersion.TRUE_TYPE_OUTLINES &&
-    header.sfntVersion !== SfntVersion.CCF_DATA &&
-    header.sfntVersion !== SfntVersion.APPLE_TRUE_TYPE
+    header.sfntVersion !== SfntVersion.TRUE_TYPE &&
+    header.sfntVersion !== SfntVersion.OPEN_TYPE &&
+    header.sfntVersion !== SfntVersion.APPLE_TRUE_TYPE &&
+    header.sfntVersion !== SfntVersion.POST_SCRIPT
   ) {
     errors.push(`invalid sfntVersion: ${toHex(header.sfntVersion)}`)
   }
@@ -43,10 +44,10 @@ export function validateHeader(header: Header) {
   }
 }
 
-export function validateTable(data: Uint8Array, table: TableRecord) {
-  const padding = table.length % 4
-  const length = table.length + (padding ? 4 - padding : 0)
-  const view = new DataView(data.buffer, table.offset, length)
+export function validateTable(data: ArrayBuffer, table: TableRecord) {
+  const padding = getAlignPadding(table.length, 4)
+  const length = table.length + padding
+  const view = new DataView(data, table.offset, length)
 
   let checksum = 0
   let o = 0
@@ -55,7 +56,16 @@ export function validateTable(data: Uint8Array, table: TableRecord) {
     o += 4
   }
 
-  // TODO: why doesn't this work?
+  if (table.tag === 'head') {
+    // head table checksum is calculated without the checksumAdjustment field
+    checksum -= view.getUint32(8)
+  }
+
+  // checksum is a u32, so we need to simulate a wrapping addition here. Also, in js bitwise
+  // operations always result in a signed 32-bit number, so we need to add if it is negative.
+  checksum &= 0xffffffff
+  if (checksum < 0) checksum += 0x100000000
+
   if (checksum !== table.checksum) {
     throw new Error(
       `invalid checksum for table ${table.tag}: ${toHex(

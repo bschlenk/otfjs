@@ -9,10 +9,9 @@
       "request": "launch",
       "name": "Parse inter",
       "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/dist/index.js",
-      "args": "${workspaceFolder}/inter.ttf",
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+      "program": "${workspaceFolder}/packages/otfjs/dist/bin/otfjs.js",
+      "args": "${workspaceFolder}/fonts/inter.ttf",
+      "outFiles": ["${workspaceFolder}/packages/otfjs/dist/**/*.js"]
     }
   ]
 }
