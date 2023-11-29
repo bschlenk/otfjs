@@ -8,10 +8,7 @@ export function toHex(n: number) {
  * Create an object from the given array, where the keys
  * are the result of calling `getKey` on each item.
  */
-export function toObject<T>(
-  arr: T[],
-  getKey: (item: T) => string,
-): Record<string, T> {
+export function toObject<T>(arr: T[], getKey: (item: T) => string) {
   return arr.reduce<Record<string, T>>((acc, item) => {
     acc[getKey(item)] = item
     return acc
@@ -34,6 +31,16 @@ export function toLongDateTime(val: Date) {
  */
 export function getAlignPadding(length: number, align: number) {
   return (align - (length % align)) % align
+}
+
+/**
+ * Truncate the given number to a 32-bit unsigned integer.
+ */
+export function trunc32(n: number) {
+  n &= 0xffffffff
+  // bitwise operations always result in a signed 32-bit number, so we add to make it unsigned
+  if (n < 0) n += 0x100000000
+  return n
 }
 
 export function assert(condition: boolean, msg: string): asserts condition {

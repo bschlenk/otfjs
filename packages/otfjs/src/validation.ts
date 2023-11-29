@@ -1,5 +1,5 @@
 import { Header, SfntVersion, TableRecord } from './types.js'
-import { getAlignPadding, toHex } from './utils.js'
+import { getAlignPadding, toHex, trunc32 } from './utils.js'
 
 export function validateHeader(header: Header) {
   const errors: string[] = []
@@ -61,10 +61,8 @@ export function validateTable(data: ArrayBuffer, table: TableRecord) {
     checksum -= view.getUint32(8)
   }
 
-  // checksum is a u32, so we need to simulate a wrapping addition here. Also, in js bitwise
-  // operations always result in a signed 32-bit number, so we need to add if it is negative.
-  checksum &= 0xffffffff
-  if (checksum < 0) checksum += 0x100000000
+  // checksum is a u32, so we need to truncate the value to 32 bits
+  checksum = trunc32(checksum)
 
   if (checksum !== table.checksum) {
     throw new Error(
