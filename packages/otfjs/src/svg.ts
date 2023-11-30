@@ -4,6 +4,11 @@ import { Glyph, Point } from './tables/glyf.js'
 export function glyphToSvgPath(glyph: Glyph, capHeight: number) {
   const path = new PathBuilder(new Matrix(1, 0, 0, -1, 0, capHeight))
 
+  if (glyph.type === 'composite') {
+    console.log(glyph)
+    return ''
+  }
+
   let i = 0
   for (const endIndex of glyph.endPtsOfContours) {
     let start = glyph.points[i++]
@@ -94,6 +99,7 @@ function join(...nums: number[]) {
 }
 
 function midpoint(p1: Point, p2: Point) {
+  // TODO: round this to the grid
   return {
     x: (p1.x + p2.x) / 2,
     y: (p1.y + p2.y) / 2,

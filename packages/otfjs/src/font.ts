@@ -1,7 +1,7 @@
 import { Reader } from './buffer.js'
 import { parseFont } from './parser.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
-import { readGlyf } from './tables/glyf.js'
+import { GlyphSimple, readGlyf } from './tables/glyf.js'
 import { GposTable, readGposTable } from './tables/gpos.js'
 import { HeadTable, readHeadTable } from './tables/head.js'
 import { HheaTable, readHheaTable } from './tables/hhea.js'
@@ -73,6 +73,10 @@ export class Font {
     return new Reader(this.#data, table.offset, table.length)
   }
 
+  public get numGlyphs() {
+    return this.getTable('maxp').numGlyphs
+  }
+
   public getGlyph(index: number) {
     const locaTable = this.getTable('loca')
     const offset = locaTable[index]
@@ -81,26 +85,59 @@ export class Font {
     const glyfTableRecord = this.#tables['glyf']
     const view = new Reader(this.#data, glyfTableRecord.offset + offset, length)
 
-    return readGlyf(view)
+    const glyph = readGlyf(view)
+    if (glyph.type === 'simple') return glyph
+
+    const { components, ...rest } = glyph
+    const fullGlyph: GlyphSimple = {
+      ...rest,
+      type: 'simple',
+      contoursOverlap: false,
+      points: [],
+      endPtsOfContours: [],
+      instructions: [],
+    }
+
+    for (const c of components) {
+      const subGlyph = this.getGlyph(c.glyphIndex)
+      fullGlyph.endPtsOfContours.push(
+        ...subGlyph.endPtsOfContours.map((i) => i + fullGlyph.points.length),
+      )
+
+      const argsAreXYValues = Boolean(c.flags & (1 << 1))
+
+      if (argsAreXYValues) {
+        const roundXYToGrid = Boolean(c.flags & (1 << 2))
+        fullGlyph.points.push(
+          ...subGlyph.points.map((p) => {
+            const point = c.matrix.transformPoint(p)
+            if (roundXYToGrid) {
+              point.x = Math.round(point.x)
+              point.y = Math.round(point.y)
+            }
+            return { ...p, ...point }
+          }),
+        )
+      } else {
+        fullGlyph.points.push(...subGlyph.points)
+      }
+
+      /*
+      const weHaveInstructions = Boolean(c.flags & (1 << 8))
+      const useMyMetrics = Boolean(c.flags & (1 << 9))
+      const overlapCompound = Boolean(c.flags & (1 << 10))
+      const scaledComponentOffset = Boolean(c.flags & (1 << 11))
+      const unscaledComponentOffset = Boolean(c.flags & (1 << 12))
+      */
+    }
+
+    return fullGlyph
   }
 
   public *glyphs() {
-    const locaTable = this.getTable('loca')
-    const numGlyphs = locaTable.length - 1
-
-    const glyfTableRecord = this.#tables['glyf']
-
+    const numGlyphs = this.numGlyphs
     for (let i = 0; i < numGlyphs; ++i) {
-      const offset = locaTable[i]
-      const length = locaTable[i + 1] - offset
-
-      const view = new Reader(
-        this.#data,
-        glyfTableRecord.offset + offset,
-        length,
-      )
-
-      yield readGlyf(view)
+      yield this.getGlyph(i)
     }
   }
 
@@ -118,13 +155,11 @@ export class Font {
         return readHheaTable(view)
       case 'hmtx': {
         const hhea = this.getTable('hhea')
-        const maxp = this.getTable('maxp')
-        return readHmtxTable(view, hhea.numberOfHMetrics, maxp.numGlyphs)
+        return readHmtxTable(view, hhea.numberOfHMetrics, this.numGlyphs)
       }
       case 'loca': {
         const head = this.getTable('head')
-        const maxp = this.getTable('maxp')
-        return readLocaTable(view, head.indexToLocFormat, maxp.numGlyphs)
+        return readLocaTable(view, head.indexToLocFormat, this.numGlyphs)
       }
       case 'maxp':
         return readMaxpTable(view)

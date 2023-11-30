@@ -1,17 +1,36 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/glyf
 
 import { Reader } from '../buffer.js'
+import { Matrix } from '../matrix.js'
 import { assert } from '../utils.js'
 
-export interface Glyph {
+interface GlyphBase<T extends string> {
+  type: T
   xMin: number
   yMin: number
   xMax: number
   yMax: number
+}
+
+export interface GlyphSimple extends GlyphBase<'simple'> {
   endPtsOfContours: number[]
   instructions: number[]
   points: Point[]
   contoursOverlap: boolean
+}
+
+export interface GlyphComposite extends GlyphBase<'composite'> {
+  components: GlyphCompositeComponent[]
+}
+
+export type Glyph = GlyphSimple | GlyphComposite
+
+interface GlyphCompositeComponent {
+  flags: number
+  glyphIndex: number
+  arg1: number
+  arg2: number
+  matrix: Matrix
 }
 
 export interface Point {
@@ -55,11 +74,17 @@ export function readGlyf(view: Reader): Glyph {
   const yMax = view.i16()
 
   if (isComposite) {
-    // TODO: handle composite glyphs
-    return {} as any
+    const components = readCompositeGlyph(view)
+    const glyph: GlyphComposite = {
+      type: 'composite',
+      xMin,
+      yMin,
+      xMax,
+      yMax,
+      components,
+    }
+    return glyph
   }
-
-  // simple glyph
 
   const endPtsOfContours = view.array(numberOfContours, () => view.u16())
   const instructionLength = view.u16()
@@ -72,7 +97,8 @@ export function readGlyf(view: Reader): Glyph {
   const yCoordinates = readYCoordinates(flags, view)
   const points = combinePoints(flags, xCoordinates, yCoordinates)
 
-  const glyph: Glyph = {
+  const glyph: GlyphSimple = {
+    type: 'simple',
     xMin,
     yMin,
     xMax,
@@ -180,8 +206,110 @@ function combinePoints(
   return points
 }
 
+function readCompositeGlyph(view: Reader) {
+  const components: GlyphCompositeComponent[] = []
+
+  let more = true
+  while (more) {
+    const result = readCompositeGlyphComponent(view)
+    components.push(result.component)
+    more = result.more
+  }
+
+  return components
+}
+
+function readCompositeGlyphComponent(view: Reader) {
+  const flags = view.u16()
+  const glyphIndex = view.u16()
+
+  const arg1And2AreWords = Boolean(flags & (1 << 0))
+  const argsAreXYValues = Boolean(flags & (1 << 1))
+  const weHaveAScale = Boolean(flags & (1 << 3))
+  const more = Boolean(flags & (1 << 5))
+  const weHaveAnXAndYScale = Boolean(flags & (1 << 6))
+  const weHaveATwoByTwo = Boolean(flags & (1 << 7))
+  const scaledComponentOffset = Boolean(flags & (1 << 11))
+  const unscaledComponentOffset = Boolean(flags & (1 << 12))
+
+  const xAndYAreScaled = scaledComponentOffset && !unscaledComponentOffset
+
+  /*
+  const argsAreXYValues = Boolean(flags & (1 << 1))
+  const roundXYToGrid = Boolean(flags & (1 << 2))
+  const weHaveInstructions = Boolean(flags & (1 << 8))
+  const useMyMetrics = Boolean(flags & (1 << 9))
+  const overlapCompound = Boolean(flags & (1 << 10))
+  */
+
+  let arg1: number, arg2: number
+
+  if (arg1And2AreWords) {
+    if (argsAreXYValues) {
+      arg1 = view.i16()
+      arg2 = view.i16()
+    } else {
+      arg1 = view.u16()
+      arg2 = view.u16()
+    }
+  } else {
+    if (argsAreXYValues) {
+      arg1 = view.i8()
+      arg2 = view.i8()
+    } else {
+      arg1 = view.u8()
+      arg2 = view.u8()
+    }
+  }
+
+  const extra: number[] = []
+
+  if (weHaveAScale) {
+    extra.push(view.f2dot14())
+  } else if (weHaveAnXAndYScale) {
+    extra.push(view.f2dot14())
+    extra.push(view.f2dot14())
+  } else if (weHaveATwoByTwo) {
+    extra.push(view.f2dot14())
+    extra.push(view.f2dot14())
+    extra.push(view.f2dot14())
+    extra.push(view.f2dot14())
+  }
+
+  let matrix = Matrix.identity()
+
+  switch (extra.length) {
+    case 1:
+    case 2:
+      matrix = matrix.mult(Matrix.withScale(...(extra as [number, number])))
+      break
+    case 4:
+      matrix = matrix.mult(
+        new Matrix(...(extra as [number, number, number, number]), 0, 0),
+      )
+  }
+
+  if (argsAreXYValues) {
+    const translation = Matrix.withTranslation(arg1, arg2)
+    matrix = xAndYAreScaled
+      ? translation.mult(matrix)
+      : matrix.mult(translation)
+  }
+
+  const component: GlyphCompositeComponent = {
+    flags,
+    glyphIndex,
+    arg1,
+    arg2,
+    matrix,
+  }
+
+  return { component, more }
+}
+
 function emptyGlyph(): Glyph {
   return {
+    type: 'simple',
     xMin: 0,
     yMin: 0,
     xMax: 0,

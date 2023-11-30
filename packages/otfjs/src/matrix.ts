@@ -35,6 +35,10 @@ export class Matrix {
     }
   }
 
+  static identity() {
+    return new Matrix()
+  }
+
   static withTranslation(x: number, y: number): Matrix {
     return new Matrix(1, 0, 0, 1, x, y)
   }
@@ -119,6 +123,17 @@ export class Matrix {
       x: xx * x + yx * y + dx,
       y: xy * x + yy * y + dy,
     }
+  }
+
+  equals(other: Matrix) {
+    for (let i = 0; i < 6; ++i) {
+      if (this.values[i] !== other.values[i]) return false
+    }
+    return true
+  }
+
+  isIdentity() {
+    return this.equals(Matrix.identity())
   }
 }
 
