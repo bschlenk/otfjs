@@ -65,6 +65,30 @@ export class Reader {
     return val
   }
 
+  public f2dot14(): number {
+    const val = this.u16()
+
+    let mantissa!: number
+    switch (val >>> 14) {
+      case 0b00:
+        mantissa = 0
+        break
+      case 0b01:
+        mantissa = 1
+        break
+      case 0b10:
+        mantissa = -2
+        break
+      case 0b11:
+        mantissa = -1
+        break
+    }
+
+    const fraction = (val & 0x3fff) / 16384
+
+    return mantissa + fraction
+  }
+
   public date(): Date {
     const val = this.i64()
     return fromLongDateTime(val)
@@ -178,6 +202,16 @@ export class Writer {
     this.maybeResize(8)
     this.view.setBigInt64(this.offset, val)
     this.offset += 8
+  }
+
+  public f2dot14(val: number) {
+    assert(val >= -2 && val < 2, 'f2dot14 must be between -2 and 2')
+
+    const mantissa = Math.trunc(val)
+    const fraction = Math.round((val - mantissa) * 16384)
+    val = ((mantissa << 14) | fraction) & 0xffff
+
+    this.u16(val)
   }
 
   public date(date: Date) {
