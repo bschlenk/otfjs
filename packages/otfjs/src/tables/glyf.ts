@@ -1,6 +1,7 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/glyf
 
 import { Reader } from '../buffer.js'
+import { createFlagReader } from '../flags.js'
 import { Matrix } from '../matrix.js'
 import { assert } from '../utils.js'
 
@@ -39,13 +40,17 @@ export interface Point {
   onCurve: boolean
 }
 
-interface Flag {
-  onCurvePoint: boolean
-  xShortVector: boolean
-  yShortVector: boolean
-  xIsSameOrPositiveXShortVector: boolean
-  yIsSameOrPositiveYShortVector: boolean
-}
+const newFlag = createFlagReader({
+  onCurvePoint: 0,
+  xShortVector: 1,
+  yShortVector: 2,
+  repeat: 3,
+  xIsSameOrPositiveXShortVector: 4,
+  yIsSameOrPositiveYShortVector: 5,
+  contoursOverlap: 6,
+})
+
+type Flag = ReturnType<typeof newFlag>
 
 /**
  * This reader is a special case, where the `view` is expected to already
@@ -117,33 +122,18 @@ function readFlags(count: number, view: Reader) {
 
   const flags: Flag[] = []
   while (flags.length < count) {
-    const flag = view.u8()
-
-    const onCurvePoint = Boolean(flag & (1 << 0))
-    const xShortVector = Boolean(flag & (1 << 1))
-    const yShortVector = Boolean(flag & (1 << 2))
-    const repeat = Boolean(flag & (1 << 3))
-    const xIsSameOrPositiveXShortVector = Boolean(flag & (1 << 4))
-    const yIsSameOrPositiveYShortVector = Boolean(flag & (1 << 5))
+    const flag = newFlag(view.u8())
 
     if (flags.length === 0) {
-      contoursOverlap = Boolean(flag & (1 << 6))
+      contoursOverlap = flag.contoursOverlap
     }
 
-    const flagData = {
-      onCurvePoint,
-      xShortVector,
-      yShortVector,
-      xIsSameOrPositiveXShortVector,
-      yIsSameOrPositiveYShortVector,
-    }
+    flags.push(flag)
 
-    flags.push(flagData)
-
-    if (repeat) {
+    if (flag.repeat) {
       const count = view.u8()
       for (let i = 0; i < count; ++i) {
-        flags.push(flagData)
+        flags.push(flag)
       }
     }
   }
