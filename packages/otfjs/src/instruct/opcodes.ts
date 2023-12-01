@@ -1,0 +1,27 @@
+export const enum Opcode {
+  NPUSHB = 0x40,
+  NPUSHW = 0x41,
+
+  PUSHB0 = 0xb0,
+  PUSHB1 = 0xb1,
+  PUSHB2 = 0xb2,
+  PUSHB3 = 0xb3,
+  PUSHB4 = 0xb4,
+  PUSHB5 = 0xb5,
+  PUSHB6 = 0xb6,
+  PUSHB7 = 0xb7,
+
+  PUSHW0 = 0xb8,
+  PUSHW1 = 0xb9,
+  PUSHW2 = 0xba,
+  PUSHW3 = 0xbb,
+  PUSHW4 = 0xbc,
+  PUSHW5 = 0xbd,
+  PUSHW6 = 0xbe,
+  PUSHW7 = 0xbf,
+
+  RS = 0x43,
+  WS = 0x42,
+
+  WCVTP = 0x44,
+}

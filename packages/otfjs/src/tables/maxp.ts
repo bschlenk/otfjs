@@ -5,12 +5,12 @@ import { assert, toHex } from '../utils.js'
 
 export type MaxpTable = MaxpTable05 | MaxpTable10
 
-interface MaxpTable05 {
+export interface MaxpTable05 {
   version: 0x00005000
   numGlyphs: number
 }
 
-interface MaxpTable10 {
+export interface MaxpTable10 {
   version: 0x00010000
   numGlyphs: number
   maxPoints: number
