@@ -4,6 +4,14 @@ export function toHex(n: number) {
   return `0x${n.toString(16).padStart(8, '0')}`
 }
 
+export function range<T>(n: number, fn: (i: number) => T): T[] {
+  const arr = new Array<T>(n)
+  for (let i = 0; i < n; ++i) {
+    arr[i] = fn(i)
+  }
+  return arr
+}
+
 /**
  * Create an object from the given array, where the keys
  * are the result of calling `getKey` on each item.
