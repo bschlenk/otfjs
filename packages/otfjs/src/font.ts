@@ -1,6 +1,7 @@
 import { Reader } from './buffer.js'
 import { parseFont } from './parser.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
+import { readTableAsU8Array } from './tables/common.js'
 import { GlyphSimple, readGlyf } from './tables/glyf.js'
 import { GposTable, readGposTable } from './tables/gpos.js'
 import { HeadTable, readHeadTable } from './tables/head.js'
@@ -17,6 +18,7 @@ import { validateHeader, validateTable } from './validation.js'
 
 export interface TableMap {
   cmap: CmapTable
+  fpgm: Uint8Array
   GPOS: GposTable
   head: HeadTable
   hhea: HheaTable
@@ -26,6 +28,7 @@ export interface TableMap {
   name: NameTable
   'OS/2': OS2Table
   post: PostTable
+  prep: Uint8Array
 }
 
 export class Font {
@@ -146,6 +149,8 @@ export class Font {
     switch (table.tag) {
       case 'cmap':
         return readCmapTable(view)
+      case 'fpgm':
+        return readTableAsU8Array(view)
       case 'GPOS':
         return readGposTable(view)
       case 'head':
@@ -168,6 +173,8 @@ export class Font {
         return readOS2Table(view)
       case 'post':
         return readPostTable(view)
+      case 'prep':
+        return readTableAsU8Array(view)
     }
   }
 }

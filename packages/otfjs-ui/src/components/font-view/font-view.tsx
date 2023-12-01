@@ -8,6 +8,7 @@ import styles from './font-view.module.css'
 
 const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   cmap: CmapView,
+  fpgm: u8ArrayView('fpgm'),
   glyf: GlyfView,
   GPOS: jsonView('GPOS', { version: toHex }),
   head: jsonView('head'),
@@ -18,6 +19,7 @@ const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   name: jsonView('name'),
   'OS/2': jsonView('OS/2'),
   post: jsonView('post', { version: toHex }),
+  prep: u8ArrayView('prep'),
 }
 
 interface FontViewProps {
@@ -97,6 +99,27 @@ function jsonView(
   }
 }
 
+function U8ArrayView({ data }: { data: Uint8Array }) {
+  for (const byte of data) {
+    console.log(byte)
+  }
+
+  return (
+    <ol>
+      {Array.from(data).map((byte, i) => (
+        <li key={i}>{toHex(byte, 2)}</li>
+      ))}
+    </ol>
+  )
+}
+
+function u8ArrayView(tag: string) {
+  return ({ font }: { font: Font }) => {
+    const table = font.getTable(tag)
+    return <U8ArrayView data={table} />
+  }
+}
+
 function CmapView({ font }: { font: Font }) {
   const [chars, setChars] = useState('')
 
@@ -127,7 +150,7 @@ function CmapView({ font }: { font: Font }) {
   )
 }
 
-function toHex(n: unknown) {
+function toHex(n: any, pad = 8) {
   if (typeof n !== 'number') return n
-  return `0x${n.toString(16).padStart(8, '0')}`
+  return `0x${n.toString(16).padStart(pad, '0')}`
 }
