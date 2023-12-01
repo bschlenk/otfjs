@@ -151,6 +151,10 @@ export class Font {
         return readCmapTable(view)
       case 'fpgm':
         return readTableAsU8Array(view)
+      case 'glyf':
+        throw new Error(
+          'call getGlyph instead of reading the glyf table directly',
+        )
       case 'GPOS':
         return readGposTable(view)
       case 'head':
