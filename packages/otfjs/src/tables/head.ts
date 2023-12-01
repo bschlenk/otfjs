@@ -1,4 +1,5 @@
 import { Reader } from '../buffer.js'
+import { createFlagReader } from '../flags.js'
 import { toHex } from '../utils.js'
 
 export interface HeadTable {
@@ -64,29 +65,28 @@ export interface HeadTable {
   glyphDataFormat: number
 }
 
-interface HeadTableFlags {
-  // Bit 0: Baseline for font at y=0.
-  baselineAtY0: boolean
-  // Bit 1: Left sidebearing point at x=0 (relevant only for TrueType rasterizers) — see the note below regarding variable fonts.
-  leftSidebearingAtX0: boolean
-  // Bit 2: Instructions may depend on point size.
-  instructionsMayDependOnPointSize: boolean
-  // Bit 3: Force ppem to integer values for all internal scaler math; may use fractional ppem sizes if this bit is clear. It is strongly recommended that this be set in hinted fonts.
-  forcePpemToIntegers: boolean
-  // Bit 4: Instructions may alter advance width (the advance widths might not scale linearly).
-  instructionsMayAlterAdvanceWidth: boolean
-  // Bit 5: This bit is not used in OpenType, and should not be set in order to ensure compatible behavior on all platforms. If set, it may result in different behavior for vertical layout in some platforms. (See Apple’s specification for details regarding behavior in Apple platforms.)
-  // Bits 6–10: These bits are not used in Opentype and should always be cleared. (See Apple’s specification for details regarding legacy used in Apple platforms.)
-  // Bit 11: Font data is “lossless” as a result of having been subjected to optimizing transformation and/or compression (such as e.g. compression mechanisms defined by ISO/IEC 14496-18, MicroType Express, WOFF 2.0 or similar) where the original font functionality and features are retained but the binary compatibility between input and output font files is not guaranteed. As a result of the applied transform, the DSIG table may also be invalidated.
-  lossless: boolean
-  // Bit 12: Font converted (produce compatible metrics).
-  converted: boolean
-  // Bit 13: Font optimized for ClearType™. Note, fonts that rely on embedded bitmaps (EBDT) for rendering should not be considered optimized for ClearType, and therefore should keep this bit cleared.
-  clearTypeOptimized: boolean
-  // Bit 14: Last Resort font. If set, indicates that the glyphs encoded in the 'cmap' subtables are simply generic symbolic representations of code point ranges and don’t truly represent support for those code points. If unset, indicates that the glyphs encoded in the 'cmap' subtables represent proper support for those code points.
-  lastResortFont: boolean
-  // Bit 15: Reserved, set to 0.
-}
+const flagReader = createFlagReader({
+  /** Baseline for font at y=0. */
+  baselineAtY0: 0,
+  /** Left sidebearing point at x=0 (relevant only for TrueType rasterizers) - see the note below regarding variable fonts. */
+  leftSidebearingAtX0: 1,
+  /** Instructions may depend on point size. */
+  instructionsMayDependOnPointSize: 2,
+  /** Force ppem to integer values for all internal scaler math; may use fractional ppem sizes if this bit is clear. It is strongly recommended that this be set in hinted fonts. */
+  forcePpemToIntegers: 3,
+  /** Instructions may alter advance width (the advance widths might not scale linearly). */
+  instructionsMayAlterAdvanceWidth: 4,
+  /** Font data is “lossless” as a result of having been subjected to optimizing transformation and/or compression (such as e.g. compression mechanisms defined by ISO/IEC 14496-18, MicroType Express, WOFF 2.0 or similar) where the original font functionality and features are retained but the binary compatibility between input and output font files is not guaranteed. As a result of the applied transform, the DSIG table may also be invalidated. */
+  lossless: 11,
+  /** Bit 12: Font converted (produce compatible metrics). */
+  converted: 12,
+  /** Font optimized for ClearType™. Note, fonts that rely on embedded bitmaps (EBDT) for rendering should not be considered optimized for ClearType, and therefore should keep this bit cleared. */
+  clearTypeOptimized: 13,
+  /** Last Resort font. If set, indicates that the glyphs encoded in the 'cmap' subtables are simply generic symbolic representations of code point ranges and don’t truly represent support for those code points. If unset, indicates that the glyphs encoded in the 'cmap' subtables represent proper support for those code points. */
+  lastResortFont: 14,
+})
+
+type HeadTableFlags = ReturnType<typeof flagReader>
 
 export function readHeadTable(view: Reader) {
   const majorVersion = view.u16()
@@ -94,7 +94,7 @@ export function readHeadTable(view: Reader) {
   const fontRevision = view.u32()
   const checksumAdjustment = view.u32()
   const magicNumber = view.u32()
-  const flags = parseFlags(view.u16())
+  const flags = flagReader(view.u16())
   const unitsPerEm = view.u16()
 
   const created = view.date()
@@ -133,28 +133,4 @@ export function readHeadTable(view: Reader) {
   }
 
   return head
-}
-
-function parseFlags(flags: number) {
-  const baselineAtY0 = Boolean(flags & 1)
-  const leftSidebearingAtX0 = Boolean(flags & (1 << 1))
-  const instructionsMayDependOnPointSize = Boolean(flags & (1 << 2))
-  const forcePpemToIntegers = Boolean(flags & (1 << 3))
-  const instructionsMayAlterAdvanceWidth = Boolean(flags & (1 << 4))
-  const lossless = Boolean(flags & (1 << 11))
-  const converted = Boolean(flags & (1 << 12))
-  const clearTypeOptimized = Boolean(flags & (1 << 13))
-  const lastResortFont = Boolean(flags & (1 << 14))
-
-  return {
-    baselineAtY0,
-    leftSidebearingAtX0,
-    instructionsMayDependOnPointSize,
-    forcePpemToIntegers,
-    instructionsMayAlterAdvanceWidth,
-    lossless,
-    converted,
-    clearTypeOptimized,
-    lastResortFont,
-  }
 }

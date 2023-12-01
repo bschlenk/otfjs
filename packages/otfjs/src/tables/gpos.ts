@@ -1,4 +1,5 @@
 import { Reader } from '../buffer.js'
+import { createFlagReader } from '../flags.js'
 import { assert } from '../utils.js'
 
 enum GposLookupType {
@@ -115,22 +116,23 @@ function readLookupListTable(view: Reader) {
   })
 }
 
+const lookupFlagReader = createFlagReader({
+  rightToLeft: 0,
+  ignoreBaseGlyphs: 1,
+  ignoreLigatures: 2,
+  ignoreMarks: 3,
+  useMarkFilteringSet: 4,
+  markAttachmentTypeMask: (flag: number) => (flag >> 8) & 0xff,
+})
+
 function readLookupTable(view: Reader) {
   const lookupType: GposLookupType = view.u16()
-  const lookupFlag = view.u16()
+  const lookupFlag = lookupFlagReader(view.u16())
   const subTableCount = view.u16()
   const subTableOffsets = view.array(subTableCount, () => view.u16())
 
-  // TODO: convert to flags
-  const rightToLeft = Boolean(lookupFlag & (1 << 0))
-  const ignoreBaseGlyphs = Boolean(lookupFlag & (1 << 1))
-  const ignoreLigatures = Boolean(lookupFlag & (1 << 2))
-  const ignoreMarks = Boolean(lookupFlag & (1 << 3))
-  const useMarkFilteringSet = Boolean(lookupFlag & (1 << 4))
-  const markAttachmentTypeMask = (lookupFlag >> 8) & 0xff
-
   let markFilteringSet = null
-  if (useMarkFilteringSet) {
+  if (lookupFlag.useMarkFilteringSet) {
     markFilteringSet = view.u16()
   }
 
@@ -141,13 +143,7 @@ function readLookupTable(view: Reader) {
   return {
     lookupType,
     lookupTypeStr: GposLookupType[lookupType],
-    lookupFlag: {
-      rightToLeft,
-      ignoreBaseGlyphs,
-      ignoreLigatures,
-      ignoreMarks,
-      markAttachmentTypeMask,
-    },
+    lookupFlag,
     subTables,
     markFilteringSet,
   }
@@ -193,11 +189,24 @@ function readSingleSubtable(view: Reader) {
   return { posFormat }
 }
 
+const valueFormatReader = createFlagReader({
+  xPlacement: 0,
+  yPlacement: 1,
+  xAdvance: 2,
+  yAdvance: 3,
+  xPlaDeviceOffset: 4,
+  yPlaDeviceOffset: 5,
+  xAdvDeviceOffset: 6,
+  yAdvDeviceOffset: 7,
+})
+
+type ValueFormat = ReturnType<typeof valueFormatReader>
+
 function readPairSubtable(view: Reader) {
   const posFormat = view.u16()
   const coverageOffset = view.u16()
-  const valueFormat1 = view.u16()
-  const valueFormat2 = view.u16()
+  const valueFormat1 = valueFormatReader(view.u16())
+  const valueFormat2 = valueFormatReader(view.u16())
   const coverage = readCoverageTable(view.subtable(coverageOffset))
 
   switch (posFormat) {
@@ -278,8 +287,8 @@ function readCoverageTable(view: Reader) {
 
 function readPairSetTable(
   view: Reader,
-  valueFormat1: number,
-  valueFormat2: number,
+  valueFormat1: ValueFormat,
+  valueFormat2: ValueFormat,
 ) {
   const pairValueCount = view.u16()
   const pairValues = view.array(pairValueCount, () => {
@@ -331,40 +340,40 @@ interface ValueRecord {
   yAdvDeviceOffset?: number
 }
 
-function readValueRecord(view: Reader, valueFormat: number) {
+function readValueRecord(view: Reader, valueFormat: ValueFormat) {
   const rec: ValueRecord = {}
 
-  if (valueFormat === 0) return rec
+  if (valueFormat.value === 0) return rec
 
-  if (valueFormat & (1 << 0)) {
+  if (valueFormat.xPlacement) {
     rec.xPlacement = view.i16()
   }
 
-  if (valueFormat & (1 << 1)) {
+  if (valueFormat.yPlacement) {
     rec.yPlacement = view.i16()
   }
 
-  if (valueFormat & (1 << 2)) {
+  if (valueFormat.xAdvance) {
     rec.xAdvance = view.i16()
   }
 
-  if (valueFormat & (1 << 3)) {
+  if (valueFormat.yAdvance) {
     rec.yAdvance = view.i16()
   }
 
-  if (valueFormat & (1 << 4)) {
+  if (valueFormat.xPlaDeviceOffset) {
     rec.xPlaDeviceOffset = view.u16()
   }
 
-  if (valueFormat & (1 << 5)) {
+  if (valueFormat.yPlaDeviceOffset) {
     rec.yPlaDeviceOffset = view.u16()
   }
 
-  if (valueFormat & (1 << 6)) {
+  if (valueFormat.xAdvDeviceOffset) {
     rec.xAdvDeviceOffset = view.u16()
   }
 
-  if (valueFormat & (1 << 7)) {
+  if (valueFormat.yAdvDeviceOffset) {
     rec.yAdvDeviceOffset = view.u16()
   }
 
