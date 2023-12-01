@@ -121,6 +121,7 @@ function readLookupTable(view: Reader) {
   const subTableCount = view.u16()
   const subTableOffsets = view.array(subTableCount, () => view.u16())
 
+  // TODO: convert to flags
   const rightToLeft = Boolean(lookupFlag & (1 << 0))
   const ignoreBaseGlyphs = Boolean(lookupFlag & (1 << 1))
   const ignoreLigatures = Boolean(lookupFlag & (1 << 2))

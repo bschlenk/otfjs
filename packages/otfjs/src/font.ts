@@ -77,7 +77,7 @@ export class Font {
     return this.getTable('maxp').numGlyphs
   }
 
-  public getGlyph(index: number) {
+  public getGlyph(index: number): GlyphSimple {
     const locaTable = this.getTable('loca')
     const offset = locaTable[index]
     const length = locaTable[index + 1] - offset
@@ -95,7 +95,7 @@ export class Font {
       contoursOverlap: components[0].flags.overlapCompound,
       points: [],
       endPtsOfContours: [],
-      instructions: [],
+      instructions: new Uint8Array(0),
     }
 
     for (const c of components) {
@@ -127,7 +127,7 @@ export class Font {
 
     if (components[0].flags.weHaveInstructions) {
       const numInstructions = view.u16()
-      fullGlyph.instructions = view.array(numInstructions, () => view.u8())
+      fullGlyph.instructions = view.u8Array(numInstructions)
     }
 
     return fullGlyph

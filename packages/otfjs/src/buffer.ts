@@ -109,11 +109,26 @@ export class Reader {
     this.offset += n
   }
 
+  /**
+   * This is meant to be used to read arrays of structured data from the view. It doesn't do any
+   * reading itself, and instead expects the callback to read the data from the view. If you need
+   * a simple array of u8s, use the u8Array method instead.
+   */
   public array<T>(length: number, fn: () => T): T[] {
     const arr = []
     for (let i = 0; i < length; i++) {
       arr.push(fn())
     }
+    return arr
+  }
+
+  public u8Array(length: number): Uint8Array {
+    const arr = new Uint8Array(
+      this.data,
+      this.view.byteOffset + this.offset,
+      length,
+    )
+    this.offset += length
     return arr
   }
 

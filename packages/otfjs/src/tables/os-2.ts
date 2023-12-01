@@ -22,7 +22,7 @@ export function readOS2Table(view: Reader) {
   const yStrikeoutSize = view.i16()
   const yStrikeoutPosition = view.i16()
   const sFamilyClass = view.i16()
-  const panose = view.array(10, () => view.u8())
+  const panose = view.u8Array(10)
   const ulUnicodeRange1 = view.u32()
   const ulUnicodeRange2 = view.u32()
   const ulUnicodeRange3 = view.u32()

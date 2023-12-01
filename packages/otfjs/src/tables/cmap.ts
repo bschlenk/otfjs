@@ -146,8 +146,6 @@ function readCmapSubtable(view: Reader) {
         idDeltas,
         idRangeOffsets,
       }
-
-      break
     }
 
     case 6: {

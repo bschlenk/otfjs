@@ -15,7 +15,7 @@ interface GlyphBase<T extends string> {
 
 export interface GlyphSimple extends GlyphBase<'simple'> {
   endPtsOfContours: number[]
-  instructions: number[]
+  instructions: Uint8Array
   points: Point[]
   contoursOverlap: boolean
 }
@@ -108,7 +108,7 @@ export function readGlyf(view: Reader): Glyph {
 
   const endPtsOfContours = view.array(numberOfContours, () => view.u16())
   const instructionLength = view.u16()
-  const instructions = view.array(instructionLength, () => view.u8())
+  const instructions = view.u8Array(instructionLength)
 
   const numEntries = endPtsOfContours[endPtsOfContours.length - 1] + 1
 
