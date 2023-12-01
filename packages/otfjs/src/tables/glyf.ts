@@ -27,7 +27,7 @@ export interface GlyphComposite extends GlyphBase<'composite'> {
 export type Glyph = GlyphSimple | GlyphComposite
 
 interface GlyphCompositeComponent {
-  flags: number
+  flags: ReturnType<typeof newCompositeFlag>
   glyphIndex: number
   arg1: number
   arg2: number
@@ -51,6 +51,21 @@ const newFlag = createFlagReader({
 })
 
 type Flag = ReturnType<typeof newFlag>
+
+const newCompositeFlag = createFlagReader({
+  arg1And2AreWords: 0,
+  argsAreXYValues: 1,
+  roundXYToGrid: 2,
+  weHaveAScale: 3,
+  moreComponents: 5,
+  weHaveAnXAndYScale: 6,
+  weHaveATwoByTwo: 7,
+  weHaveInstructions: 8,
+  useMyMetrics: 9,
+  overlapCompound: 10,
+  scaledComponentOffset: 11,
+  unscaledComponentOffset: 12,
+})
 
 /**
  * This reader is a special case, where the `view` is expected to already
@@ -198,44 +213,27 @@ function combinePoints(
 
 function readCompositeGlyph(view: Reader) {
   const components: GlyphCompositeComponent[] = []
+  let component!: GlyphCompositeComponent
 
-  let more = true
-  while (more) {
-    const result = readCompositeGlyphComponent(view)
-    components.push(result.component)
-    more = result.more
-  }
+  do {
+    component = readCompositeGlyphComponent(view)
+    components.push(component)
+  } while (component.flags.moreComponents)
 
   return components
 }
 
 function readCompositeGlyphComponent(view: Reader) {
-  const flags = view.u16()
+  const flags = newCompositeFlag(view.u16())
   const glyphIndex = view.u16()
 
-  const arg1And2AreWords = Boolean(flags & (1 << 0))
-  const argsAreXYValues = Boolean(flags & (1 << 1))
-  const weHaveAScale = Boolean(flags & (1 << 3))
-  const more = Boolean(flags & (1 << 5))
-  const weHaveAnXAndYScale = Boolean(flags & (1 << 6))
-  const weHaveATwoByTwo = Boolean(flags & (1 << 7))
-  const scaledComponentOffset = Boolean(flags & (1 << 11))
-  const unscaledComponentOffset = Boolean(flags & (1 << 12))
-
-  const xAndYAreScaled = scaledComponentOffset && !unscaledComponentOffset
-
-  /*
-  const argsAreXYValues = Boolean(flags & (1 << 1))
-  const roundXYToGrid = Boolean(flags & (1 << 2))
-  const weHaveInstructions = Boolean(flags & (1 << 8))
-  const useMyMetrics = Boolean(flags & (1 << 9))
-  const overlapCompound = Boolean(flags & (1 << 10))
-  */
+  const xAndYAreScaled =
+    flags.scaledComponentOffset && !flags.unscaledComponentOffset
 
   let arg1: number, arg2: number
 
-  if (arg1And2AreWords) {
-    if (argsAreXYValues) {
+  if (flags.arg1And2AreWords) {
+    if (flags.argsAreXYValues) {
       arg1 = view.i16()
       arg2 = view.i16()
     } else {
@@ -243,7 +241,7 @@ function readCompositeGlyphComponent(view: Reader) {
       arg2 = view.u16()
     }
   } else {
-    if (argsAreXYValues) {
+    if (flags.argsAreXYValues) {
       arg1 = view.i8()
       arg2 = view.i8()
     } else {
@@ -254,12 +252,12 @@ function readCompositeGlyphComponent(view: Reader) {
 
   const extra: number[] = []
 
-  if (weHaveAScale) {
+  if (flags.weHaveAScale) {
     extra.push(view.f2dot14())
-  } else if (weHaveAnXAndYScale) {
+  } else if (flags.weHaveAnXAndYScale) {
     extra.push(view.f2dot14())
     extra.push(view.f2dot14())
-  } else if (weHaveATwoByTwo) {
+  } else if (flags.weHaveATwoByTwo) {
     extra.push(view.f2dot14())
     extra.push(view.f2dot14())
     extra.push(view.f2dot14())
@@ -279,7 +277,7 @@ function readCompositeGlyphComponent(view: Reader) {
       )
   }
 
-  if (argsAreXYValues) {
+  if (flags.argsAreXYValues) {
     const translation = Matrix.withTranslation(arg1, arg2)
     matrix = xAndYAreScaled
       ? translation.mult(matrix)
@@ -294,7 +292,7 @@ function readCompositeGlyphComponent(view: Reader) {
     matrix,
   }
 
-  return { component, more }
+  return component
 }
 
 function emptyGlyph(): Glyph {

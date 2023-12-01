@@ -92,7 +92,7 @@ export class Font {
     const fullGlyph: GlyphSimple = {
       ...rest,
       type: 'simple',
-      contoursOverlap: false,
+      contoursOverlap: components[0].flags.overlapCompound,
       points: [],
       endPtsOfContours: [],
       instructions: [],
@@ -104,10 +104,8 @@ export class Font {
         ...subGlyph.endPtsOfContours.map((i) => i + fullGlyph.points.length),
       )
 
-      const argsAreXYValues = Boolean(c.flags & (1 << 1))
-
-      if (argsAreXYValues) {
-        const roundXYToGrid = Boolean(c.flags & (1 << 2))
+      if (c.flags.argsAreXYValues) {
+        const roundXYToGrid = c.flags.roundXYToGrid
         fullGlyph.points.push(
           ...subGlyph.points.map((p) => {
             const point = c.matrix.transformPoint(p)
@@ -122,13 +120,14 @@ export class Font {
         fullGlyph.points.push(...subGlyph.points)
       }
 
-      /*
-      const weHaveInstructions = Boolean(c.flags & (1 << 8))
-      const useMyMetrics = Boolean(c.flags & (1 << 9))
-      const overlapCompound = Boolean(c.flags & (1 << 10))
-      const scaledComponentOffset = Boolean(c.flags & (1 << 11))
-      const unscaledComponentOffset = Boolean(c.flags & (1 << 12))
-      */
+      // TODO: probably need to include lsb and rsb in glyph so we can use the metrics of a
+      // component rather than always looking in the hmtx table
+      // const useMyMetrics = c.flags.useMyMetrics
+    }
+
+    if (components[0].flags.weHaveInstructions) {
+      const numInstructions = view.u16()
+      fullGlyph.instructions = view.array(numInstructions, () => view.u8())
     }
 
     return fullGlyph
