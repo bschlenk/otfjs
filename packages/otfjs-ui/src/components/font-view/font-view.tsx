@@ -8,7 +8,8 @@ import styles from './font-view.module.css'
 
 const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   cmap: CmapView,
-  fpgm: u8ArrayView('fpgm'),
+  'cvt ': arrayView('cvt '),
+  fpgm: arrayView('fpgm', 1),
   glyf: GlyfView,
   GPOS: jsonView('GPOS', { version: toHex }),
   head: jsonView('head'),
@@ -19,7 +20,7 @@ const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   name: jsonView('name'),
   'OS/2': jsonView('OS/2'),
   post: jsonView('post', { version: toHex }),
-  prep: u8ArrayView('prep'),
+  prep: arrayView('prep', 1),
 }
 
 interface FontViewProps {
@@ -99,24 +100,26 @@ function jsonView(
   }
 }
 
-function U8ArrayView({ data }: { data: Uint8Array }) {
-  for (const byte of data) {
-    console.log(byte)
-  }
-
+function ArrayView({
+  data,
+  bytesPerItem,
+}: {
+  data: Iterable<number>
+  bytesPerItem?: number
+}) {
   return (
     <ol>
       {Array.from(data).map((byte, i) => (
-        <li key={i}>{toHex(byte, 2)}</li>
+        <li key={i}>{bytesPerItem ? toHex(byte, bytesPerItem * 2) : byte}</li>
       ))}
     </ol>
   )
 }
 
-function u8ArrayView(tag: string) {
+function arrayView(tag: string, bytesPerItem?: number) {
   return ({ font }: { font: Font }) => {
     const table = font.getTable(tag)
-    return <U8ArrayView data={table} />
+    return <ArrayView data={table} bytesPerItem={bytesPerItem} />
   }
 }
 
