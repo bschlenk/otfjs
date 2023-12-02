@@ -1,3 +1,4 @@
+import { from2dot14, to2dot14 } from './bit.js'
 import {
   assert,
   fromLongDateTime,
@@ -66,27 +67,8 @@ export class Reader {
   }
 
   public f2dot14(): number {
-    const val = this.u16()
-
-    let mantissa!: number
-    switch (val >>> 14) {
-      case 0b00:
-        mantissa = 0
-        break
-      case 0b01:
-        mantissa = 1
-        break
-      case 0b10:
-        mantissa = -2
-        break
-      case 0b11:
-        mantissa = -1
-        break
-    }
-
-    const fraction = (val & 0x3fff) / 16384
-
-    return mantissa + fraction
+    const val = this.i16()
+    return from2dot14(val)
   }
 
   public date(): Date {
@@ -221,12 +203,7 @@ export class Writer {
 
   public f2dot14(val: number) {
     assert(val >= -2 && val < 2, 'f2dot14 must be between -2 and 2')
-
-    const mantissa = Math.trunc(val)
-    const fraction = Math.round((val - mantissa) * 16384)
-    val = ((mantissa << 14) | fraction) & 0xffff
-
-    this.u16(val)
+    this.u16(to2dot14(val))
   }
 
   public date(date: Date) {
