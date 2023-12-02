@@ -317,6 +317,148 @@ export function process(
         gs.roundState = 5
         break
       }
+
+      case Opcode.SROUND: {
+        // TODO: decompose this later??
+        // I think I'll need to mark that this isn't one of the above roundState enums, since they overlap
+        const value = stack.pop()! >>> 0
+        gs.roundState = value
+        break
+      }
+
+      case Opcode.S45ROUND: {
+        const value = stack.pop()! >>> 0
+        gs.roundState = value
+        break
+      }
+
+      case Opcode.SLOOP: {
+        const value = stack.pop()! >>> 0
+        gs.loop = value
+        break
+      }
+
+      case Opcode.SMD: {
+        // TODO: 26.6
+        const value = stack.pop()! >>> 0
+        gs.minimumDistance = value
+        break
+      }
+
+      case Opcode.INSTCTRL: {
+        const s = stack.pop()!
+        const value = stack.pop()! >>> 0
+        // TODO: error if this is used anywhere but the cvt program
+        switch (s) {
+          case 1:
+            if (value === 0) {
+              gs.instructControl.disableGridFitting = false
+            } else if (value === 1) {
+              gs.instructControl.disableGridFitting = true
+            }
+            break
+          case 2:
+            if (value === 0) {
+              gs.instructControl.ignoreCvtParams = false
+            } else if (value === 2) {
+              gs.instructControl.ignoreCvtParams = true
+            }
+            break
+          case 3:
+            if (value === 0) {
+              gs.instructControl.nativeClearTypeMode = false
+            } else if (value === 4) {
+              gs.instructControl.nativeClearTypeMode = true
+            }
+            break
+        }
+
+        break
+      }
+
+      case Opcode.SCANCTRL: {
+        const value = stack.pop()! >>> 0
+        gs.scanControl.enabled = value
+        break
+      }
+
+      case Opcode.SCANTYPE: {
+        const value = stack.pop()! >>> 0
+        gs.scanControl.rules = value
+        break
+      }
+
+      case Opcode.SCVTCI: {
+        const value = stack.pop()! >>> 0
+        // TODO: 26.6
+        gs.controlValueCutIn = value
+        break
+      }
+
+      case Opcode.SSWCI: {
+        const value = stack.pop()! >>> 0
+        // TODO: 26.6
+        gs.singeWidthCutIn = value
+        break
+      }
+
+      case Opcode.SSW: {
+        const value = stack.pop()! >>> 0
+        // TODO: convert to pixels??
+        gs.singleWidthValue = value
+        break
+      }
+
+      case Opcode.FLIPON: {
+        gs.autoFlip = true
+        break
+      }
+
+      case Opcode.FLIPOFF: {
+        gs.autoFlip = false
+        break
+      }
+
+      case Opcode.SANGW: {
+        // Opcode is no longer used, but let's pop from the stack anyway for correctness
+        stack.pop()
+        break
+      }
+
+      case Opcode.SDB: {
+        const value = stack.pop()! >>> 0
+        gs.deltaBase = value
+        break
+      }
+
+      case Opcode.SDS: {
+        const value = stack.pop()! >>> 0
+        gs.deltaShift = value
+        break
+      }
+
+      case Opcode.GC0:
+      case Opcode.GC1: {
+        const useOriginal = opcode === Opcode.GC1
+        const p = stack.pop()! >>> 0
+        // TODO: zp2 determins which zone to look at
+        const pt = useOriginal ? glyph.points[p] : zones[1][p]
+        // TODO: how to project a point? is that cross product?
+
+        // TODO: verify y x is the correct order
+        stack.push(pt.y)
+        stack.push(pt.x)
+        break
+      }
+
+      case Opcode.SCFS: {
+        // TODO: 26.6
+        const value = stack.pop()! >>> 0
+        const p = stack.pop()! >>> 0
+        // TODO: not sure about the mat here at all
+        // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM05/Chap5.html#SCFS
+        break
+      }
     }
   }
 }

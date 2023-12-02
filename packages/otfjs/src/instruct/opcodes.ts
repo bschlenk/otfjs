@@ -69,4 +69,29 @@ export const enum Opcode {
   RDTG = 0x7d,
   RUTG = 0x7c,
   ROFF = 0x7a,
+
+  SROUND = 0x76,
+  S45ROUND = 0x77,
+
+  SLOOP = 0x17,
+  SMD = 0x1a,
+
+  INSTCTRL = 0x8e,
+  SCANCTRL = 0x85,
+  SCANTYPE = 0x8d,
+  SCVTCI = 0x1d,
+  SSWCI = 0x1e,
+  SSW = 0x1f,
+  FLIPON = 0x4d,
+  FLIPOFF = 0x4e,
+
+  // @deprecated no longer used?
+  SANGW = 0x7e,
+
+  SDB = 0x5e,
+  SDS = 0x5f,
+
+  GC0 = 0x46,
+  GC1 = 0x47,
+  SCFS = 0x48,
 }
