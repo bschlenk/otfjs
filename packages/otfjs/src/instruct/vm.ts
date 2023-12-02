@@ -2,7 +2,7 @@ import { GlyphSimple } from '../tables/glyf.js'
 import { MaxpTable10 } from '../tables/maxp.js'
 import { range } from '../utils.js'
 import { makeGraphicsState } from './graphics.js'
-import { Opcode } from './opcodes.js'
+import { Opcode } from './opcode.js'
 
 export function process(
   inst: Uint8Array,
