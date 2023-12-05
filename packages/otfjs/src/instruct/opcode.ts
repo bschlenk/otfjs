@@ -94,4 +94,10 @@ export const enum Opcode {
   GC0 = 0x46,
   GC1 = 0x47,
   SCFS = 0x48,
+
+  MD0 = 0x49,
+  MD1 = 0x4a,
+
+  MPPEM = 0x4b,
+  MPS = 0x4c,
 }
