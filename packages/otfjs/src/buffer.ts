@@ -1,4 +1,5 @@
 import { from2dot14, to2dot14 } from './bit.js'
+import { computeChecksum } from './checksum.js'
 import {
   assert,
   fromLongDateTime,
@@ -134,14 +135,15 @@ export class Writer {
   public data: ArrayBuffer
   public view: DataView
   public offset: number = 0
+  private maxOffset: number = 0
 
-  constructor() {
-    this.data = new ArrayBuffer(1024)
+  constructor(data?: ArrayBuffer) {
+    this.data = data ?? new ArrayBuffer(1024)
     this.view = new DataView(this.data)
   }
 
   get length(): number {
-    return this.offset
+    return Math.max(this.offset, this.maxOffset)
   }
 
   get capacity(): number {
@@ -228,20 +230,31 @@ export class Writer {
   public buffer(val: Writer | ArrayBuffer, align = 0) {
     let size = 0
     if (val instanceof Writer) {
-      size = val.offset
+      size = val.length
       val = val.data
     } else {
       size = val.byteLength
     }
 
-    this.maybeResize(val.byteLength)
+    this.maybeResize(size)
     new Uint8Array(this.data).set(new Uint8Array(val, 0, size), this.offset)
-    this.offset += val.byteLength
+    this.offset += size
 
     if (align) {
       const padding = getAlignPadding(this.offset, align)
       this.offset += padding
     }
+  }
+
+  public at(offset: number, fn: (writer: Writer) => void) {
+    const writer = new Writer(this.data)
+    writer.offset = offset
+    fn(writer)
+    this.maxOffset = Math.max(this.maxOffset, writer.length)
+  }
+
+  public checksum() {
+    return computeChecksum(new DataView(this.data, 0, this.length))
   }
 
   private maybeResize(n: number) {

@@ -1,7 +1,7 @@
 import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
 import { Header, TableRecord } from './types.js'
-import { getAlignPadding, toHex, trunc32 } from './utils.js'
+import { getAlignPadding, toHex } from './utils.js'
 
 export function validateHeader(header: Header) {
   const errors: string[] = []
@@ -51,7 +51,11 @@ export function validateTable(data: ArrayBuffer, table: TableRecord) {
   const length = table.length + padding
   const view = new DataView(data, table.offset, length)
 
-  const checksum = computeChecksum(view, table.tag)
+  let checksum = computeChecksum(view)
+  if (table.tag === 'head') {
+    // head table checksum is calculated without the checksumAdjustment field
+    checksum = (checksum - view.getUint32(8)) >>> 0
+  }
 
   if (checksum !== table.checksum) {
     throw new Error(

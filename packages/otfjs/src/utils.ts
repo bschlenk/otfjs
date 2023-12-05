@@ -41,6 +41,10 @@ export function getAlignPadding(length: number, align: number) {
   return (align - (length % align)) % align
 }
 
+export function padToMultiple(length: number, align: number) {
+  return length + getAlignPadding(length, align)
+}
+
 export function assert(condition: boolean, msg: string): asserts condition {
   if (!condition) {
     throw new Error(msg)

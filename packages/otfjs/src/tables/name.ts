@@ -5,7 +5,6 @@ export interface NameTable {}
 
 export function readNameTable(view: Reader): NameTable {
   const version = view.u16()
-
   const count = view.u16()
   const storageOffset = view.u16()
 
