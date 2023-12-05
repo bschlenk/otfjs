@@ -1,4 +1,5 @@
-import { Header, SfntVersion, TableRecord } from './types.js'
+import { SfntVersion } from './enums.js'
+import { Header, TableRecord } from './types.js'
 import { getAlignPadding, toHex, trunc32 } from './utils.js'
 
 export function validateHeader(header: Header) {

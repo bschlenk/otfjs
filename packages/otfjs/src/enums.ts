@@ -1,3 +1,14 @@
+/**
+ * @see https://learn.microsoft.com/en-us/typography/opentype/spec/otff#table-directory
+ * @see https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6.html#ScalerTypeNote
+ */
+export const enum SfntVersion {
+  TRUE_TYPE = 0x00010000,
+  OPEN_TYPE = 0x4f54544f, // "OTTO"
+  APPLE_TRUE_TYPE = 0x74727565, // "true"
+  POST_SCRIPT = 0x74797031, // "typ1"
+}
+
 export enum PlatformId {
   Unicode = 0,
   Macintosh = 1,
