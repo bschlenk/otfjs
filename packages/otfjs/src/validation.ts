@@ -1,3 +1,4 @@
+import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
 import { Header, TableRecord } from './types.js'
 import { getAlignPadding, toHex, trunc32 } from './utils.js'
@@ -50,20 +51,7 @@ export function validateTable(data: ArrayBuffer, table: TableRecord) {
   const length = table.length + padding
   const view = new DataView(data, table.offset, length)
 
-  let checksum = 0
-  let o = 0
-  while (o < view.byteLength) {
-    checksum += view.getUint32(o)
-    o += 4
-  }
-
-  if (table.tag === 'head') {
-    // head table checksum is calculated without the checksumAdjustment field
-    checksum -= view.getUint32(8)
-  }
-
-  // checksum is a u32, so we need to truncate the value to 32 bits
-  checksum = trunc32(checksum)
+  const checksum = computeChecksum(view, table.tag)
 
   if (checksum !== table.checksum) {
     throw new Error(
