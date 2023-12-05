@@ -303,7 +303,7 @@ function emptyGlyph(): Glyph {
     xMax: 0,
     yMax: 0,
     endPtsOfContours: [],
-    instructions: [],
+    instructions: new Uint8Array(0),
     points: [],
     contoursOverlap: false,
   }
