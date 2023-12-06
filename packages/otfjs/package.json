@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "tsc --watch --incremental",
     "build": "tsc",
+    "build:gh": "pnpm build",
     "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0 --color",
     "test": "vitest"
   },
