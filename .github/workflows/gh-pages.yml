@@ -1,0 +1,24 @@
+name: gh-pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  gh-pages:
+    concurrency: ci-${{ github.ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          run_install: |
+            - recursive: true
+              args: [--frozen-lockfile, --strict-peer-dependencies]
+      - run: pnpm build
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: packages/otfjs-ui/dist

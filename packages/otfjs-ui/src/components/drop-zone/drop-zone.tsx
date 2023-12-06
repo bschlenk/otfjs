@@ -1,6 +1,6 @@
 import { preventDefault } from '../../utils/event'
 
-import { srOnly } from '../../styles/utils.module.css'
+import utilStyles from '../../styles/utils.module.css'
 import styles from './drop-zone.module.css'
 
 export function DropZone({
@@ -22,7 +22,7 @@ export function DropZone({
       <input
         type="file"
         accept=".otf,.ttf"
-        className={srOnly}
+        className={utilStyles.srOnly}
         onChange={(e) => {
           e.target.files![0].arrayBuffer().then(onLoad)
         }}
