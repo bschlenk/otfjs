@@ -1,4 +1,4 @@
-export const enum Opcode {
+export enum Opcode {
   NPUSHB = 0x40,
   NPUSHW = 0x41,
 

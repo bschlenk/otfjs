@@ -3,4 +3,6 @@ export * from './font.js'
 export * from './svg.js'
 
 export { CmapTable } from './tables/cmap.js'
-export { Glyph } from './tables/glyf.js'
+export { type Glyph } from './tables/glyf.js'
+
+export { disassemble } from './instruct/disassemble.js'

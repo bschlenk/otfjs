@@ -1,7 +1,13 @@
 const SECONDS_BETWEEN_1904_AND_1970 = 2_082_844_800n
 
 export function toHex(n: number, bytes = 4) {
-  return `0x${n.toString(16).padStart(bytes * 2, '0')}`
+  let h = n.toString(16)
+  let neg = false
+  if (h.startsWith('-')) {
+    h = h.slice(1)
+    neg = true
+  }
+  return `0x${h.padStart(bytes * 2, neg ? '1' : '0')}`
 }
 
 export function range<T>(n: number, fn: (i: number) => T): T[] {

@@ -1,6 +1,6 @@
 import { JSXElementConstructor, useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { Font } from 'otfjs'
+import { Font, disassemble } from 'otfjs'
 
 import { GlyfView } from './glyf-view'
 
@@ -9,7 +9,7 @@ import styles from './font-view.module.css'
 const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   cmap: CmapView,
   'cvt ': arrayView('cvt '),
-  fpgm: arrayView('fpgm', 1),
+  fpgm: instructionView('fpgm'),
   glyf: GlyfView,
   GPOS: jsonView('GPOS', { version: toHex }),
   head: jsonView('head'),
@@ -20,7 +20,7 @@ const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   name: jsonView('name'),
   'OS/2': jsonView('OS/2'),
   post: jsonView('post', { version: toHex }),
-  prep: arrayView('prep', 1),
+  prep: instructionView('prep'),
 }
 
 interface FontViewProps {
@@ -120,6 +120,33 @@ function arrayView(tag: string, bytesPerItem?: number) {
   return ({ font }: { font: Font }) => {
     const table = font.getTable(tag)
     return <ArrayView data={table} bytesPerItem={bytesPerItem} />
+  }
+}
+
+function InstructionView({ data }: { data: Uint8Array }) {
+  const instructions = disassemble(data)
+  return (
+    <ol>
+      {instructions.map((inst, i) => (
+        <>
+          <li key={i}>{inst.name}</li>
+          {inst.args && (
+            <ol>
+              {inst.args.map((arg, j) => (
+                <li key={j}>{arg}</li>
+              ))}
+            </ol>
+          )}
+        </>
+      ))}
+    </ol>
+  )
+}
+
+function instructionView(tag: string) {
+  return ({ font }: { font: Font }) => {
+    const table = font.getTable(tag)
+    return <InstructionView data={table} />
   }
 }
 
