@@ -222,6 +222,12 @@ export class Writer {
     this.offset += 4
   }
 
+  public utf16(val: string) {
+    for (let i = 0, n = val.length; i < n; ++i) {
+      this.u16(val.charCodeAt(i))
+    }
+  }
+
   public skip(n: number): void {
     this.maybeResize(n)
     this.offset += n
@@ -251,6 +257,7 @@ export class Writer {
     writer.offset = offset
     fn(writer)
     this.maxOffset = Math.max(this.maxOffset, writer.length)
+    return writer.length - offset
   }
 
   public checksum() {

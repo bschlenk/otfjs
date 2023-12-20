@@ -35,22 +35,7 @@ export function writeNameTable(names: NameRecord[]) {
 }
 
 function encodeUtf16(str: string, writer: Writer, offset: number) {
-  let length = 0
-
-  writer.at(offset, (w) => {
-    for (const char of str) {
-      let code = char.charCodeAt(0)
-      if (code <= 0xd7ff) {
-        w.u16(char.charCodeAt(0))
-        length += 2
-      } else if (code <= 0x10ffff) {
-        code -= 0x10000
-        w.u16((code >>> 10) + 0xd800)
-        w.u16((code & 0x3ff) + 0xdc00)
-        length += 4
-      }
-    }
+  return writer.at(offset, (w) => {
+    w.utf16(str)
   })
-
-  return length
 }
