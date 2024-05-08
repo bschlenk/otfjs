@@ -56,7 +56,6 @@ export function GlyfView({ font }: { font: Font }) {
 function GlyfContainer({ children }: React.PropsWithChildren) {
   const [scale, setScale] = useState(60)
   return (
-    // @ts-expect-error ts doesn't know about css vars
     <div style={{ '--glyph-height': `${scale}px` }}>
       <input
         type="range"
