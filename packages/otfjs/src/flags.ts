@@ -1,7 +1,7 @@
 type Handler<U> = (flag: number) => U
 type FlagConfig<T extends string> = Record<T, number | Handler<any>>
 
-export function createFlagReader<const T extends FlagConfig<any>>(
+export function createFlagReader<T extends FlagConfig<any>>(
   cfg: T,
 ): (flags: number) => {
   [K in keyof T]: (typeof cfg)[K] extends number
@@ -25,6 +25,14 @@ export function createFlagReader<const T extends FlagConfig<any>>(
       Object.defineProperty(Flags.prototype, key, {
         get() {
           return Boolean(this.value & (1 << (value as number)))
+        },
+        set(val: boolean) {
+          const k = 1 << (value as number)
+          if (val) {
+            this.value |= k
+          } else {
+            this.value &= ~k
+          }
         },
       })
     }
