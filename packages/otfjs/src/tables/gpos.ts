@@ -63,9 +63,9 @@ function readScriptTable(view: Reader) {
   const langSysCount = view.u16()
 
   const defaultLangSys =
-    defaultLangSysOffset === 0
-      ? null
-      : readLangSysTable(view.subtable(defaultLangSysOffset))
+    defaultLangSysOffset === 0 ? null : (
+      readLangSysTable(view.subtable(defaultLangSysOffset))
+    )
 
   const langSysRecords = view.array(langSysCount, () => {
     const langSysTag = view.tag()

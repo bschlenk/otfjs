@@ -279,9 +279,8 @@ function readCompositeGlyphComponent(view: Reader) {
 
   if (flags.argsAreXYValues) {
     const translation = Matrix.withTranslation(arg1, arg2)
-    matrix = xAndYAreScaled
-      ? translation.mult(matrix)
-      : matrix.mult(translation)
+    matrix =
+      xAndYAreScaled ? translation.mult(matrix) : matrix.mult(translation)
   }
 
   const component: GlyphCompositeComponent = {

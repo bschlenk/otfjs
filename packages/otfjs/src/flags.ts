@@ -4,11 +4,9 @@ type FlagConfig<T extends string> = Record<T, number | Handler<any>>
 export function createFlagReader<T extends FlagConfig<any>>(
   cfg: T,
 ): (flags: number) => {
-  [K in keyof T]: (typeof cfg)[K] extends number
-    ? boolean
-    : (typeof cfg)[K] extends (...args: any) => any
-    ? ReturnType<(typeof cfg)[K]>
-    : never
+  [K in keyof T]: (typeof cfg)[K] extends number ? boolean
+  : (typeof cfg)[K] extends (...args: any) => any ? ReturnType<(typeof cfg)[K]>
+  : never
 } & { value: number } {
   function Flags(this: { value: number }, value: number) {
     this.value = value

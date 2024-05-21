@@ -16,7 +16,7 @@ export function App() {
       onDragOver={preventDefault}
       onDrop={preventDefault}
     >
-      {!font ? (
+      {!font ?
         <div className={styles.fullCenter}>
           <DropZone onLoad={setFont}>
             <p>Drag font here to load it on the page.</p>
@@ -29,9 +29,7 @@ export function App() {
             }}
           />
         </div>
-      ) : (
-        <FontView font={font} />
-      )}
+      : <FontView font={font} />}
     </div>
   )
 }

@@ -11,7 +11,11 @@ export class Reader {
   private view: DataView
   public offset: number = 0
 
-  constructor(public readonly data: ArrayBuffer, offset = 0, length?: number) {
+  constructor(
+    public readonly data: ArrayBuffer,
+    offset = 0,
+    length?: number,
+  ) {
     this.view = new DataView(data, offset, length)
   }
 

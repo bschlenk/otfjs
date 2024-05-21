@@ -2,7 +2,10 @@
 export const PRECISION = 1e-6
 
 export class Vector {
-  constructor(public readonly x: number, public readonly y: number) {}
+  constructor(
+    public readonly x: number,
+    public readonly y: number,
+  ) {}
 
   static of(x: number, y: number) {
     return new Vector(x, y)
