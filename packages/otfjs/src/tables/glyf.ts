@@ -72,8 +72,6 @@ const newCompositeFlag = createFlagReader({
  * incorporate the offset into the glyph table to the desired glyph. The glyph
  * offset can be determined by reading the `loca` table. The glyph length can be
  * determined by looking at glyphIndex + 1.
- *
- * @param view
  */
 export function readGlyf(view: Reader): Glyph {
   if (view.length === 0) return emptyGlyph()
