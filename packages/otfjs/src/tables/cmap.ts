@@ -49,9 +49,9 @@ export class CmapTable {
     // need to start from the offset of idRangeOffsets[i], which is going to be
     // the start of the glyphIdArray - segCountX2 + i * 2
 
-    return subtableView.u16(
-      subtableView.offset + glyphIndexOffset - subtable.segCountX2! + i * 2,
-    )
+    return subtableView
+      .subtable(glyphIndexOffset - subtable.segCountX2! + i * 2)
+      .u16()
   }
 }
 
