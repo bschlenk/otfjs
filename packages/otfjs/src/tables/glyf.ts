@@ -131,16 +131,9 @@ export function readGlyf(view: Reader): Glyph {
 }
 
 function readFlags(count: number, view: Reader) {
-  let contoursOverlap = false
-
   const flags: Flag[] = []
   while (flags.length < count) {
     const flag = newFlag(view.u8())
-
-    if (flags.length === 0) {
-      contoursOverlap = flag.contoursOverlap
-    }
-
     flags.push(flag)
 
     if (flag.repeat) {
@@ -150,6 +143,8 @@ function readFlags(count: number, view: Reader) {
       }
     }
   }
+
+  const contoursOverlap = flags[0]?.contoursOverlap ?? false
 
   return { flags, contoursOverlap }
 }
