@@ -1,99 +1,76 @@
-/** @const {number} */
-export const PRECISION = 1e-6
-
-export class Vector {
-  constructor(
-    public readonly x: number,
-    public readonly y: number,
-  ) {}
-
-  static of(x: number, y: number) {
-    return new Vector(x, y)
-  }
-
-  static zero() {
-    return ZERO
-  }
-
-  /**
-   * Return a vector pointing in the same direction
-   * but with the given `magnitude`.
-   */
-  withMagnitude(magnitude: number) {
-    return this.normalize().scale(magnitude)
-  }
-
-  /**
-   * Return true if this and other are the same vector.
-   * Takes PRECISION into account due to floating point rounding errors.
-   */
-  equals(other: Vector) {
-    return (
-      Math.abs(this.x - other.x) <= PRECISION &&
-      Math.abs(this.y - other.y) <= PRECISION
-    )
-  }
-
-  /**
-   * Return whether this vector represents the zero vector.
-   */
-  isZero() {
-    return this.equals(ZERO)
-  }
-
-  clone() {
-    return new Vector(this.x, this.y)
-  }
-
-  scale(scalar: number) {
-    return new Vector(this.x * scalar, this.y * scalar)
-  }
-
-  add(vector: Vector) {
-    const { x, y } = vector
-    return new Vector(this.x + x, this.y + y)
-  }
-
-  distance(other: Vector) {
-    return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2)
-  }
-
-  magnitude() {
-    return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2))
-  }
-
-  /**
-   * Get the angle in radians of this vector.
-   */
-  angle() {
-    return Math.atan2(this.y, this.x)
-  }
-
-  /**
-   * Returns a vector of magnitude 1, pointing in the original direction.
-   */
-  normalize() {
-    return this.scale(1 / this.magnitude())
-  }
-
-  rotate(radians: number) {
-    const newX = this.x * Math.cos(radians) - this.y * Math.sin(radians)
-    const newY = this.x * Math.sin(radians) + this.y * Math.cos(radians)
-    return new Vector(newX, newY)
-  }
-
-  /**
-   * Returns the dot product of this vector and `other`.
-   */
-  dot(other: Vector) {
-    return this.x * other.x + this.y * other.y
-  }
-
-  projectOnto(other: Vector) {
-    return other.scale(this.dot(other) / other.dot(other))
-  }
+export interface Vector {
+  x: number
+  y: number
 }
 
-// This has to be defined after Vector for some reason.
-/** @const {!Vector} */
-const ZERO = new Vector(0, 0)
+export const ZERO: Vector = { x: 0, y: 0 }
+
+/**
+ * Return a vector pointing in the same direction
+ * but with the given `magnitude`.
+ */
+export function withMagnitude(vec: Vector, magnitude: number) {
+  return scale(normalize(vec), magnitude)
+}
+
+/**
+ * Return true if this and other are the same vector.
+ * Takes PRECISION into account due to floating point rounding errors.
+ */
+export function equals(a: Vector, b: Vector) {
+  return (
+    Math.abs(a.x - b.x) <= Number.EPSILON &&
+    Math.abs(a.y - b.y) <= Number.EPSILON
+  )
+}
+
+export function scale(vec: Vector, scalar: number) {
+  return { x: vec.x * scalar, y: vec.y * scalar }
+}
+
+export function add(a: Vector, b: Vector) {
+  return { x: a.x + b.x, y: a.y + b.y }
+}
+
+export function distanceSquared(a: Vector, b: Vector) {
+  return (a.x - b.x) ** 2 + (a.y - b.y) ** 2
+}
+
+export function distance(a: Vector, b: Vector) {
+  return Math.sqrt(distanceSquared(a, b))
+}
+
+export function magnitude(vec: Vector) {
+  return distance(ZERO, vec)
+}
+
+/**
+ * Get the angle in radians of this vector.
+ */
+export function angle(vec: Vector) {
+  return Math.atan2(vec.y, vec.x)
+}
+
+/**
+ * Returns a vector of magnitude 1, pointing in the original direction.
+ */
+export function normalize(vec: Vector) {
+  return scale(vec, 1 / magnitude(vec))
+}
+
+export function rotate(vec: Vector, radians: number) {
+  const x = vec.x * Math.cos(radians) - vec.y * Math.sin(radians)
+  const y = vec.x * Math.sin(radians) + vec.y * Math.cos(radians)
+  return { x, y }
+}
+
+/**
+ * Returns the dot product of this vector and `other`.
+ */
+export function dot(a: Vector, b: Vector) {
+  return a.x * b.x + a.y * b.y
+}
+
+export function projectOnto(a: Vector, b: Vector) {
+  return scale(b, dot(a, b) / dot(b, b))
+}
