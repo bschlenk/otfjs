@@ -81,6 +81,17 @@ export class Vector {
     const newY = this.x * Math.sin(radians) + this.y * Math.cos(radians)
     return new Vector(newX, newY)
   }
+
+  /**
+   * Returns the dot product of this vector and `other`.
+   */
+  dot(other: Vector) {
+    return this.x * other.x + this.y * other.y
+  }
+
+  projectOnto(other: Vector) {
+    return other.scale(this.dot(other) / other.dot(other))
+  }
 }
 
 // This has to be defined after Vector for some reason.
