@@ -11,11 +11,7 @@ export function toHex(n: number, bytes = 4) {
 }
 
 export function range<T>(n: number, fn: (i: number) => T): T[] {
-  const arr = new Array<T>(n)
-  for (let i = 0; i < n; ++i) {
-    arr[i] = fn(i)
-  }
-  return arr
+  return Array.from({ length: n }, (_, i) => fn(i))
 }
 
 /**
