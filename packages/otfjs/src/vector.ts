@@ -32,6 +32,10 @@ export function add(a: Vector, b: Vector) {
   return { x: a.x + b.x, y: a.y + b.y }
 }
 
+export function subtract(a: Vector, b: Vector) {
+  return { x: a.x - b.x, y: a.y - b.y }
+}
+
 export function distanceSquared(a: Vector, b: Vector) {
   return (a.x - b.x) ** 2 + (a.y - b.y) ** 2
 }
@@ -58,6 +62,10 @@ export function normalize(vec: Vector) {
   return scale(vec, 1 / magnitude(vec))
 }
 
+export function rotate90(vec: Vector) {
+  return { x: -vec.y, y: vec.x }
+}
+
 export function rotate(vec: Vector, radians: number) {
   const x = vec.x * Math.cos(radians) - vec.y * Math.sin(radians)
   const y = vec.x * Math.sin(radians) + vec.y * Math.cos(radians)
@@ -73,4 +81,8 @@ export function dot(a: Vector, b: Vector) {
 
 export function projectOnto(a: Vector, b: Vector) {
   return scale(b, dot(a, b) / dot(b, b))
+}
+
+export function projectLength(a: Vector, b: Vector) {
+  return dot(a, b) / magnitude(b)
 }

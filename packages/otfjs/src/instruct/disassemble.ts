@@ -137,6 +137,85 @@ export function disassemble(inst: Uint8Array) {
         break
       }
 
+      case Opcode.SHP0:
+      case Opcode.SHP1: {
+        const n = opcode & 0b1
+        insts.push({ name: `SHP[${n}]` })
+        break
+      }
+
+      case Opcode.SHC0:
+      case Opcode.SHC1: {
+        const n = opcode & 0b1
+        insts.push({ name: `SHC[${n}]` })
+        break
+      }
+
+      case Opcode.SHZ0:
+      case Opcode.SHZ1: {
+        const n = opcode & 0b1
+        insts.push({ name: `SHZ[${n}]` })
+        break
+      }
+
+      case Opcode.MSIRP0:
+      case Opcode.MSIRP1: {
+        const n = opcode & 0b1
+        insts.push({ name: `MSIRP[${n}]` })
+        break
+      }
+
+      case Opcode.MDAP0:
+      case Opcode.MDAP1: {
+        const n = opcode & 0b1
+        insts.push({ name: `MDAP[${n}]` })
+        break
+      }
+
+      case Opcode.MIAP0:
+      case Opcode.MIAP1: {
+        const n = opcode & 0b1
+        insts.push({ name: `MIAP[${n}]` })
+        break
+      }
+
+      case Opcode.MDRP00:
+      case Opcode.MDRP01:
+      case Opcode.MDRP02:
+      case Opcode.MDRP03:
+      case Opcode.MDRP04:
+      case Opcode.MDRP05:
+      case Opcode.MDRP06:
+      case Opcode.MDRP07:
+      case Opcode.MDRP08:
+      case Opcode.MDRP09:
+      case Opcode.MDRP0A:
+      case Opcode.MDRP0B:
+      case Opcode.MDRP0C:
+      case Opcode.MDRP0D:
+      case Opcode.MDRP0E:
+      case Opcode.MDRP0F:
+      case Opcode.MDRP10:
+      case Opcode.MDRP11:
+      case Opcode.MDRP12:
+      case Opcode.MDRP13:
+      case Opcode.MDRP14:
+      case Opcode.MDRP15:
+      case Opcode.MDRP16:
+      case Opcode.MDRP17:
+      case Opcode.MDRP18:
+      case Opcode.MDRP19:
+      case Opcode.MDRP1A:
+      case Opcode.MDRP1B:
+      case Opcode.MDRP1C:
+      case Opcode.MDRP1D:
+      case Opcode.MDRP1E:
+      case Opcode.MDRP1F: {
+        const n = opcode & 0b11111
+        insts.push({ name: `MDRP[${n.toString(2).padStart(5, '0')}]` })
+        break
+      }
+
       default: {
         insts.push({ name: Opcode[opcode] ?? `🚧 ${toHex(opcode, 1)}` })
         break
