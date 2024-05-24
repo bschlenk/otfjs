@@ -1,8 +1,9 @@
 import { Reader } from '../buffer.js'
 import { PostscriptGlyphName } from '../postscript.js'
+import { toHex } from '../utils.js'
 
-interface PostTableV1 {
-  version: 0x00010000
+interface PostTableBase<T extends number> {
+  version: T
   italicAngle: number
   underlinePosition: number
   underlineThickness: number
@@ -13,33 +14,35 @@ interface PostTableV1 {
   maxMemType1: number
 }
 
+interface PostTableV1 extends PostTableBase<0x00010000> {}
+
 type IPostTableV2Behaviors = typeof PostTableV2Behaviors
 
-interface PostTableV2
-  extends Omit<PostTableV1, 'version'>,
-    IPostTableV2Behaviors {
-  version: 0x00020000
+interface PostTableV2 extends PostTableBase<0x00020000>, IPostTableV2Behaviors {
   numGlyphs: number
   glyphNameIndexes: number[]
   stringData: DataView
 }
 
-export type PostTable = PostTableV1 | PostTableV2
+interface PostTableV3 extends PostTableBase<0x00030000> {}
 
-export function readPostTable(view: Reader) {
+export type PostTable = PostTableV1 | PostTableV2 | PostTableV3
+
+export function readPostTable(view: Reader): PostTable {
   const version = view.u32()
 
-  let table: PostTable
+  let table: PostTableV1 | PostTableV2 | PostTableV3
 
   switch (version) {
     case 0x00010000:
+    case 0x00030000:
       table = Object.create(null)
       break
     case 0x00020000:
       table = Object.create(PostTableV2Behaviors)
       break
     default:
-      throw new Error(`Unexpected post table version: ${version}`)
+      throw new Error(`Unexpected post table version: ${toHex(version)}`)
   }
 
   table.version = version
@@ -52,11 +55,10 @@ export function readPostTable(view: Reader) {
   table.minMemType1 = view.u32()
   table.maxMemType1 = view.u32()
 
-  if (version === 0x00020000) {
-    const tableV2 = table as PostTableV2
-    tableV2.numGlyphs = view.u16()
-    tableV2.glyphNameIndexes = view.array(tableV2.numGlyphs, () => view.u16())
-    tableV2.stringData = view.dataview()
+  if (table.version === 0x00020000) {
+    table.numGlyphs = view.u16()
+    table.glyphNameIndexes = view.array(table.numGlyphs, () => view.u16())
+    table.stringData = view.dataview()
   }
 
   return table
