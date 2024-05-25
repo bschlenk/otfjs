@@ -1,7 +1,7 @@
 import * as vec from '../vector.js'
 import { emptyGlyph, type GlyphSimple, type Point } from '../tables/glyf.js'
 import { MaxpTable10 } from '../tables/maxp.js'
-import { assert, debug, range } from '../utils.js'
+import { assert, debug, range, toHex } from '../utils.js'
 import { type GraphicsState, makeGraphicsState } from './graphics.js'
 import { Opcode } from './opcode.js'
 import { Stack } from './stack.js'
@@ -20,13 +20,16 @@ interface Fdef {
   pc: number
 }
 
-class VirtualMachine {
+const ENDF = Symbol('ENDF')
+
+export class VirtualMachine {
   pc = 0
   cvt: number[]
   store: DataView
   stack: Stack
   gs: GraphicsState
   fns: Fdef[] = []
+  idefs: Record<number, Fdef> = {}
 
   glyph!: GlyphSimple
   zones!: Point[][]
@@ -53,11 +56,6 @@ class VirtualMachine {
     this.setGlyph(null)
   }
 
-  init() {
-    const insts = this.font.getTable('fpgm')
-    this.process(insts)
-  }
-
   setGlyph(glyph: GlyphSimple | null) {
     if (!glyph) {
       this.glyph = emptyGlyph()
@@ -77,9 +75,35 @@ class VirtualMachine {
     this.touched = [new Set(), new Set()]
   }
 
-  process(inst: Uint8Array) {
+  runFpgm() {
+    const inst = this.font.getTable('fpgm')
+    this.run(inst)
+  }
+
+  runPrep() {
+    const inst = this.font.getTable('prep')
+    this.run(inst)
+  }
+
+  runGlyph() {
+    const inst = this.glyph.instructions
+    this.run(inst)
+  }
+
+  run(inst: Uint8Array, pc?: number) {
+    if (pc != null) {
+      this.pcStack.push(this.pc)
+      this.pc = pc
+    } else {
+      this.pc = 0
+    }
+
     while (this.pc < inst.length) {
-      this.step(inst)
+      if (this.step(inst) === ENDF) break
+    }
+
+    if (pc != null) {
+      this.pc = this.pcStack.pop()!
     }
   }
 
@@ -1189,28 +1213,30 @@ class VirtualMachine {
 
       case Opcode.FDEF: {
         const f = this.stack.pop()
-        // TODO: need to know whether this is fpgm or cvgprogram
-        this.fns[f] = this.pc
-
+        this.fns[f] = { inst, pc: this.pc }
         this.seek(inst, Opcode.ENDF)
-
         break
       }
 
       case Opcode.ENDF: {
-        break
+        return ENDF
       }
 
       case Opcode.CALL: {
         const f = this.stack.pop()
+        const fn = this.fns[f]
+        this.run(fn.inst, fn.pc)
         break
       }
 
       case Opcode.LOOPCALL: {
         const f = this.stack.pop()
         const count = this.stack.pop()
+        const fn = this.fns[f]
 
-        for (let i = 0; i < count; ++i) {}
+        for (let i = 0; i < count; ++i) {
+          this.run(fn.inst, fn.pc)
+        }
 
         break
       }
@@ -1218,9 +1244,13 @@ class VirtualMachine {
       case Opcode.IDEF: {
         const opcode = this.stack.popU32()
 
-        this.seek(inst, Opcode.ENDF)
+        assert(
+          Opcode[opcode] === undefined,
+          'Cannot redefine an existing opcode',
+        )
 
-        // TODO: store this idef somewhere
+        this.idefs[opcode] = { inst, pc: this.pc }
+        this.seek(inst, Opcode.ENDF)
         break
       }
 
@@ -1272,7 +1302,10 @@ class VirtualMachine {
       }
 
       default: {
-        // TODO: handle any IDEFs
+        const fn = this.idefs[opcode]
+        assert(!!fn, `Unknown opcode ${toHex(opcode, 1)}`)
+
+        this.run(fn.inst, fn.pc)
       }
     }
   }
