@@ -52,3 +52,11 @@ export function opcodeLength(inst: Uint8Array, pc: number) {
       return 1
   }
 }
+
+export function viewFor(inst: Uint8Array) {
+  return new DataView(inst.buffer, inst.byteOffset)
+}
+
+export function makeStore(size: number) {
+  return new DataView(new ArrayBuffer(size * 4))
+}

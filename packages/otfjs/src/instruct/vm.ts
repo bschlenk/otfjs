@@ -1,73 +1,106 @@
 import * as vec from '../vector.js'
-import { GlyphSimple } from '../tables/glyf.js'
+import { emptyGlyph, type GlyphSimple, type Point } from '../tables/glyf.js'
 import { MaxpTable10 } from '../tables/maxp.js'
 import { assert, debug, range } from '../utils.js'
-import { makeGraphicsState } from './graphics.js'
+import { type GraphicsState, makeGraphicsState } from './graphics.js'
 import { Opcode } from './opcode.js'
 import { Stack } from './stack.js'
-import { getinfoFlags, opcodeLength } from './utils.js'
+import { getinfoFlags, makeStore, opcodeLength, viewFor } from './utils.js'
+import type { Font } from '../font.js'
 
-export function process(
-  inst: Uint8Array,
-  maxp: MaxpTable10,
-  cvt: number[],
-  glyph: GlyphSimple,
-  fns: Int32Array,
-) {
-  const view = new DataView(inst.buffer, inst.byteOffset)
-  const store = new DataView(new ArrayBuffer(maxp.maxStorage * 4))
-  const stack = new Stack(maxp.maxStackElements)
-  const gs = makeGraphicsState()
-  const zonesOriginal = [
-    range(maxp.maxTwilightPoints, () => ({ x: 0, y: 0, onCurve: true })),
-    // TODO: am I supposed to add 4 extra points here?
-    [...glyph.points],
-  ]
-  const zones = structuredClone(zonesOriginal)
-  const touched = range(zones.length, () => new Set<number>())
+const enum Touched {
+  NEITHER,
+  X,
+  Y,
+  BOTH,
+}
 
-  let pc = 0
+interface Fdef {
+  inst: Uint8Array
+  pc: number
+}
 
-  // affects ALIGNRP, FLIPPT, IP, SHP, SHPIX
-  function loop() {
-    const points = range(gs.loop, () => stack.popU32())
-    gs.loop = 1
-    return points
+class VirtualMachine {
+  pc = 0
+  cvt: number[]
+  store: DataView
+  stack: Stack
+  gs: GraphicsState
+  fns: Fdef[] = []
+
+  glyph!: GlyphSimple
+  zones!: Point[][]
+  zonesOriginal!: Point[][]
+  touched!: Set<Touched>[]
+
+  private pcStack: number[] = []
+  private maxp: MaxpTable10
+
+  constructor(private font: Font) {
+    const maxp = font.getTable('maxp')
+
+    assert(
+      maxp.version === 0x00010000,
+      'Only version 1.0 maxp tables are supported',
+    )
+
+    this.maxp = maxp
+    this.cvt = font.getTable('cvt ')
+    this.store = makeStore(maxp.maxStorage)
+    this.stack = new Stack(maxp.maxStackElements)
+    this.gs = makeGraphicsState()
+
+    this.setGlyph(null)
   }
 
-  function seek(...opcodes: Opcode[]) {
-    while (pc < inst.length) {
-      const opcode = inst[pc]
-      if (opcodes.includes(opcode)) {
-        // skip over the opcode
-        ++pc
-        return
-      }
-      pc += opcodeLength(inst, pc)
+  init() {
+    const insts = this.font.getTable('fpgm')
+    this.process(insts)
+  }
+
+  setGlyph(glyph: GlyphSimple | null) {
+    if (!glyph) {
+      this.glyph = emptyGlyph()
+      this.zones = [[], []]
+      this.zonesOriginal = this.zones
+      this.touched = [new Set(), new Set()]
+      return
     }
 
-    throw new Error(
-      `Expected ${opcodes.map((o) => Opcode[o]).join(' or ')} but reached the end of the program`,
-    )
+    this.glyph = glyph
+    this.zonesOriginal = [
+      range(this.maxp.maxTwilightPoints, () => ({ x: 0, y: 0, onCurve: true })),
+      // TODO: am I supposed to add 4 extra points here?
+      [...glyph.points],
+    ]
+    this.zones = structuredClone(this.zonesOriginal)
+    this.touched = [new Set(), new Set()]
   }
 
-  while (pc < inst.length) {
-    const opcode = inst[pc++]
+  process(inst: Uint8Array) {
+    while (this.pc < inst.length) {
+      this.step(inst)
+    }
+  }
+
+  step(inst: Uint8Array) {
+    const opcode = inst[this.pc++]
 
     switch (opcode) {
       case Opcode.NPUSHB: {
-        const n = inst[pc++]
+        const n = inst[this.pc++]
         for (let i = 0; i < n; ++i) {
-          stack.push(inst[pc++])
+          this.stack.push(inst[this.pc++])
         }
         break
       }
 
       case Opcode.NPUSHW: {
-        const n = inst[pc++]
+        const view = viewFor(inst)
+        const n = inst[this.pc++]
         for (let i = 0; i < n; ++i) {
-          stack.push(view.getInt16(pc))
-          pc += 2
+          this.stack.push(view.getInt16(this.pc))
+          this.pc += 2
         }
         break
       }
@@ -82,7 +115,7 @@ export function process(
       case Opcode.PUSHB7: {
         const n = (opcode & 0b111) + 1
         for (let i = 0; i < n; ++i) {
-          stack.push(inst[pc++])
+          this.stack.push(inst[this.pc++])
         }
         break
       }
@@ -95,47 +128,48 @@ export function process(
       case Opcode.PUSHW5:
       case Opcode.PUSHW6:
       case Opcode.PUSHW7: {
+        const view = viewFor(inst)
         const n = (opcode & 0b111) + 1
         for (let i = 0; i < n; ++i) {
-          stack.push(view.getInt16(pc))
-          pc += 2
+          this.stack.push(view.getInt16(this.pc))
+          this.pc += 2
         }
         break
       }
 
       case Opcode.RS: {
-        const s = stack.popU32()
-        stack.push(store.getUint32(s * 4))
+        const s = this.stack.popU32()
+        this.stack.push(this.store.getUint32(s * 4))
         break
       }
 
       case Opcode.WS: {
-        const value = stack.popU32()
-        const s = stack.popU32()
-        store.setUint32(s * 4, value)
+        const value = this.stack.popU32()
+        const s = this.stack.popU32()
+        this.store.setUint32(s * 4, value)
         break
       }
 
       case Opcode.WCVTP: {
-        const value = stack.pop26dot6()
-        const c = stack.popU32()
-        cvt[c] = value
+        const value = this.stack.pop26dot6()
+        const c = this.stack.popU32()
+        this.cvt[c] = value
         break
       }
 
       case Opcode.WCVTF: {
         // TODO: something something convert to pixels?
         // The value is scaled before being written to the table
-        const value = stack.popU32()
-        const c = stack.popU32()
-        cvt[c] = value
+        const value = this.stack.popU32()
+        const c = this.stack.popU32()
+        this.cvt[c] = value
         break
       }
 
       case Opcode.RCVT: {
-        const c = stack.popU32()
-        const value = cvt[c]
-        stack.push26dot6(value)
+        const c = this.stack.popU32()
+        const value = this.cvt[c]
+        this.stack.push26dot6(value)
         break
       }
 
@@ -143,8 +177,8 @@ export function process(
       case Opcode.SVTCA1: {
         const isX = opcode === Opcode.SVTCA1
         const vec = isX ? { x: 1, y: 0 } : { x: 0, y: 1 }
-        gs.freedomVector = vec
-        gs.projectionVector = vec
+        this.gs.freedomVector = vec
+        this.gs.projectionVector = vec
         break
       }
 
@@ -152,7 +186,7 @@ export function process(
       case Opcode.SPVTCA1: {
         const isX = opcode === Opcode.SPVTCA1
         const vec = isX ? { x: 1, y: 0 } : { x: 0, y: 1 }
-        gs.projectionVector = vec
+        this.gs.projectionVector = vec
         break
       }
 
@@ -160,15 +194,15 @@ export function process(
       case Opcode.SFVTCA1: {
         const isX = opcode === Opcode.SFVTCA1
         const vec = isX ? { x: 1, y: 0 } : { x: 0, y: 1 }
-        gs.freedomVector = vec
+        this.gs.freedomVector = vec
         break
       }
 
       case Opcode.SPVTL0:
       case Opcode.SPVTL1: {
         const rotate = opcode === Opcode.SPVTL1
-        const p1 = zones[gs.zp2][stack.popU32()]
-        const p2 = zones[gs.zp1][stack.popU32()]
+        const p1 = this.zones[this.gs.zp2][this.stack.popU32()]
+        const p2 = this.zones[this.gs.zp1][this.stack.popU32()]
 
         let x = p2.x - p1.x
         let y = p2.y - p1.y
@@ -183,15 +217,15 @@ export function process(
           y = tmp
         }
 
-        gs.projectionVector = { x, y }
+        this.gs.projectionVector = { x, y }
         break
       }
 
       case Opcode.SFVTL0:
       case Opcode.SFVTL1: {
         const rotate = opcode === Opcode.SFVTL1
-        const p1 = zones[gs.zp2][stack.popU32()]
-        const p2 = zones[gs.zp1][stack.popU32()]
+        const p1 = this.zones[this.gs.zp2][this.stack.popU32()]
+        const p2 = this.zones[this.gs.zp1][this.stack.popU32()]
 
         let x = p2.x - p1.x
         let y = p2.y - p1.y
@@ -206,20 +240,20 @@ export function process(
           y = tmp
         }
 
-        gs.freedomVector = { x, y }
+        this.gs.freedomVector = { x, y }
         break
       }
 
       case Opcode.SFVTPV: {
-        gs.freedomVector = gs.projectionVector
+        this.gs.freedomVector = this.gs.projectionVector
         break
       }
 
       case Opcode.SDPVTL0:
       case Opcode.SDPVTL1: {
         const rotate = opcode === Opcode.SDPVTL1
-        const p1 = zones[gs.zp2][stack.popU32()]
-        const p2 = zones[gs.zp1][stack.popU32()]
+        const p1 = this.zones[this.gs.zp2][this.stack.popU32()]
+        const p2 = this.zones[this.gs.zp1][this.stack.popU32()]
 
         let v = vec.normalize(vec.subtract(p2, p1))
 
@@ -231,162 +265,162 @@ export function process(
         // sounds like the dual one gets set and then is used in place of the projection vector
         // until the next instruction that sets the projection vector
 
-        gs.dualProjectionVectors = v
-        gs.projectionVector = v
+        this.gs.dualProjectionVectors = v
+        this.gs.projectionVector = v
         break
       }
 
       case Opcode.SPVFS: {
-        const y = stack.pop2dot14()
-        const x = stack.pop2dot14()
-        gs.projectionVector = { x, y }
+        const y = this.stack.pop2dot14()
+        const x = this.stack.pop2dot14()
+        this.gs.projectionVector = { x, y }
         break
       }
 
       case Opcode.SFVFS: {
-        const y = stack.pop2dot14()
-        const x = stack.pop2dot14()
-        gs.freedomVector = { x, y }
+        const y = this.stack.pop2dot14()
+        const x = this.stack.pop2dot14()
+        this.gs.freedomVector = { x, y }
         break
       }
 
       case Opcode.GPV: {
-        const { x, y } = gs.projectionVector
-        stack.push2dot14(x)
-        stack.push2dot14(y)
+        const { x, y } = this.gs.projectionVector
+        this.stack.push2dot14(x)
+        this.stack.push2dot14(y)
         break
       }
 
       case Opcode.GFV: {
-        const { x, y } = gs.freedomVector
-        stack.push2dot14(x)
-        stack.push2dot14(y)
+        const { x, y } = this.gs.freedomVector
+        this.stack.push2dot14(x)
+        this.stack.push2dot14(y)
         break
       }
 
       case Opcode.SRP0: {
-        const value = stack.popU32()
-        gs.rp0 = value
+        const value = this.stack.popU32()
+        this.gs.rp0 = value
         break
       }
 
       case Opcode.SRP1: {
-        const value = stack.popU32()
-        gs.rp1 = value
+        const value = this.stack.popU32()
+        this.gs.rp1 = value
         break
       }
 
       case Opcode.SRP2: {
-        const value = stack.popU32()
-        gs.rp2 = value
+        const value = this.stack.popU32()
+        this.gs.rp2 = value
         break
       }
 
       case Opcode.SZP0: {
-        const value = stack.popU32()
-        gs.zp0 = value
+        const value = this.stack.popU32()
+        this.gs.zp0 = value
         break
       }
 
       case Opcode.SZP1: {
-        const value = stack.popU32()
-        gs.zp1 = value
+        const value = this.stack.popU32()
+        this.gs.zp1 = value
         break
       }
 
       case Opcode.SZP2: {
-        const value = stack.popU32()
-        gs.zp2 = value
+        const value = this.stack.popU32()
+        this.gs.zp2 = value
         break
       }
 
       case Opcode.SZPS: {
-        const value = stack.popU32()
-        gs.zp0 = gs.zp1 = gs.zp2 = value
+        const value = this.stack.popU32()
+        this.gs.zp0 = this.gs.zp1 = this.gs.zp2 = value
         break
       }
 
       case Opcode.RTHG: {
-        gs.roundState = 0
+        this.gs.roundState = 0
         break
       }
 
       case Opcode.RTG: {
-        gs.roundState = 1
+        this.gs.roundState = 1
         break
       }
 
       case Opcode.RTDG: {
-        gs.roundState = 2
+        this.gs.roundState = 2
         break
       }
 
       case Opcode.RDTG: {
-        gs.roundState = 3
+        this.gs.roundState = 3
         break
       }
 
       case Opcode.RUTG: {
-        gs.roundState = 4
+        this.gs.roundState = 4
         break
       }
 
       case Opcode.ROFF: {
-        gs.roundState = 5
+        this.gs.roundState = 5
         break
       }
 
       case Opcode.SROUND: {
         // TODO: decompose this later??
         // I think I'll need to mark that this isn't one of the above roundState enums, since they overlap
-        const value = stack.popU32()
-        gs.roundState = value
+        const value = this.stack.popU32()
+        this.gs.roundState = value
         break
       }
 
       case Opcode.S45ROUND: {
-        const value = stack.popU32()
-        gs.roundState = value
+        const value = this.stack.popU32()
+        this.gs.roundState = value
         break
       }
 
       case Opcode.SLOOP: {
-        const value = stack.popU32()
+        const value = this.stack.popU32()
         assert(value > 0, 'SLOOP must be greater than 0')
-        gs.loop = value
+        this.gs.loop = value
         break
       }
 
       case Opcode.SMD: {
-        const value = stack.pop26dot6()
-        gs.minimumDistance = value
+        const value = this.stack.pop26dot6()
+        this.gs.minimumDistance = value
         break
       }
 
       case Opcode.INSTCTRL: {
-        const s = stack.pop()
-        const value = stack.popU32()
+        const s = this.stack.pop()
+        const value = this.stack.popU32()
         // TODO: error if this is used anywhere but the cvt program
         switch (s) {
           case 1:
             if (value === 0) {
-              gs.instructControl.disableGridFitting = false
+              this.gs.instructControl.disableGridFitting = false
             } else if (value === 1) {
-              gs.instructControl.disableGridFitting = true
+              this.gs.instructControl.disableGridFitting = true
             }
             break
           case 2:
             if (value === 0) {
-              gs.instructControl.ignoreCvtParams = false
+              this.gs.instructControl.ignoreCvtParams = false
             } else if (value === 2) {
-              gs.instructControl.ignoreCvtParams = true
+              this.gs.instructControl.ignoreCvtParams = true
             }
             break
           case 3:
             if (value === 0) {
-              gs.instructControl.nativeClearTypeMode = false
+              this.gs.instructControl.nativeClearTypeMode = false
             } else if (value === 4) {
-              gs.instructControl.nativeClearTypeMode = true
+              this.gs.instructControl.nativeClearTypeMode = true
             }
             break
         }
@@ -395,81 +429,81 @@ export function process(
       }
 
       case Opcode.SCANCTRL: {
-        const value = stack.popU32()
-        gs.scanControl.enabled = value
+        const value = this.stack.popU32()
+        this.gs.scanControl.enabled = value
         break
       }
 
       case Opcode.SCANTYPE: {
-        const value = stack.popU32()
-        gs.scanControl.rules = value
+        const value = this.stack.popU32()
+        this.gs.scanControl.rules = value
         break
       }
 
       case Opcode.SCVTCI: {
-        const value = stack.pop26dot6()
-        gs.controlValueCutIn = value
+        const value = this.stack.pop26dot6()
+        this.gs.controlValueCutIn = value
         break
       }
 
       case Opcode.SSWCI: {
-        const value = stack.pop26dot6()
-        gs.singeWidthCutIn = value
+        const value = this.stack.pop26dot6()
+        this.gs.singeWidthCutIn = value
         break
       }
 
       case Opcode.SSW: {
-        const value = stack.popU32()
+        const value = this.stack.popU32()
         // TODO: convert to pixels??
-        gs.singleWidthValue = value
+        this.gs.singleWidthValue = value
         break
       }
 
       case Opcode.FLIPON: {
-        gs.autoFlip = true
+        this.gs.autoFlip = true
         break
       }
 
       case Opcode.FLIPOFF: {
-        gs.autoFlip = false
+        this.gs.autoFlip = false
         break
       }
 
       case Opcode.SANGW: {
         // Opcode is no longer used, but let's pop from the stack anyway for correctness
-        stack.pop()
+        this.stack.pop()
         break
       }
 
       case Opcode.SDB: {
-        const value = stack.popU32()
-        gs.deltaBase = value
+        const value = this.stack.popU32()
+        this.gs.deltaBase = value
         break
       }
 
       case Opcode.SDS: {
-        const value = stack.popU32()
-        gs.deltaShift = value
+        const value = this.stack.popU32()
+        this.gs.deltaShift = value
         break
       }
 
       case Opcode.GC0:
       case Opcode.GC1: {
         const useOriginal = opcode === Opcode.GC1
-        const p = stack.popU32()
+        const p = this.stack.popU32()
         // TODO: zp2 determins which zone to look at
-        const pt = useOriginal ? glyph.points[p] : zones[1][p]
+        const pt = useOriginal ? this.zonesOriginal[1][p] : this.zones[1][p]
         // TODO: how to project a point? is that cross product?
 
         // TODO: verify y x is the correct order
-        stack.push(pt.y)
-        stack.push(pt.x)
+        this.stack.push(pt.y)
+        this.stack.push(pt.x)
         break
       }
 
       case Opcode.SCFS: {
-        const value = stack.pop26dot6()
-        const p = stack.popU32()
+        const value = this.stack.pop26dot6()
+        const p = this.stack.popU32()
         // TODO: not sure about the math here at all
         // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM05/Chap5.html#SCFS
         break
@@ -478,13 +512,15 @@ export function process(
       case Opcode.MD0:
       case Opcode.MD1: {
         const useOriginal = opcode === Opcode.MD1
-        const p1 = stack.popU32()
-        const p2 = stack.popU32()
+        const p1 = this.stack.popU32()
+        const p2 = this.stack.popU32()
 
         // TODO: the use original ones need to use zp1 and zp0 as well
         // TODO: apple's docs say zp0 and zp1, double check this?
-        const pt1 = useOriginal ? glyph.points[p1] : zones[gs.zp1][p1]
-        const pt2 = useOriginal ? glyph.points[p2] : zones[gs.zp0][p2]
+        const pt1 =
+          useOriginal ? this.glyph.points[p1] : this.zones[this.gs.zp1][p1]
+        const pt2 =
+          useOriginal ? this.glyph.points[p2] : this.zones[this.gs.zp0][p2]
 
         // TODO: verify I should use dual projection vector if that is set over projection vector
         // get disantce between points, projected onto projection vector
@@ -509,15 +545,15 @@ export function process(
         // TODO: this needs to be passed in to the process function
         // TODO: microsoft and apple docs disagree on what the pushed type looks
         // like, microsoft says 26.6, apple says u16
-        stack.push26dot6(12)
+        this.stack.push26dot6(12)
         break
       }
 
       case Opcode.FLIPPT: {
-        const points = loop()
+        const points = this.loop()
 
         for (const p of points) {
-          const point = zones[gs.zp0][p]
+          const point = this.zones[this.gs.zp0][p]
           point.onCurve = !point.onCurve
         }
 
@@ -527,10 +563,10 @@ export function process(
       case Opcode.FLIPRGON:
       case Opcode.FLIPRGOFF: {
         const on = opcode === Opcode.FLIPRGON
-        const hp = stack.popU32()
-        const lp = stack.popU32()
+        const hp = this.stack.popU32()
+        const lp = this.stack.popU32()
         for (let i = lp; i <= hp; ++i) {
-          const point = zones[gs.zp0][i]
+          const point = this.zones[this.gs.zp0][i]
           point.onCurve = on
         }
 
@@ -540,24 +576,24 @@ export function process(
       case Opcode.SHP0:
       case Opcode.SHP1: {
         const a = opcode & 0b1
-        const rp = a === 0 ? gs.rp2 : gs.rp1
-        const z = a === 0 ? gs.zp1 : gs.zp0
+        const rp = a === 0 ? this.gs.rp2 : this.gs.rp1
+        const z = a === 0 ? this.gs.zp1 : this.gs.zp0
 
-        const refo = zonesOriginal[z][rp]
-        const refm = zones[z][rp]
+        const refo = this.zonesOriginal[z][rp]
+        const refm = this.zones[z][rp]
 
         // measure the relative distance of the reference point
         // along the projection vector
         const dist = vec.projectLength(
           vec.subtract(refm, refo),
-          gs.projectionVector,
+          this.gs.projectionVector,
         )
-        const dv = vec.scale(gs.freedomVector, dist)
+        const dv = vec.scale(this.gs.freedomVector, dist)
 
-        const points = loop()
+        const points = this.loop()
         for (const p of points) {
-          const point = zones[gs.zp2][p]
-          touched[gs.zp2].add(p)
+          const point = this.zones[this.gs.zp2][p]
+          this.touched[this.gs.zp2].add(p)
 
           // TODO: I don't think this is correct
           // move the point p by that distance, along the freedom vector
@@ -572,41 +608,41 @@ export function process(
       case Opcode.SHC0:
       case Opcode.SHC1: {
         const a = opcode & 0b1
-        const rp = a === 0 ? gs.rp2 : gs.rp1
-        const z = a === 0 ? gs.zp1 : gs.zp0
+        const rp = a === 0 ? this.gs.rp2 : this.gs.rp1
+        const z = a === 0 ? this.gs.zp1 : this.gs.zp0
 
-        const refo = zonesOriginal[z][rp]
-        const refm = zones[z][rp]
+        const refo = this.zonesOriginal[z][rp]
+        const refm = this.zones[z][rp]
 
         // measure the relative distance of the reference point
         // along the projection vector
         const dist = vec.projectLength(
           vec.subtract(refm, refo),
-          gs.projectionVector,
+          this.gs.projectionVector,
         )
-        const dv = vec.scale(gs.freedomVector, dist)
+        const dv = vec.scale(this.gs.freedomVector, dist)
 
-        const c = stack.popU32()
+        const c = this.stack.popU32()
 
-        const start = c === 0 ? 0 : glyph.endPtsOfContours[c - 1] + 1
-        const end = glyph.endPtsOfContours[c]
+        const start = c === 0 ? 0 : this.glyph.endPtsOfContours[c - 1] + 1
+        const end = this.glyph.endPtsOfContours[c]
 
-        const skip = z === gs.zp2 ? { ...refm } : null
-        const skipTouch = skip ? touched[gs.zp2].has(rp) : false
+        const skip = z === this.gs.zp2 ? { ...refm } : null
+        const skipTouch = skip ? this.touched[this.gs.zp2].has(rp) : false
 
         for (let i = start; i <= end; ++i) {
-          const point = zones[gs.zp2][i]
+          const point = this.zones[this.gs.zp2][i]
           const newPoint = vec.add(point, dv)
           point.x = newPoint.x
           point.y = newPoint.y
-          touched[gs.zp2].add(i)
+          this.touched[this.gs.zp2].add(i)
         }
 
         if (skip) {
           // if the reference point is on the contour, it should not be updated
-          zones[gs.zp2][rp] = skip
+          this.zones[this.gs.zp2][rp] = skip
           if (!skipTouch) {
-            touched[gs.zp2].delete(rp)
+            this.touched[this.gs.zp2].delete(rp)
           }
         }
 
@@ -616,38 +652,38 @@ export function process(
       case Opcode.SHZ0:
       case Opcode.SHZ1: {
         const a = opcode & 0b1
-        const rp = a === 0 ? gs.rp2 : gs.rp1
-        const z = a === 0 ? gs.zp1 : gs.zp0
+        const rp = a === 0 ? this.gs.rp2 : this.gs.rp1
+        const z = a === 0 ? this.gs.zp1 : this.gs.zp0
 
-        const refo = zonesOriginal[z][rp]
-        const refm = zones[z][rp]
+        const refo = this.zonesOriginal[z][rp]
+        const refm = this.zones[z][rp]
 
         // measure the relative distance of the reference point
         // along the projection vector
         const dist = vec.projectLength(
           vec.subtract(refm, refo),
-          gs.projectionVector,
+          this.gs.projectionVector,
         )
-        const dv = vec.scale(gs.freedomVector, dist)
+        const dv = vec.scale(this.gs.freedomVector, dist)
 
-        const e = stack.popU32()
+        const e = this.stack.popU32()
 
         const skip = z === e ? { ...refm } : null
-        const skipTouch = skip ? touched[e].has(rp) : false
+        const skipTouch = skip ? this.touched[e].has(rp) : false
 
-        for (let i = 0; i < zones[e].length; ++i) {
-          const point = zones[e][i]
+        for (let i = 0; i < this.zones[e].length; ++i) {
+          const point = this.zones[e][i]
           const newPoint = vec.add(point, dv)
           point.x = newPoint.x
           point.y = newPoint.y
-          touched[e].add(i)
+          this.touched[e].add(i)
         }
 
         if (skip) {
           // if the reference point is on the zone, it should not be updated
-          zones[e][rp] = skip
+          this.zones[e][rp] = skip
           if (!skipTouch) {
-            touched[e].delete(rp)
+            this.touched[e].delete(rp)
           }
         }
 
@@ -655,16 +691,16 @@ export function process(
       }
 
       case Opcode.SHPIX: {
-        const points = loop()
-        const magnitude = stack.pop26dot6()
-        const dv = vec.scale(gs.freedomVector, magnitude)
+        const points = this.loop()
+        const magnitude = this.stack.pop26dot6()
+        const dv = vec.scale(this.gs.freedomVector, magnitude)
 
         for (const p of points) {
-          const point = zones[gs.zp2][p]
+          const point = this.zones[this.gs.zp2][p]
           const newPoint = vec.add(point, dv)
           point.x = newPoint.x
           point.y = newPoint.y
-          touched[gs.zp2].add(p)
+          this.touched[this.gs.zp2].add(p)
         }
 
         break
@@ -673,28 +709,28 @@ export function process(
       case Opcode.MSIRP0:
       case Opcode.MSIRP1: {
         const a = opcode & 0b1
-        const d = stack.pop26dot6()
-        const p = stack.popU32()
+        const d = this.stack.pop26dot6()
+        const p = this.stack.popU32()
 
-        const point = zones[gs.zp1][p]
-        const ref = zones[gs.zp0][gs.rp0]
+        const point = this.zones[this.gs.zp1][p]
+        const ref = this.zones[this.gs.zp0][this.gs.rp0]
 
         // find the distance by projecting freedom vector onto projection vector
         // TODO: I don't think this logic is correct
-        const proj = vec.projectOnto(point, gs.projectionVector)
+        const proj = vec.projectOnto(point, this.gs.projectionVector)
         const currentDistance = vec.magnitude(proj)
         const scale = d / currentDistance
         const newPoint = vec.scale(point, scale)
 
         point.x = newPoint.x
         point.y = newPoint.y
-        touched[gs.zp1].add(p)
+        this.touched[this.gs.zp1].add(p)
 
-        gs.rp1 = gs.rp0
-        gs.rp2 = p
+        this.gs.rp1 = this.gs.rp0
+        this.gs.rp2 = p
 
         if (a === 1) {
-          gs.rp0 = p
+          this.gs.rp0 = p
         }
 
         break
@@ -703,7 +739,7 @@ export function process(
       case Opcode.MDAP0:
       case Opcode.MDAP1: {
         const round = (opcode & 0b1) === 1
-        const p = stack.popU32()
+        const p = this.stack.popU32()
 
         if (round) {
           // TODO: need to figure out rounding rules
@@ -711,9 +747,9 @@ export function process(
 
         // TODO: touch needs to be direction aware (i.e. if the freedom vector
         // is orthogonal, only the pointed direction is marked touched)
-        touched[gs.zp0].add(p)
+        this.touched[this.gs.zp0].add(p)
 
-        gs.rp0 = gs.rp1 = p
+        this.gs.rp0 = this.gs.rp1 = p
 
         break
       }
@@ -721,8 +757,8 @@ export function process(
       case Opcode.MIAP0:
       case Opcode.MIAP1: {
         const round = (opcode & 0b1) === 1
-        const n = stack.popU32()
-        const p = stack.popU32()
+        const n = this.stack.popU32()
+        const p = this.stack.popU32()
 
         // TOOD: this instruction
 
@@ -765,7 +801,7 @@ export function process(
         const b = Boolean(opcode & (0b1 << 3))
         const c = Boolean(opcode & (0b1 << 2))
         const de = opcode & 0b11
-        const p = stack.popU32()
+        const p = this.stack.popU32()
 
         // TODO: this instruction
 
@@ -808,8 +844,8 @@ export function process(
         const b = Boolean(opcode & (0b1 << 3))
         const c = Boolean(opcode & (0b1 << 2))
         const de = opcode & 0b11
-        const n = stack.popU32()
-        const p = stack.popU32()
+        const n = this.stack.popU32()
+        const p = this.stack.popU32()
 
         // TODO: this instruction
 
@@ -817,11 +853,11 @@ export function process(
       }
 
       case Opcode.ALIGNRP: {
-        const points = loop()
-        const rp = zones[gs.zp0][gs.rp0]
+        const points = this.loop()
+        const rp = this.zones[this.gs.zp0][this.gs.rp0]
 
         for (const p of points) {
-          const point = zones[gs.zp1][p]
+          const point = this.zones[this.gs.zp1][p]
           // TODO: reduce measured distance to 0 along projection vector
         }
 
@@ -830,16 +866,16 @@ export function process(
 
       case Opcode.AA: {
         // deprecated opcode, just pop from the stack
-        stack.pop()
+        this.stack.pop()
         break
       }
 
       case Opcode.ISECT: {
-        const b1 = stack.popU32()
-        const b0 = stack.popU32()
-        const a1 = stack.popU32()
-        const a0 = stack.popU32()
-        const p = stack.popU32()
+        const b1 = this.stack.popU32()
+        const b0 = this.stack.popU32()
+        const a1 = this.stack.popU32()
+        const a0 = this.stack.popU32()
+        const p = this.stack.popU32()
 
         // If lines A and B are parallel, point p is moved to a position in the middle of the lines. That is:
         // px = (a0x + a1x)/4 + (b0x + b1x)/4
@@ -852,15 +888,15 @@ export function process(
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructions#align-points
       case Opcode.ALIGNPTS: {
-        const p1 = stack.popU32()
-        const p2 = stack.popU32()
+        const p1 = this.stack.popU32()
+        const p2 = this.stack.popU32()
 
         // TODO: this instruction
         break
       }
 
       case Opcode.IP: {
-        const points = loop()
+        const points = this.loop()
         for (const p of points) {
           // TODO: this instruction
         }
@@ -869,9 +905,9 @@ export function process(
       }
 
       case Opcode.UTP: {
-        const p = stack.popU32()
+        const p = this.stack.popU32()
         // TODO: need to do this along the freedom vector
-        touched[gs.zp0].delete(p)
+        this.touched[this.gs.zp0].delete(p)
         break
       }
 
@@ -885,68 +921,68 @@ export function process(
       // TODO: handle delta instructions
 
       case Opcode.DUP: {
-        const e = stack.pop()
-        stack.push(e)
-        stack.push(e)
+        const e = this.stack.pop()
+        this.stack.push(e)
+        this.stack.push(e)
         break
       }
 
       case Opcode.POP: {
-        stack.pop()
+        this.stack.pop()
         break
       }
 
       case Opcode.CLEAR: {
-        stack.clear()
+        this.stack.clear()
         break
       }
 
       case Opcode.SWAP: {
-        const e2 = stack.pop()
-        const e1 = stack.pop()
-        stack.push(e2)
-        stack.push(e1)
+        const e2 = this.stack.pop()
+        const e1 = this.stack.pop()
+        this.stack.push(e2)
+        this.stack.push(e1)
         break
       }
 
       case Opcode.DEPTH: {
-        stack.push(stack.depth())
+        this.stack.push(this.stack.depth())
         break
       }
 
       case Opcode.CINDEX: {
-        const k = stack.pop()
-        stack.push(stack.at(k))
+        const k = this.stack.pop()
+        this.stack.push(this.stack.at(k))
         break
       }
 
       case Opcode.MINDEX: {
-        const k = stack.pop()
-        const value = stack.delete(k)
-        stack.push(value)
+        const k = this.stack.pop()
+        const value = this.stack.delete(k)
+        this.stack.push(value)
         break
       }
 
       case Opcode.ROLL: {
-        const a = stack.pop()
-        const b = stack.pop()
-        const c = stack.pop()
-        stack.push(b)
-        stack.push(a)
-        stack.push(c)
+        const a = this.stack.pop()
+        const b = this.stack.pop()
+        const c = this.stack.pop()
+        this.stack.push(b)
+        this.stack.push(a)
+        this.stack.push(c)
       }
 
       case Opcode.IF: {
-        const e = stack.popU32()
+        const e = this.stack.popU32()
         if (e === 0) {
-          seek(Opcode.ELSE, Opcode.EIF)
+          this.seek(inst, Opcode.ELSE, Opcode.EIF)
         }
         // else continue into the block
         break
       }
 
       case Opcode.ELSE: {
-        seek(Opcode.EIF)
+        this.seek(inst, Opcode.EIF)
         break
       }
 
@@ -955,167 +991,167 @@ export function process(
       }
 
       case Opcode.JROT: {
-        const e = stack.popU32()
-        const offset = stack.pop()
+        const e = this.stack.popU32()
+        const offset = this.stack.pop()
 
         if (e !== 0) {
-          pc += offset - 1
+          this.pc += offset - 1
         }
 
         break
       }
 
       case Opcode.JMPR: {
-        pc += stack.pop() - 1
+        this.pc += this.stack.pop() - 1
         break
       }
 
       case Opcode.JROF: {
-        const e = stack.popU32()
-        const offset = stack.pop()
+        const e = this.stack.popU32()
+        const offset = this.stack.pop()
 
         if (e === 0) {
-          pc += offset - 1
+          this.pc += offset - 1
         }
 
         break
       }
 
       case Opcode.LT: {
-        const e2 = stack.popU32()
-        const e1 = stack.popU32()
-        stack.push(e1 < e2 ? 1 : 0)
+        const e2 = this.stack.popU32()
+        const e1 = this.stack.popU32()
+        this.stack.push(e1 < e2 ? 1 : 0)
         break
       }
 
       case Opcode.LTEQ: {
-        const e2 = stack.popU32()
-        const e1 = stack.popU32()
-        stack.push(e1 <= e2 ? 1 : 0)
+        const e2 = this.stack.popU32()
+        const e1 = this.stack.popU32()
+        this.stack.push(e1 <= e2 ? 1 : 0)
         break
       }
 
       case Opcode.GT: {
-        const e2 = stack.popU32()
-        const e1 = stack.popU32()
-        stack.push(e1 > e2 ? 1 : 0)
+        const e2 = this.stack.popU32()
+        const e1 = this.stack.popU32()
+        this.stack.push(e1 > e2 ? 1 : 0)
         break
       }
 
       case Opcode.GTEQ: {
-        const e2 = stack.popU32()
-        const e1 = stack.popU32()
-        stack.push(e1 >= e2 ? 1 : 0)
+        const e2 = this.stack.popU32()
+        const e1 = this.stack.popU32()
+        this.stack.push(e1 >= e2 ? 1 : 0)
         break
       }
 
       case Opcode.EQ: {
-        const e2 = stack.popU32()
-        const e1 = stack.popU32()
-        stack.push(e1 === e2 ? 1 : 0)
+        const e2 = this.stack.popU32()
+        const e1 = this.stack.popU32()
+        this.stack.push(e1 === e2 ? 1 : 0)
         break
       }
 
       case Opcode.NEQ: {
-        const e2 = stack.popU32()
-        const e1 = stack.popU32()
-        stack.push(e1 !== e2 ? 1 : 0)
+        const e2 = this.stack.popU32()
+        const e1 = this.stack.popU32()
+        this.stack.push(e1 !== e2 ? 1 : 0)
         break
       }
 
       case Opcode.ODD:
       case Opcode.EVEN: {
         const even = opcode === Opcode.EVEN
-        const e1 = stack.pop26dot6()
+        const e1 = this.stack.pop26dot6()
         // TODO: need to round first
         const isEven = e1 % 2 === 0
-        stack.push(Number(even === isEven))
+        this.stack.push(Number(even === isEven))
         break
       }
 
       case Opcode.AND: {
-        const e2 = stack.popU32()
-        const e1 = stack.popU32()
-        stack.push(Number(Boolean(e1 && e2)))
+        const e2 = this.stack.popU32()
+        const e1 = this.stack.popU32()
+        this.stack.push(Number(Boolean(e1 && e2)))
         break
       }
 
       case Opcode.OR: {
-        const e2 = stack.popU32()
-        const e1 = stack.popU32()
-        stack.push(Number(Boolean(e1 || e2)))
+        const e2 = this.stack.popU32()
+        const e1 = this.stack.popU32()
+        this.stack.push(Number(Boolean(e1 || e2)))
         break
       }
 
       case Opcode.NOT: {
-        const e = stack.popU32()
-        stack.push(Number(!e))
+        const e = this.stack.popU32()
+        this.stack.push(Number(!e))
       }
 
       case Opcode.ADD: {
-        const n2 = stack.pop26dot6()
-        const n1 = stack.pop26dot6()
-        stack.push26dot6(n1 + n2)
+        const n2 = this.stack.pop26dot6()
+        const n1 = this.stack.pop26dot6()
+        this.stack.push26dot6(n1 + n2)
         break
       }
 
       case Opcode.SUB: {
-        const n2 = stack.pop26dot6()
-        const n1 = stack.pop26dot6()
-        stack.push26dot6(n1 - n2)
+        const n2 = this.stack.pop26dot6()
+        const n1 = this.stack.pop26dot6()
+        this.stack.push26dot6(n1 - n2)
         break
       }
 
       case Opcode.DIV: {
-        const n2 = stack.pop26dot6()
-        const n1 = stack.pop26dot6()
+        const n2 = this.stack.pop26dot6()
+        const n1 = this.stack.pop26dot6()
         // TODO: handle divide by 0
-        stack.push26dot6(n1 / n2)
+        this.stack.push26dot6(n1 / n2)
         break
       }
 
       case Opcode.MUL: {
-        const n2 = stack.pop26dot6()
-        const n1 = stack.pop26dot6()
-        stack.push26dot6(n1 * n2)
+        const n2 = this.stack.pop26dot6()
+        const n1 = this.stack.pop26dot6()
+        this.stack.push26dot6(n1 * n2)
         break
       }
 
       case Opcode.ABS: {
-        const n = stack.pop26dot6()
-        stack.push26dot6(Math.abs(n))
+        const n = this.stack.pop26dot6()
+        this.stack.push26dot6(Math.abs(n))
         break
       }
 
       case Opcode.NEG: {
-        const n = stack.pop26dot6()
-        stack.push26dot6(-n)
+        const n = this.stack.pop26dot6()
+        this.stack.push26dot6(-n)
         break
       }
 
       case Opcode.FLOOR: {
-        const n = stack.pop26dot6()
-        stack.push26dot6(Math.floor(n))
+        const n = this.stack.pop26dot6()
+        this.stack.push26dot6(Math.floor(n))
         break
       }
 
       case Opcode.CEILING: {
-        const n = stack.pop26dot6()
-        stack.push26dot6(Math.ceil(n))
+        const n = this.stack.pop26dot6()
+        this.stack.push26dot6(Math.ceil(n))
         break
       }
 
       case Opcode.MAX: {
-        const n2 = stack.pop26dot6()
-        const n1 = stack.pop26dot6()
-        stack.push26dot6(Math.max(n1, n2))
+        const n2 = this.stack.pop26dot6()
+        const n1 = this.stack.pop26dot6()
+        this.stack.push26dot6(Math.max(n1, n2))
         break
       }
 
       case Opcode.MIN: {
-        const n2 = stack.pop26dot6()
-        const n1 = stack.pop26dot6()
-        stack.push26dot6(Math.min(n1, n2))
+        const n2 = this.stack.pop26dot6()
+        const n1 = this.stack.pop26dot6()
+        this.stack.push26dot6(Math.min(n1, n2))
         break
       }
 
@@ -1124,14 +1160,14 @@ export function process(
       case Opcode.ROUND2:
       case Opcode.ROUND3: {
         const ab = opcode & 0b11
-        const n1 = stack.pop()
+        const n1 = this.stack.pop()
 
         // TODO: do I need to do anything here? might be cool to be able to
         // define an "engine characteristic" here for experimentation
 
         // TODO: round n2 based on round_state
         const n2 = n1
-        stack.push(n2)
+        this.stack.push(n2)
 
         break
       }
@@ -1141,22 +1177,22 @@ export function process(
       case Opcode.NROUND2:
       case Opcode.NROUND3: {
         const ab = opcode & 0b11
-        const n1 = stack.pop()
+        const n1 = this.stack.pop()
 
         // TODO: do something with engine characteristic
 
         const n2 = n1
-        stack.push(n2)
+        this.stack.push(n2)
 
         break
       }
 
       case Opcode.FDEF: {
-        const f = stack.pop()
+        const f = this.stack.pop()
         // TODO: need to know whether this is fpgm or cvgprogram
-        fns[f] = pc
+        this.fns[f] = this.pc
 
-        seek(Opcode.ENDF)
+        this.seek(inst, Opcode.ENDF)
 
         break
       }
@@ -1166,13 +1202,13 @@ export function process(
       }
 
       case Opcode.CALL: {
-        const f = stack.pop()
+        const f = this.stack.pop()
         break
       }
 
       case Opcode.LOOPCALL: {
-        const f = stack.pop()
-        const count = stack.pop()
+        const f = this.stack.pop()
+        const count = this.stack.pop()
 
         for (let i = 0; i < count; ++i) {}
 
@@ -1180,22 +1216,22 @@ export function process(
       }
 
       case Opcode.IDEF: {
-        const opcode = stack.popU32()
+        const opcode = this.stack.popU32()
 
-        seek(Opcode.ENDF)
+        this.seek(inst, Opcode.ENDF)
 
         // TODO: store this idef somewhere
         break
       }
 
       case Opcode.DEBUG: {
-        const n = stack.popU32()
+        const n = this.stack.popU32()
         console.log(debug(n))
         break
       }
 
       case Opcode.GETINFO: {
-        const flags = getinfoFlags(stack.pop())
+        const flags = getinfoFlags(this.stack.pop())
         let result = 0
 
         if (flags.version) {
@@ -1230,8 +1266,8 @@ export function process(
 
       case Opcode.GETVARIATION: {
         // TODO: this instruction
-        stack.push(0)
-        stack.push(0)
+        this.stack.push(0)
+        this.stack.push(0)
         break
       }
 
@@ -1239,5 +1275,28 @@ export function process(
         // TODO: handle any IDEFs
       }
     }
+  }
+
+  // affects ALIGNRP, FLIPPT, IP, SHP, SHPIX
+  private loop() {
+    const points = range(this.gs.loop, () => this.stack.popU32())
+    this.gs.loop = 1
+    return points
+  }
+
+  private seek(inst: Uint8Array, ...opcodes: Opcode[]) {
+    while (this.pc < inst.length) {
+      const opcode = inst[this.pc]
+      if (opcodes.includes(opcode)) {
+        // skip over the opcode
+        ++this.pc
+        return
+      }
+      this.pc += opcodeLength(inst, this.pc)
+    }
+
+    throw new Error(
+      `Expected ${opcodes.map((o) => Opcode[o]).join(' or ')} but reached the end of the program`,
+    )
   }
 }

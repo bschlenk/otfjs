@@ -287,7 +287,7 @@ function readCompositeGlyphComponent(view: Reader) {
   return component
 }
 
-function emptyGlyph(): Glyph {
+export function emptyGlyph(): GlyphSimple {
   return {
     type: 'simple',
     xMin: 0,
