@@ -5,7 +5,7 @@ import { assert, debug, range } from '../utils.js'
 import { makeGraphicsState } from './graphics.js'
 import { Opcode } from './opcode.js'
 import { Stack } from './stack.js'
-import { getinfoFlags } from './utils.js'
+import { getinfoFlags, opcodeLength } from './utils.js'
 
 export function process(
   inst: Uint8Array,
@@ -26,6 +26,8 @@ export function process(
   const zones = structuredClone(zonesOriginal)
   const touched = range(zones.length, () => new Set<number>())
 
+  let pc = 0
+
   // affects ALIGNRP, FLIPPT, IP, SHP, SHPIX
   function loop() {
     const points = range(gs.loop, () => stack.popU32())
@@ -33,10 +35,25 @@ export function process(
     return points
   }
 
-  let pc = 0
+  function seek(...opcodes: Opcode[]) {
+    while (pc < inst.length) {
+      const opcode = inst[pc]
+      if (opcodes.includes(opcode)) {
+        // skip over the opcode
+        ++pc
+        return
+      }
+      pc += opcodeLength(inst, pc)
+    }
+
+    throw new Error(
+      `Expected ${opcodes.map((o) => Opcode[o]).join(' or ')} but reached the end of the program`,
+    )
+  }
 
   while (pc < inst.length) {
     const opcode = inst[pc++]
+
     switch (opcode) {
       case Opcode.NPUSHB: {
         const n = inst[pc++]
@@ -542,6 +559,7 @@ export function process(
           const point = zones[gs.zp2][p]
           touched[gs.zp2].add(p)
 
+          // TODO: I don't think this is correct
           // move the point p by that distance, along the freedom vector
           const newPoint = vec.add(point, dv)
           point.x = newPoint.x
@@ -921,26 +939,18 @@ export function process(
       case Opcode.IF: {
         const e = stack.popU32()
         if (e === 0) {
-          // skip to the next ELSE or EIF
-          // TODO: need to account for length of push instructions
-          while (inst[pc] !== Opcode.ELSE && inst[pc] !== Opcode.EIF) {
-            pc++
-          }
+          seek(Opcode.ELSE, Opcode.EIF)
         }
         // else continue into the block
         break
       }
 
       case Opcode.ELSE: {
-        // skip to the next EIF
-        while (inst[pc] !== Opcode.EIF) {
-          pc++
-        }
+        seek(Opcode.EIF)
         break
       }
 
       case Opcode.EIF: {
-        // end of an IF block
         break
       }
 
@@ -1146,13 +1156,7 @@ export function process(
         // TODO: need to know whether this is fpgm or cvgprogram
         fns[f] = pc
 
-        while (inst[pc] !== Opcode.ENDF) {
-          // TODO: skip over inst args
-          pc += 1
-        }
-
-        // skip over ENDF instruction
-        ++pc
+        seek(Opcode.ENDF)
 
         break
       }
@@ -1178,13 +1182,7 @@ export function process(
       case Opcode.IDEF: {
         const opcode = stack.popU32()
 
-        while (inst[pc] !== Opcode.ENDF) {
-          // TODO: skip over inst args
-          pc += 1
-        }
-
-        // skip over ENDF instruction
-        ++pc
+        seek(Opcode.ENDF)
 
         // TODO: store this idef somewhere
         break
@@ -1235,6 +1233,10 @@ export function process(
         stack.push(0)
         stack.push(0)
         break
+      }
+
+      default: {
+        // TODO: handle any IDEFs
       }
     }
   }
