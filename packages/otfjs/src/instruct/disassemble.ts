@@ -212,7 +212,69 @@ export function disassemble(inst: Uint8Array) {
       case Opcode.MDRP1E:
       case Opcode.MDRP1F: {
         const n = opcode & 0b11111
-        insts.push({ name: `MDRP[${n.toString(2).padStart(5, '0')}]` })
+        insts.push({ name: `MDRP[${bin(n, 5)}]` })
+        break
+      }
+
+      case Opcode.MIRP00:
+      case Opcode.MIRP01:
+      case Opcode.MIRP02:
+      case Opcode.MIRP03:
+      case Opcode.MIRP04:
+      case Opcode.MIRP05:
+      case Opcode.MIRP06:
+      case Opcode.MIRP07:
+      case Opcode.MIRP08:
+      case Opcode.MIRP09:
+      case Opcode.MIRP0A:
+      case Opcode.MIRP0B:
+      case Opcode.MIRP0C:
+      case Opcode.MIRP0D:
+      case Opcode.MIRP0E:
+      case Opcode.MIRP0F:
+      case Opcode.MIRP10:
+      case Opcode.MIRP11:
+      case Opcode.MIRP12:
+      case Opcode.MIRP13:
+      case Opcode.MIRP14:
+      case Opcode.MIRP15:
+      case Opcode.MIRP16:
+      case Opcode.MIRP17:
+      case Opcode.MIRP18:
+      case Opcode.MIRP19:
+      case Opcode.MIRP1A:
+      case Opcode.MIRP1B:
+      case Opcode.MIRP1C:
+      case Opcode.MIRP1D:
+      case Opcode.MIRP1E:
+      case Opcode.MIRP1F: {
+        const n = opcode & 0b11111
+        insts.push({ name: `MIRP[${bin(n, 5)}]` })
+        break
+      }
+
+      case Opcode.IUP0:
+      case Opcode.IUP1: {
+        const n = opcode & 0b1
+        insts.push({ name: `IUP[${n}]` })
+        break
+      }
+
+      case Opcode.ROUND0:
+      case Opcode.ROUND1:
+      case Opcode.ROUND2:
+      case Opcode.ROUND3: {
+        const n = opcode & 0b11
+        insts.push({ name: `ROUND[${bin(n, 2)}]` })
+        break
+      }
+
+      case Opcode.NROUND0:
+      case Opcode.NROUND1:
+      case Opcode.NROUND2:
+      case Opcode.NROUND3: {
+        const n = opcode & 0b11
+        insts.push({ name: `NROUND[${bin(n, 2)}]` })
         break
       }
 
@@ -224,4 +286,8 @@ export function disassemble(inst: Uint8Array) {
   }
 
   return insts
+}
+
+function bin(n: number, bits: number) {
+  return n.toString(2).padStart(bits, '0')
 }

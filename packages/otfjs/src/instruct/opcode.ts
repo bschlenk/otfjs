@@ -85,7 +85,7 @@ export enum Opcode {
   FLIPON = 0x4d,
   FLIPOFF = 0x4e,
 
-  // @deprecated no longer used?
+  /** @deprecated no longer used? */
   SANGW = 0x7e,
 
   SDB = 0x5e,
@@ -100,6 +100,8 @@ export enum Opcode {
 
   MPPEM = 0x4b,
   MPS = 0x4c,
+
+  // Point operations
 
   FLIPPT = 0x80,
   FLIPRGON = 0x81,
@@ -152,6 +154,73 @@ export enum Opcode {
   MDRP1E = 0xde,
   MDRP1F = 0xdf,
 
+  MIRP00 = 0xe0,
+  MIRP01 = 0xe1,
+  MIRP02 = 0xe2,
+  MIRP03 = 0xe3,
+  MIRP04 = 0xe4,
+  MIRP05 = 0xe5,
+  MIRP06 = 0xe6,
+  MIRP07 = 0xe7,
+  MIRP08 = 0xe8,
+  MIRP09 = 0xe9,
+  MIRP0A = 0xea,
+  MIRP0B = 0xeb,
+  MIRP0C = 0xec,
+  MIRP0D = 0xed,
+  MIRP0E = 0xee,
+  MIRP0F = 0xef,
+  MIRP10 = 0xf0,
+  MIRP11 = 0xf1,
+  MIRP12 = 0xf2,
+  MIRP13 = 0xf3,
+  MIRP14 = 0xf4,
+  MIRP15 = 0xf5,
+  MIRP16 = 0xf6,
+  MIRP17 = 0xf7,
+  MIRP18 = 0xf8,
+  MIRP19 = 0xf9,
+  MIRP1A = 0xfa,
+  MIRP1B = 0xfb,
+  MIRP1C = 0xfc,
+  MIRP1D = 0xfd,
+  MIRP1E = 0xfe,
+  MIRP1F = 0xff,
+
+  ALIGNRP = 0x3c,
+
+  /** @deprecated (adjust angle) */
+  AA = 0x7f,
+
+  ISECT = 0x0f,
+  ALIGNPTS = 0x27,
+  IP = 0x39,
+  UTP = 0x29,
+  IUP0 = 0x30,
+  IUP1 = 0x31,
+
+  // Managing exceptions
+
+  DELTAP1 = 0x5d,
+  DELTAP2 = 0x71,
+  DELTAP3 = 0x72,
+  DELTAC1 = 0x73,
+  DELTAC2 = 0x74,
+  DELTAC3 = 0x75,
+
+  // Managing the stack
+
+  DUP = 0x20,
+  POP = 0x21,
+  CLEAR = 0x22,
+  SWAP = 0x23,
+  DEPTH = 0x24,
+  CINDEX = 0x25,
+  MINDEX = 0x26,
+  ROLL = 0x8a,
+
+  // Control flow
+
   IF = 0x58,
   ELSE = 0x1b,
   EIF = 0x59,
@@ -168,11 +237,11 @@ export enum Opcode {
   GTEQ = 0x53,
   EQ = 0x54,
   NEQ = 0x55,
-
-  /*
   ODD = 0x56,
   EVEN = 0x57,
-  */
+  AND = 0x5a,
+  OR = 0x5b,
+  NOT = 0x5c,
 
   // Arithmetic operations
 
@@ -186,4 +255,31 @@ export enum Opcode {
   CEILING = 0x67,
   MAX = 0x8b,
   MIN = 0x8c,
+
+  ROUND0 = 0x68,
+  ROUND1 = 0x69,
+  ROUND2 = 0x6a,
+  ROUND3 = 0x6b,
+
+  NROUND0 = 0x6c,
+  NROUND1 = 0x6d,
+  NROUND2 = 0x6e,
+  NROUND3 = 0x6f,
+
+  // Functions
+
+  LOOPCALL = 0x2a,
+  CALL = 0x2b,
+  FDEF = 0x2c,
+  ENDF = 0x2d,
+  IDEF = 0x89,
+
+  // Debug
+
+  DEBUG = 0x4f,
+
+  // Misc
+
+  GETINFO = 0x88,
+  GETVARIATION = 0x91,
 }

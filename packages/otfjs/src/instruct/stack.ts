@@ -8,6 +8,24 @@ export class Stack {
     this.values = new Int32Array(size)
   }
 
+  clear() {
+    this.top = 0
+  }
+
+  depth() {
+    return this.top
+  }
+
+  at(index: number) {
+    return this.values[index]
+  }
+
+  delete(index: number) {
+    const value = this.values[index]
+    this.values.copyWithin(index, index + 1, this.top--)
+    return value
+  }
+
   push(value: number) {
     this.values[this.top++] = value
   }

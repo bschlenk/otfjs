@@ -1,16 +1,18 @@
 import * as vec from '../vector.js'
 import { GlyphSimple } from '../tables/glyf.js'
 import { MaxpTable10 } from '../tables/maxp.js'
-import { assert, range } from '../utils.js'
+import { assert, debug, range } from '../utils.js'
 import { makeGraphicsState } from './graphics.js'
 import { Opcode } from './opcode.js'
 import { Stack } from './stack.js'
+import { getinfoFlags } from './utils.js'
 
 export function process(
   inst: Uint8Array,
   maxp: MaxpTable10,
   cvt: number[],
   glyph: GlyphSimple,
+  fns: Int32Array,
 ) {
   const view = new DataView(inst.buffer, inst.byteOffset)
   const store = new DataView(new ArrayBuffer(maxp.maxStorage * 4))
@@ -752,6 +754,170 @@ export function process(
         break
       }
 
+      case Opcode.MIRP00:
+      case Opcode.MIRP01:
+      case Opcode.MIRP02:
+      case Opcode.MIRP03:
+      case Opcode.MIRP04:
+      case Opcode.MIRP05:
+      case Opcode.MIRP06:
+      case Opcode.MIRP07:
+      case Opcode.MIRP08:
+      case Opcode.MIRP09:
+      case Opcode.MIRP0A:
+      case Opcode.MIRP0B:
+      case Opcode.MIRP0C:
+      case Opcode.MIRP0D:
+      case Opcode.MIRP0E:
+      case Opcode.MIRP0F:
+      case Opcode.MIRP10:
+      case Opcode.MIRP11:
+      case Opcode.MIRP12:
+      case Opcode.MIRP13:
+      case Opcode.MIRP14:
+      case Opcode.MIRP15:
+      case Opcode.MIRP16:
+      case Opcode.MIRP17:
+      case Opcode.MIRP18:
+      case Opcode.MIRP19:
+      case Opcode.MIRP1A:
+      case Opcode.MIRP1B:
+      case Opcode.MIRP1C:
+      case Opcode.MIRP1D:
+      case Opcode.MIRP1E:
+      case Opcode.MIRP1F: {
+        const a = Boolean(opcode & (0b1 << 4))
+        const b = Boolean(opcode & (0b1 << 3))
+        const c = Boolean(opcode & (0b1 << 2))
+        const de = opcode & 0b11
+        const n = stack.popU32()
+        const p = stack.popU32()
+
+        // TODO: this instruction
+
+        break
+      }
+
+      case Opcode.ALIGNRP: {
+        const points = loop()
+        const rp = zones[gs.zp0][gs.rp0]
+
+        for (const p of points) {
+          const point = zones[gs.zp1][p]
+          // TODO: reduce measured distance to 0 along projection vector
+        }
+
+        break
+      }
+
+      case Opcode.AA: {
+        // deprecated opcode, just pop from the stack
+        stack.pop()
+        break
+      }
+
+      case Opcode.ISECT: {
+        const b1 = stack.popU32()
+        const b0 = stack.popU32()
+        const a1 = stack.popU32()
+        const a0 = stack.popU32()
+        const p = stack.popU32()
+
+        // If lines A and B are parallel, point p is moved to a position in the middle of the lines. That is:
+        // px = (a0x + a1x)/4 + (b0x + b1x)/4
+        // py = (a0y + a1y)/4 + (b0y + b1y)/4
+
+        // TODO: this instruction
+
+        break
+      }
+
+      // https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructions#align-points
+      case Opcode.ALIGNPTS: {
+        const p1 = stack.popU32()
+        const p2 = stack.popU32()
+
+        // TODO: this instruction
+        break
+      }
+
+      case Opcode.IP: {
+        const points = loop()
+        for (const p of points) {
+          // TODO: this instruction
+        }
+
+        break
+      }
+
+      case Opcode.UTP: {
+        const p = stack.popU32()
+        // TODO: need to do this along the freedom vector
+        touched[gs.zp0].delete(p)
+        break
+      }
+
+      case Opcode.IUP0:
+      case Opcode.IUP1: {
+        const a = opcode & 0b1
+        // TODO: this instruction
+        break
+      }
+
+      // TODO: handle delta instructions
+
+      case Opcode.DUP: {
+        const e = stack.pop()
+        stack.push(e)
+        stack.push(e)
+        break
+      }
+
+      case Opcode.POP: {
+        stack.pop()
+        break
+      }
+
+      case Opcode.CLEAR: {
+        stack.clear()
+        break
+      }
+
+      case Opcode.SWAP: {
+        const e2 = stack.pop()
+        const e1 = stack.pop()
+        stack.push(e2)
+        stack.push(e1)
+        break
+      }
+
+      case Opcode.DEPTH: {
+        stack.push(stack.depth())
+        break
+      }
+
+      case Opcode.CINDEX: {
+        const k = stack.pop()
+        stack.push(stack.at(k))
+        break
+      }
+
+      case Opcode.MINDEX: {
+        const k = stack.pop()
+        const value = stack.delete(k)
+        stack.push(value)
+        break
+      }
+
+      case Opcode.ROLL: {
+        const a = stack.pop()
+        const b = stack.pop()
+        const c = stack.pop()
+        stack.push(b)
+        stack.push(a)
+        stack.push(c)
+      }
+
       case Opcode.IF: {
         const e = stack.popU32()
         if (e === 0) {
@@ -844,6 +1010,230 @@ export function process(
         const e2 = stack.popU32()
         const e1 = stack.popU32()
         stack.push(e1 !== e2 ? 1 : 0)
+        break
+      }
+
+      case Opcode.ODD:
+      case Opcode.EVEN: {
+        const even = opcode === Opcode.EVEN
+        const e1 = stack.pop26dot6()
+        // TODO: need to round first
+        const isEven = e1 % 2 === 0
+        stack.push(Number(even === isEven))
+        break
+      }
+
+      case Opcode.AND: {
+        const e2 = stack.popU32()
+        const e1 = stack.popU32()
+        stack.push(Number(Boolean(e1 && e2)))
+        break
+      }
+
+      case Opcode.OR: {
+        const e2 = stack.popU32()
+        const e1 = stack.popU32()
+        stack.push(Number(Boolean(e1 || e2)))
+        break
+      }
+
+      case Opcode.NOT: {
+        const e = stack.popU32()
+        stack.push(Number(!e))
+      }
+
+      case Opcode.ADD: {
+        const n2 = stack.pop26dot6()
+        const n1 = stack.pop26dot6()
+        stack.push26dot6(n1 + n2)
+        break
+      }
+
+      case Opcode.SUB: {
+        const n2 = stack.pop26dot6()
+        const n1 = stack.pop26dot6()
+        stack.push26dot6(n1 - n2)
+        break
+      }
+
+      case Opcode.DIV: {
+        const n2 = stack.pop26dot6()
+        const n1 = stack.pop26dot6()
+        // TODO: handle divide by 0
+        stack.push26dot6(n1 / n2)
+        break
+      }
+
+      case Opcode.MUL: {
+        const n2 = stack.pop26dot6()
+        const n1 = stack.pop26dot6()
+        stack.push26dot6(n1 * n2)
+        break
+      }
+
+      case Opcode.ABS: {
+        const n = stack.pop26dot6()
+        stack.push26dot6(Math.abs(n))
+        break
+      }
+
+      case Opcode.NEG: {
+        const n = stack.pop26dot6()
+        stack.push26dot6(-n)
+        break
+      }
+
+      case Opcode.FLOOR: {
+        const n = stack.pop26dot6()
+        stack.push26dot6(Math.floor(n))
+        break
+      }
+
+      case Opcode.CEILING: {
+        const n = stack.pop26dot6()
+        stack.push26dot6(Math.ceil(n))
+        break
+      }
+
+      case Opcode.MAX: {
+        const n2 = stack.pop26dot6()
+        const n1 = stack.pop26dot6()
+        stack.push26dot6(Math.max(n1, n2))
+        break
+      }
+
+      case Opcode.MIN: {
+        const n2 = stack.pop26dot6()
+        const n1 = stack.pop26dot6()
+        stack.push26dot6(Math.min(n1, n2))
+        break
+      }
+
+      case Opcode.ROUND0:
+      case Opcode.ROUND1:
+      case Opcode.ROUND2:
+      case Opcode.ROUND3: {
+        const ab = opcode & 0b11
+        const n1 = stack.pop()
+
+        // TODO: do I need to do anything here? might be cool to be able to
+        // define an "engine characteristic" here for experimentation
+
+        // TODO: round n2 based on round_state
+        const n2 = n1
+        stack.push(n2)
+
+        break
+      }
+
+      case Opcode.NROUND0:
+      case Opcode.NROUND1:
+      case Opcode.NROUND2:
+      case Opcode.NROUND3: {
+        const ab = opcode & 0b11
+        const n1 = stack.pop()
+
+        // TODO: do something with engine characteristic
+
+        const n2 = n1
+        stack.push(n2)
+
+        break
+      }
+
+      case Opcode.FDEF: {
+        const f = stack.pop()
+        // TODO: need to know whether this is fpgm or cvgprogram
+        fns[f] = pc
+
+        while (inst[pc] !== Opcode.ENDF) {
+          // TODO: skip over inst args
+          pc += 1
+        }
+
+        // skip over ENDF instruction
+        ++pc
+
+        break
+      }
+
+      case Opcode.ENDF: {
+        break
+      }
+
+      case Opcode.CALL: {
+        const f = stack.pop()
+        break
+      }
+
+      case Opcode.LOOPCALL: {
+        const f = stack.pop()
+        const count = stack.pop()
+
+        for (let i = 0; i < count; ++i) {}
+
+        break
+      }
+
+      case Opcode.IDEF: {
+        const opcode = stack.popU32()
+
+        while (inst[pc] !== Opcode.ENDF) {
+          // TODO: skip over inst args
+          pc += 1
+        }
+
+        // skip over ENDF instruction
+        ++pc
+
+        // TODO: store this idef somewhere
+        break
+      }
+
+      case Opcode.DEBUG: {
+        const n = stack.popU32()
+        console.log(debug(n))
+        break
+      }
+
+      case Opcode.GETINFO: {
+        const flags = getinfoFlags(stack.pop())
+        let result = 0
+
+        if (flags.version) {
+          // TODO: allow configuring the version?
+          result |= 42
+        }
+
+        if (flags.rotation) {
+          // TODO: check if glyph is rotated
+        }
+
+        if (flags.stretch) {
+          // TODO: check if glyph is stretched
+        }
+
+        if (flags.variations) {
+          result |= 1 << 10
+        }
+
+        if (flags.verticalPhantom) {
+          // TODO: not sure what this means
+        }
+
+        if (flags.greyscale) {
+          // TODO: configurable?
+        }
+
+        // Ignoring cleartype requests for now - bits will always be 0
+
+        break
+      }
+
+      case Opcode.GETVARIATION: {
+        // TODO: this instruction
+        stack.push(0)
+        stack.push(0)
         break
       }
     }

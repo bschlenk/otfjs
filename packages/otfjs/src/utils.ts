@@ -52,3 +52,8 @@ export function assert(condition: boolean, msg: string): asserts condition {
     throw new Error(msg)
   }
 }
+
+export function debug(n: number) {
+  // TODO: return as all different numeric types
+  return n
+}
