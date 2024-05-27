@@ -1073,10 +1073,41 @@ export class VirtualMachine {
 
       case Opcode.IF: {
         const e = this.stack.popU32()
-        if (e === 0) {
-          this.seek(inst, Opcode.ELSE, Opcode.EIF)
+
+        // continue into the block
+        if (e !== 0) break
+
+        // else skip ahead to either the next ELSE or EIF
+        // but considering nested IFs
+
+        let depth = 0
+        let done = false
+
+        while (this.pc < inst.length) {
+          const next = this.seekOne(inst)
+
+          if (next === Opcode.IF) {
+            ++depth
+            continue
+          } else if (next === Opcode.ELSE) {
+            if (depth === 0) {
+              done = true
+              break
+            }
+          } else if (next === Opcode.EIF) {
+            if (depth === 0) {
+              done = true
+              break
+            } else {
+              --depth
+            }
+          }
         }
-        // else continue into the block
+
+        if (!done) {
+          throw new Error('unterminated IF block')
+        }
+
         break
       }
 
@@ -1401,18 +1432,19 @@ export class VirtualMachine {
 
   private seek(inst: Uint8Array, ...opcodes: Opcode[]) {
     while (this.pc < inst.length) {
-      const opcode = inst[this.pc]
-      if (opcodes.includes(opcode)) {
-        // skip over the opcode
-        ++this.pc
-        return
-      }
-      this.pc += opcodeLength(inst, this.pc)
+      const opcode = this.seekOne(inst)
+      if (opcodes.includes(opcode)) return
     }
 
     throw new Error(
       `Expected ${opcodes.map((o) => Opcode[o]).join(' or ')} but reached the end of the program`,
     )
+  }
+
+  private seekOne(inst: Uint8Array) {
+    const next = inst[this.pc]
+    this.pc += opcodeLength(inst, this.pc)
+    return next
   }
 
   private delta(offset: number, cb: (i: number, magnitude: number) => void) {
