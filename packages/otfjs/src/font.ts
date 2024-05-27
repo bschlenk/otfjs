@@ -135,16 +135,15 @@ export class Font {
 
       if (c.flags.argsAreXYValues) {
         const roundXYToGrid = c.flags.roundXYToGrid
-        fullGlyph.points.push(
-          ...subGlyph.points.map((p) => {
-            const point = c.matrix.transformPoint(p)
-            if (roundXYToGrid) {
-              point.x = Math.round(point.x)
-              point.y = Math.round(point.y)
-            }
-            return { ...p, ...point }
-          }),
-        )
+        for (const p of subGlyph.points) {
+          const point = c.matrix.transformPoint(p)
+          if (roundXYToGrid) {
+            point.x = Math.round(point.x)
+            point.y = Math.round(point.y)
+          }
+          const newPoint = { ...p, ...point }
+          fullGlyph.points.push(newPoint)
+        }
       } else {
         fullGlyph.points.push(...subGlyph.points)
       }
