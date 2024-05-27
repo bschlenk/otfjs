@@ -542,13 +542,18 @@ export class VirtualMachine {
         // TODO: the use original ones need to use zp1 and zp0 as well
         // TODO: apple's docs say zp0 and zp1, double check this?
         const pt1 =
-          useOriginal ? this.glyph.points[p1] : this.zones[this.gs.zp1][p1]
+          useOriginal ?
+            this.zonesOriginal[this.gs.zp1][p1]
+          : this.zones[this.gs.zp1][p1]
         const pt2 =
-          useOriginal ? this.glyph.points[p2] : this.zones[this.gs.zp0][p2]
+          useOriginal ?
+            this.zonesOriginal[this.gs.zp0][p2]
+          : this.zones[this.gs.zp0][p2]
 
         // TODO: verify I should use dual projection vector if that is set over projection vector
         // get disantce between points, projected onto projection vector
         // pushes distance in pixels as 26.6
+        this.stack.push26dot6(1)
 
         break
       }
@@ -562,6 +567,7 @@ export class VirtualMachine {
 
         // TODO: not sure what it means to measure along the projection vector,
         // or why that would always be an integer
+        this.stack.push(16)
         break
       }
 
@@ -1225,6 +1231,9 @@ export class VirtualMachine {
       case Opcode.CALL: {
         const f = this.stack.pop()
         const fn = this.fns[f]
+
+        assert(!!fn, `Function ${f} not defined`)
+
         this.run(fn.inst, fn.pc)
         break
       }
@@ -1233,6 +1242,7 @@ export class VirtualMachine {
         const f = this.stack.pop()
         const count = this.stack.pop()
         const fn = this.fns[f]
+        assert(!!fn, `Function ${f} not defined`)
 
         for (let i = 0; i < count; ++i) {
           this.run(fn.inst, fn.pc)
@@ -1290,6 +1300,8 @@ export class VirtualMachine {
         }
 
         // Ignoring cleartype requests for now - bits will always be 0
+
+        this.stack.push(result)
 
         break
       }
