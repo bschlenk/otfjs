@@ -1,21 +1,37 @@
-import { useState } from 'react'
-import { Font, glyphToSvgPath } from 'otfjs'
+import { useMemo, useState } from 'react'
+import { Font, VirtualMachine, glyphToSvgPath } from 'otfjs'
 
 import styles from './glyf-view.module.css'
 
 export function GlyfView({ font }: { font: Font }) {
+  const [glyf, setGlyf] = useState<number | null>(null)
+
+  if (!glyf) {
+    return <AllGlyfView font={font} onClick={(i) => setGlyf(i)} />
+  }
+
+  return (
+    <SingleGlyphView font={font} index={glyf} onBack={() => setGlyf(null)} />
+  )
+}
+
+export function AllGlyfView({
+  font,
+  onClick,
+}: {
+  font: Font
+  onClick: (i: number) => void
+}) {
   const svgs: JSX.Element[] = []
 
   const head = font.getTable('head')
   const hmtx = font.getTable('hmtx')
 
   let i = 0
-  let skipped = 0
 
   for (const glyph of font.glyphs()) {
     if (!glyph.points) {
       ++i
-      ++skipped
       continue
     }
 
@@ -32,12 +48,13 @@ export function GlyfView({ font }: { font: Font }) {
     const height = head.unitsPerEm // glyph.yMax - glyph.yMin
 
     const d = glyphToSvgPath(glyph, height)
+    const idx = i
 
     svgs.push(
       <svg
-        key={i}
+        onClick={() => onClick(idx)}
+        key={idx}
         className={styles.glyph}
-        onClick={() => console.log(glyph)}
         data-glyph-index={i++}
         height="100px"
         viewBox={`0 0 ${width} ${height}`}
@@ -47,8 +64,6 @@ export function GlyfView({ font }: { font: Font }) {
       </svg>,
     )
   }
-
-  console.log('skipped', skipped)
 
   return <GlyfContainer>{svgs}</GlyfContainer>
 }
@@ -65,6 +80,55 @@ function GlyfContainer({ children }: React.PropsWithChildren) {
         onChange={(e) => setScale(+e.target.value)}
       />
       <div className={styles.view}>{children}</div>
+    </div>
+  )
+}
+
+function SingleGlyphView({
+  font,
+  index,
+  onBack,
+}: {
+  font: Font
+  index: number
+  onBack: () => void
+}) {
+  const glyph = useMemo(() => font.getGlyph(index), [font, index])
+
+  const head = font.getTable('head')
+  const hmtx = font.getTable('hmtx')
+
+  const vm = useMemo(() => {
+    const vm = new VirtualMachine(font)
+    vm.runFpgm()
+    vm.runPrep()
+    vm.setGlyph(glyph)
+    return vm
+  }, [font, glyph])
+
+  const { advanceWidth } =
+    hmtx.longHorMetrics[index] ??
+    hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
+
+  const width = advanceWidth
+  const height = head.unitsPerEm // glyph.yMax - glyph.yMin
+
+  const d = glyphToSvgPath(glyph, height)
+
+  return (
+    <div>
+      <button onClick={onBack}>Back</button>
+      <svg
+        className={styles.glyph}
+        height="100px"
+        viewBox={`0 0 ${width} ${height}`}
+        style={{ overflow: 'visible' }}
+      >
+        <path d={d} fill="currentcolor" />
+      </svg>
+      <div>
+        <pre>{JSON.stringify(vm)}</pre>
+      </div>
     </div>
   )
 }

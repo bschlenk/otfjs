@@ -1,7 +1,8 @@
-import { JSXElementConstructor, useMemo, useState } from 'react'
+import { Fragment, JSXElementConstructor, useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { Font, disassemble } from 'otfjs'
+import { disassemble, Font } from 'otfjs'
 
+import { makeColor } from '../../utils/color'
 import { GlyfView } from './glyf-view'
 
 import styles from './font-view.module.css'
@@ -29,9 +30,7 @@ interface FontViewProps {
 
 export function FontView(props: FontViewProps) {
   const font = useMemo(() => new Font(props.font), [props.font])
-  const [tag, setTag] = useState(() =>
-    font.tables.includes('head') ? 'head' : font.tables[0],
-  )
+  const [tag, setTag] = useState('glyf')
 
   const TableComponent = TABLE_MAP[tag] ?? null
 
@@ -125,11 +124,21 @@ function arrayView(tag: string, bytesPerItem?: number) {
 
 function InstructionView({ data }: { data: Uint8Array }) {
   const instructions = disassemble(data)
+  let nextColor = 0
   return (
     <ol>
       {instructions.map((inst, i) => (
-        <>
-          <li key={i}>{inst.name}</li>
+        <Fragment key={i}>
+          <li
+            style={{
+              color:
+                inst.name === 'FDEF' ? makeColor(nextColor)
+                : inst.name === 'ENDF' ? makeColor(nextColor++)
+                : undefined,
+            }}
+          >
+            {inst.name}
+          </li>
           {inst.args && (
             <ol>
               {inst.args.map((arg, j) => (
@@ -137,7 +146,7 @@ function InstructionView({ data }: { data: Uint8Array }) {
               ))}
             </ol>
           )}
-        </>
+        </Fragment>
       ))}
     </ol>
   )

@@ -6,3 +6,4 @@ export { CmapTable } from './tables/cmap.js'
 export { type Glyph } from './tables/glyf.js'
 
 export { disassemble } from './instruct/disassemble.js'
+export { VirtualMachine } from './instruct/vm.js'
