@@ -1126,35 +1126,35 @@ export class VirtualMachine {
       case Opcode.LTEQ: {
         const e2 = this.stack.popU32()
         const e1 = this.stack.popU32()
-        this.stack.push(e1 <= e2 ? 1 : 0)
+        this.stack.push(Number(e1 <= e2))
         break
       }
 
       case Opcode.GT: {
         const e2 = this.stack.popU32()
         const e1 = this.stack.popU32()
-        this.stack.push(e1 > e2 ? 1 : 0)
+        this.stack.push(Number(e1 > e2))
         break
       }
 
       case Opcode.GTEQ: {
         const e2 = this.stack.popU32()
         const e1 = this.stack.popU32()
-        this.stack.push(e1 >= e2 ? 1 : 0)
+        this.stack.push(Number(e1 >= e2))
         break
       }
 
       case Opcode.EQ: {
         const e2 = this.stack.popU32()
         const e1 = this.stack.popU32()
-        this.stack.push(e1 === e2 ? 1 : 0)
+        this.stack.push(Number(e1 === e2))
         break
       }
 
       case Opcode.NEQ: {
         const e2 = this.stack.popU32()
         const e1 = this.stack.popU32()
-        this.stack.push(e1 !== e2 ? 1 : 0)
+        this.stack.push(Number(e1 !== e2))
         break
       }
 
