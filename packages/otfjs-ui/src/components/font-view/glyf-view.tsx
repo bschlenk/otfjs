@@ -25,7 +25,6 @@ export function AllGlyfView({
   const svgs: JSX.Element[] = []
 
   const head = font.getTable('head')
-  const hmtx = font.getTable('hmtx')
 
   let i = 0
 
@@ -35,16 +34,12 @@ export function AllGlyfView({
       continue
     }
 
-    const { advanceWidth } =
-      hmtx.longHorMetrics[i] ??
-      hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
-
-    if (advanceWidth === 0) {
+    if (glyph.advanceWidth === 0) {
       ++i
       continue
     }
 
-    const width = advanceWidth
+    const width = glyph.advanceWidth
     const height = head.unitsPerEm // glyph.yMax - glyph.yMin
 
     const d = glyphToSvgPath(glyph, height)
@@ -96,7 +91,6 @@ function SingleGlyphView({
   const glyph = useMemo(() => font.getGlyph(index), [font, index])
 
   const head = font.getTable('head')
-  const hmtx = font.getTable('hmtx')
 
   const vm = useMemo(() => {
     const vm = new VirtualMachine(font)
@@ -106,11 +100,7 @@ function SingleGlyphView({
     return vm
   }, [font, glyph])
 
-  const { advanceWidth } =
-    hmtx.longHorMetrics[index] ??
-    hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
-
-  const width = advanceWidth
+  const width = glyph.advanceWidth
   const height = head.unitsPerEm // glyph.yMax - glyph.yMin
 
   const d = glyphToSvgPath(glyph, height)
