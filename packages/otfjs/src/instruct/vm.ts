@@ -58,7 +58,7 @@ export class VirtualMachine {
     )
 
     this.maxp = maxp
-    this.cvt = [...font.getTable('cvt ')]
+    this.cvt = [...(font.getTableOrNull('cvt ') ?? [])]
     this.store = makeStore(maxp.maxStorage)
     this.stack = new Stack(maxp.maxStackElements)
     this.gs = makeGraphicsState()
@@ -86,13 +86,17 @@ export class VirtualMachine {
   }
 
   runFpgm() {
-    const inst = this.font.getTable('fpgm')
-    this.run(inst)
+    const inst = this.font.getTableOrNull('fpgm')
+    if (inst) {
+      this.run(inst)
+    }
   }
 
   runPrep() {
-    const inst = this.font.getTable('prep')
-    this.run(inst)
+    const inst = this.font.getTableOrNull('prep')
+    if (inst) {
+      this.run(inst)
+    }
   }
 
   runGlyph() {

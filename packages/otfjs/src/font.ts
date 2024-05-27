@@ -32,6 +32,8 @@ export interface TableMap {
   prep: Uint8Array
 }
 
+type TableType<T extends string> = T extends keyof TableMap ? TableMap[T] : any
+
 export class Font {
   public readonly sfntVersion: number
   #data: ArrayBuffer
@@ -55,14 +57,26 @@ export class Font {
     return Object.keys(this.#tables)
   }
 
-  public getTable<T extends string>(
-    tag: T,
-  ): T extends keyof TableMap ? TableMap[T] : any {
+  public hasTable(tag: string) {
+    return tag in this.#tables
+  }
+
+  public getTable<T extends string>(tag: T): TableType<T> {
+    const table = this.getTableOrNull(tag)
+
+    if (!table) {
+      throw new Error(`table ${tag} not found`)
+    }
+
+    return table
+  }
+
+  public getTableOrNull<T extends string>(tag: T): TableType<T> | null {
     let table = this.#tableCache.get(tag)
 
     if (!table) {
       const tableRec = this.#tables[tag]
-      if (!tableRec) throw new Error(`table ${tag} not found`)
+      if (!tableRec) return null
 
       table = this.readTable(tableRec)
       this.#tableCache.set(tag, table)
