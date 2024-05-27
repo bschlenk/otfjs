@@ -2,6 +2,20 @@
   height: var(--glyph-height, 100px);
 }
 
+.glyphCompare {
+  position: relative;
+
+  & > * {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  & > :nth-child(1) {
+    color: red;
+  }
+}
+
 .view {
   display: flex;
   flex-wrap: wrap;

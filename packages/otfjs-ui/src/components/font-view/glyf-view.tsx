@@ -100,22 +100,32 @@ function SingleGlyphView({
     return vm
   }, [font, glyph])
 
+  const hintedGlyph = useMemo(() => vm.getGlyph(), [vm])
+
   const width = glyph.advanceWidth
   const height = head.unitsPerEm // glyph.yMax - glyph.yMin
-
-  const d = glyphToSvgPath(glyph, height)
 
   return (
     <div>
       <button onClick={onBack}>Back</button>
-      <svg
-        className={styles.glyph}
-        height="100px"
-        viewBox={`0 0 ${width} ${height}`}
-        style={{ overflow: 'visible' }}
-      >
-        <path d={d} fill="currentcolor" />
-      </svg>
+      <div className={styles.glyphCompare}>
+        <svg
+          className={styles.glyph}
+          height="100px"
+          viewBox={`0 0 ${width} ${height}`}
+          style={{ overflow: 'visible' }}
+        >
+          <path d={glyphToSvgPath(glyph, height)} fill="currentcolor" />
+        </svg>
+        <svg
+          className={styles.glyph}
+          height="100px"
+          viewBox={`0 0 ${width} ${height}`}
+          style={{ overflow: 'visible' }}
+        >
+          <path d={glyphToSvgPath(hintedGlyph, height)} fill="currentcolor" />
+        </svg>
+      </div>
       <div>
         <pre>{JSON.stringify(vm, null, 2)}</pre>
       </div>

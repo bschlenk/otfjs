@@ -85,6 +85,13 @@ export class VirtualMachine {
     this.touched = [new Set(), new Set()]
   }
 
+  getGlyph() {
+    return {
+      ...this.glyph,
+      points: this.zones[1],
+    }
+  }
+
   runFpgm() {
     const inst = this.font.getTableOrNull('fpgm')
     if (inst) {
