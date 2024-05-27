@@ -130,6 +130,7 @@ function InstructionView({ data }: { data: Uint8Array }) {
       {instructions.map((inst, i) => (
         <Fragment key={i}>
           <li
+            value={inst.pc}
             style={{
               color:
                 inst.name === 'FDEF' ? makeColor(nextColor)
