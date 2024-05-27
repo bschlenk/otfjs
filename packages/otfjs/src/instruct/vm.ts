@@ -113,23 +113,11 @@ export class VirtualMachine {
     }
 
     while (this.pc < inst.length) {
-      const pc = this.pc
+      const thisPc = this.pc
       try {
         if (this.step(inst) === ENDF) break
       } catch (e) {
-        const d = disassemble(inst)
-        // show enough context before and after?
-        const msg = []
-        const i = d.findIndex((i) => i.pc === pc)
-        const ctx = d.slice(i - 10, i + 5)
-        for (let i = 0; i < ctx.length; ++i) {
-          const c = ctx[i]
-          const arrow = i === 10 ? '->' : '  '
-          msg.push(`${arrow} ${c.pc}: ${c.name}`)
-        }
-
-        console.log(msg.join('\n'))
-
+        this.logContext(inst, thisPc)
         throw e
       }
     }
@@ -1447,5 +1435,20 @@ export class VirtualMachine {
 
       cb(i, magnitude)
     }
+  }
+
+  logContext(inst: Uint8Array, pc: number, before = 10, after = 10) {
+    const msg = []
+    const d = disassemble(inst)
+    const i = d.findIndex((i) => i.pc === pc)
+    const ctx = d.slice(i - before, i + after)
+    const maxPcLength = Math.max(...ctx.map((c) => c.pc.toString().length))
+    for (let i = 0; i < ctx.length; ++i) {
+      const c = ctx[i]
+      const arrow = i === before ? '->' : '  '
+      msg.push(`${arrow} ${('' + c.pc).padStart(maxPcLength, ' ')}: ${c.name}`)
+    }
+
+    console.log(msg.join('\n'))
   }
 }
