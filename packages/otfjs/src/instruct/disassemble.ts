@@ -2,6 +2,7 @@ import { toHex } from '../utils.js'
 import { Opcode } from './opcode.js'
 
 interface Instruction {
+  pc: number
   name: string
   args?: string[]
 }
@@ -10,34 +11,35 @@ export function disassemble(inst: Uint8Array) {
   const view = new DataView(inst.buffer, inst.byteOffset)
   const insts: Instruction[] = []
 
-  let pc = 0
+  let ipc = 0
   const n = inst.length
 
-  while (pc < n) {
-    const opcode: Opcode = inst[pc++]
+  while (ipc < n) {
+    const pc = ipc
+    const opcode: Opcode = inst[ipc++]
 
     switch (opcode) {
       case Opcode.NPUSHB: {
-        const n = inst[pc++]
+        const n = inst[ipc++]
         const args: string[] = []
         for (let i = 0; i < n; i++) {
-          args.push(toHex(inst[pc++], 1))
+          args.push(toHex(inst[ipc++], 1))
         }
 
-        insts.push({ name: `NPUSHB[${n}]`, args })
+        insts.push({ pc, name: `NPUSHB[${n}]`, args })
 
         break
       }
 
       case Opcode.NPUSHW: {
-        const n = inst[pc++]
+        const n = inst[ipc++]
         const args: string[] = []
         for (let i = 0; i < n; ++i) {
-          args.push(toHex(view.getInt16(pc), 2))
-          pc += 2
+          args.push(toHex(view.getInt16(ipc), 2))
+          ipc += 2
         }
 
-        insts.push({ name: `NPUSHW[${n}]`, args })
+        insts.push({ pc, name: `NPUSHW[${n}]`, args })
 
         break
       }
@@ -53,10 +55,10 @@ export function disassemble(inst: Uint8Array) {
         const n = (opcode & 0b111) + 1
         const args: string[] = []
         for (let i = 0; i < n; ++i) {
-          args.push(toHex(inst[pc++], 1))
+          args.push(toHex(inst[ipc++], 1))
         }
 
-        insts.push({ name: `PUSHB[${n}]`, args })
+        insts.push({ pc, name: `PUSHB[${n}]`, args })
 
         break
       }
@@ -72,11 +74,11 @@ export function disassemble(inst: Uint8Array) {
         const n = (opcode & 0b111) + 1
         const args: string[] = []
         for (let i = 0; i < n; ++i) {
-          args.push(toHex(view.getInt16(pc), 2))
-          pc += 2
+          args.push(toHex(view.getInt16(ipc), 2))
+          ipc += 2
         }
 
-        insts.push({ name: `PUSHW[${n}]`, args })
+        insts.push({ pc, name: `PUSHW[${n}]`, args })
 
         break
       }
@@ -84,98 +86,98 @@ export function disassemble(inst: Uint8Array) {
       case Opcode.SVTCA0:
       case Opcode.SVTCA1: {
         const n = opcode & 0b1
-        insts.push({ name: `SVTCA[${n}]` })
+        insts.push({ pc, name: `SVTCA[${n}]` })
         break
       }
 
       case Opcode.SPVTCA0:
       case Opcode.SPVTCA1: {
         const n = opcode & 0b1
-        insts.push({ name: `SPVTCA[${n}]` })
+        insts.push({ pc, name: `SPVTCA[${n}]` })
         break
       }
 
       case Opcode.SFVTCA0:
       case Opcode.SFVTCA1: {
         const n = opcode & 0b1
-        insts.push({ name: `SFVTCA[${n}]` })
+        insts.push({ pc, name: `SFVTCA[${n}]` })
         break
       }
 
       case Opcode.SPVTL0:
       case Opcode.SPVTL1: {
         const n = opcode & 0b1
-        insts.push({ name: `SPVTL[${n}]` })
+        insts.push({ pc, name: `SPVTL[${n}]` })
         break
       }
 
       case Opcode.SFVTL0:
       case Opcode.SFVTL1: {
         const n = opcode & 0b1
-        insts.push({ name: `SFVTL[${n}]` })
+        insts.push({ pc, name: `SFVTL[${n}]` })
         break
       }
 
       case Opcode.SDPVTL0:
       case Opcode.SDPVTL1: {
         const n = opcode & 0b1
-        insts.push({ name: `SDPVTL[${n}]` })
+        insts.push({ pc, name: `SDPVTL[${n}]` })
         break
       }
 
       case Opcode.GC0:
       case Opcode.GC1: {
         const n = opcode & 0b1
-        insts.push({ name: `GC[${n}]` })
+        insts.push({ pc, name: `GC[${n}]` })
         break
       }
 
       case Opcode.MD0:
       case Opcode.MD1: {
         const n = opcode & 0b1
-        insts.push({ name: `MD[${n}]` })
+        insts.push({ pc, name: `MD[${n}]` })
         break
       }
 
       case Opcode.SHP0:
       case Opcode.SHP1: {
         const n = opcode & 0b1
-        insts.push({ name: `SHP[${n}]` })
+        insts.push({ pc, name: `SHP[${n}]` })
         break
       }
 
       case Opcode.SHC0:
       case Opcode.SHC1: {
         const n = opcode & 0b1
-        insts.push({ name: `SHC[${n}]` })
+        insts.push({ pc, name: `SHC[${n}]` })
         break
       }
 
       case Opcode.SHZ0:
       case Opcode.SHZ1: {
         const n = opcode & 0b1
-        insts.push({ name: `SHZ[${n}]` })
+        insts.push({ pc, name: `SHZ[${n}]` })
         break
       }
 
       case Opcode.MSIRP0:
       case Opcode.MSIRP1: {
         const n = opcode & 0b1
-        insts.push({ name: `MSIRP[${n}]` })
+        insts.push({ pc, name: `MSIRP[${n}]` })
         break
       }
 
       case Opcode.MDAP0:
       case Opcode.MDAP1: {
         const n = opcode & 0b1
-        insts.push({ name: `MDAP[${n}]` })
+        insts.push({ pc, name: `MDAP[${n}]` })
         break
       }
 
       case Opcode.MIAP0:
       case Opcode.MIAP1: {
         const n = opcode & 0b1
-        insts.push({ name: `MIAP[${n}]` })
+        insts.push({ pc, name: `MIAP[${n}]` })
         break
       }
 
@@ -212,7 +214,7 @@ export function disassemble(inst: Uint8Array) {
       case Opcode.MDRP1E:
       case Opcode.MDRP1F: {
         const n = opcode & 0b11111
-        insts.push({ name: `MDRP[${bin(n, 5)}]` })
+        insts.push({ pc, name: `MDRP[${bin(n, 5)}]` })
         break
       }
 
@@ -249,14 +251,14 @@ export function disassemble(inst: Uint8Array) {
       case Opcode.MIRP1E:
       case Opcode.MIRP1F: {
         const n = opcode & 0b11111
-        insts.push({ name: `MIRP[${bin(n, 5)}]` })
+        insts.push({ pc, name: `MIRP[${bin(n, 5)}]` })
         break
       }
 
       case Opcode.IUP0:
       case Opcode.IUP1: {
         const n = opcode & 0b1
-        insts.push({ name: `IUP[${n}]` })
+        insts.push({ pc, name: `IUP[${n}]` })
         break
       }
 
@@ -265,7 +267,7 @@ export function disassemble(inst: Uint8Array) {
       case Opcode.ROUND2:
       case Opcode.ROUND3: {
         const n = opcode & 0b11
-        insts.push({ name: `ROUND[${bin(n, 2)}]` })
+        insts.push({ pc, name: `ROUND[${bin(n, 2)}]` })
         break
       }
 
@@ -274,12 +276,12 @@ export function disassemble(inst: Uint8Array) {
       case Opcode.NROUND2:
       case Opcode.NROUND3: {
         const n = opcode & 0b11
-        insts.push({ name: `NROUND[${bin(n, 2)}]` })
+        insts.push({ pc, name: `NROUND[${bin(n, 2)}]` })
         break
       }
 
       default: {
-        insts.push({ name: Opcode[opcode] ?? `🚧 ${toHex(opcode, 1)}` })
+        insts.push({ pc, name: Opcode[opcode] ?? `🚧 ${toHex(opcode, 1)}` })
         break
       }
     }
