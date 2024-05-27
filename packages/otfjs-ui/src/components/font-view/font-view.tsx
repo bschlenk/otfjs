@@ -124,9 +124,17 @@ function arrayView(tag: string, bytesPerItem?: number) {
 
 function InstructionView({ data }: { data: Uint8Array }) {
   const instructions = disassemble(data)
+  let max = instructions[instructions.length - 1].pc
+  // for each 10 magnitude over 1000, increase padding by 10px
+  let padMultiplier = 0
+  while (max >= 1000) {
+    max /= 10
+    padMultiplier += 1
+  }
+
   let nextColor = 0
   return (
-    <ol>
+    <ol style={{ margin: padMultiplier ? padMultiplier * 10 : undefined }}>
       {instructions.map((inst, i) => (
         <Fragment key={i}>
           <li

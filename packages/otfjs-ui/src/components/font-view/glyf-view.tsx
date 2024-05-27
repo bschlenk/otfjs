@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Font, glyphToSvgPath,VirtualMachine } from 'otfjs'
+import { Font, glyphToSvgPath, VirtualMachine } from 'otfjs'
 
 import styles from './glyf-view.module.css'
 
@@ -127,7 +127,7 @@ function SingleGlyphView({
         <path d={d} fill="currentcolor" />
       </svg>
       <div>
-        <pre>{JSON.stringify(vm)}</pre>
+        <pre>{JSON.stringify(vm, null, 2)}</pre>
       </div>
     </div>
   )
