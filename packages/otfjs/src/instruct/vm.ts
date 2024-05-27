@@ -1,12 +1,15 @@
-import * as vec from '../vector.js'
+// Temporary while I work on this
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+import type { Font } from '../font.js'
 import { emptyGlyph, type GlyphSimple, type Point } from '../tables/glyf.js'
 import { MaxpTable10 } from '../tables/maxp.js'
 import { assert, debug, range, toHex } from '../utils.js'
+import * as vec from '../vector.js'
 import { type GraphicsState, makeGraphicsState } from './graphics.js'
 import { Opcode } from './opcode.js'
 import { Stack } from './stack.js'
 import { getinfoFlags, makeStore, opcodeLength, viewFor } from './utils.js'
-import type { Font } from '../font.js'
 
 const enum Touched {
   NEITHER,
@@ -1000,6 +1003,7 @@ export class VirtualMachine {
         this.stack.push(b)
         this.stack.push(a)
         this.stack.push(c)
+        break
       }
 
       case Opcode.IF: {
@@ -1116,6 +1120,7 @@ export class VirtualMachine {
       case Opcode.NOT: {
         const e = this.stack.popU32()
         this.stack.push(Number(!e))
+        break
       }
 
       case Opcode.ADD: {

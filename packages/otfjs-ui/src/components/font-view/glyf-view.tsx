@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Font, VirtualMachine, glyphToSvgPath } from 'otfjs'
+import { Font, glyphToSvgPath,VirtualMachine } from 'otfjs'
 
 import styles from './glyf-view.module.css'
 

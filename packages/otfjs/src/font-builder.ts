@@ -6,7 +6,6 @@
 // font at least)
 
 import { Writer } from './buffer.js'
-import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
 import { padToMultiple } from './utils.js'
 
