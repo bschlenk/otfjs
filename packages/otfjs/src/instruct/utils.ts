@@ -60,3 +60,8 @@ export function viewFor(inst: Uint8Array) {
 export function makeStore(size: number) {
   return new DataView(new ArrayBuffer(size * 4))
 }
+
+export function deltaValue(magnitude: number) {
+  const val = magnitude - 8
+  return val < 0 ? val : val + 1
+}

@@ -32,6 +32,11 @@ export function add(a: Vector, b: Vector) {
   return { x: a.x + b.x, y: a.y + b.y }
 }
 
+export function addTo(a: Vector, b: Vector) {
+  a.x += b.x
+  a.y += b.y
+}
+
 export function subtract(a: Vector, b: Vector) {
   return { x: a.x - b.x, y: a.y - b.y }
 }

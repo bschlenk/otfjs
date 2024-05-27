@@ -9,7 +9,13 @@ import * as vec from '../vector.js'
 import { type GraphicsState, makeGraphicsState } from './graphics.js'
 import { Opcode } from './opcode.js'
 import { Stack } from './stack.js'
-import { getinfoFlags, makeStore, opcodeLength, viewFor } from './utils.js'
+import {
+  deltaValue,
+  getinfoFlags,
+  makeStore,
+  opcodeLength,
+  viewFor,
+} from './utils.js'
 
 const enum Touched {
   NEITHER,
@@ -51,7 +57,7 @@ export class VirtualMachine {
     )
 
     this.maxp = maxp
-    this.cvt = font.getTable('cvt ')
+    this.cvt = [...font.getTable('cvt ')]
     this.store = makeStore(maxp.maxStorage)
     this.stack = new Stack(maxp.maxStackElements)
     this.gs = makeGraphicsState()
@@ -951,7 +957,55 @@ export class VirtualMachine {
         break
       }
 
-      // TODO: handle delta instructions
+      case Opcode.DELTAP1: {
+        this.delta(0, (p, magnitude) => {
+          const point = this.zones[this.gs.zp0][p]
+          vec.addTo(point, vec.scale(this.gs.freedomVector, magnitude))
+        })
+
+        break
+      }
+
+      case Opcode.DELTAP2: {
+        this.delta(16, (p, magnitude) => {
+          const point = this.zones[this.gs.zp0][p]
+          vec.addTo(point, vec.scale(this.gs.freedomVector, magnitude))
+        })
+
+        break
+      }
+
+      case Opcode.DELTAP3: {
+        this.delta(32, (p, magnitude) => {
+          const point = this.zones[this.gs.zp0][p]
+          vec.addTo(point, vec.scale(this.gs.freedomVector, magnitude))
+        })
+
+        break
+      }
+
+      case Opcode.DELTAC1: {
+        this.delta(0, (c, magnitude) => {
+          this.cvt[c] += magnitude
+        })
+
+        break
+      }
+      case Opcode.DELTAC2: {
+        this.delta(16, (c, magnitude) => {
+          this.cvt[c] += magnitude
+        })
+
+        break
+      }
+
+      case Opcode.DELTAC3: {
+        this.delta(32, (c, magnitude) => {
+          this.cvt[c] += magnitude
+        })
+
+        break
+      }
 
       case Opcode.DUP: {
         const e = this.stack.pop()
@@ -1348,5 +1402,27 @@ export class VirtualMachine {
     throw new Error(
       `Expected ${opcodes.map((o) => Opcode[o]).join(' or ')} but reached the end of the program`,
     )
+  }
+
+  private delta(offset: number, cb: (i: number, magnitude: number) => void) {
+    const n = this.stack.popU32()
+    const pairs = range(n, () => [this.stack.popU32(), this.stack.popU32()])
+
+    // TODO: need to know the ppem to know when this delta applies
+    // if the ppem is greater than gs.deltaBase + 16, skip
+    const ppem = 16
+
+    if (ppem < this.gs.deltaBase + offset) return
+    if (ppem >= this.gs.deltaBase + 16 + offset) return
+
+    const step = 1 / 2 ** this.gs.deltaShift
+
+    for (const [i, arg] of pairs) {
+      // TODO: check the ppem here against the current ppem
+      const ppem = ((arg >>> 4) & 0b1111) + this.gs.deltaBase
+      const magnitude = deltaValue(arg & 0b1111) * step
+
+      cb(i, magnitude)
+    }
   }
 }
