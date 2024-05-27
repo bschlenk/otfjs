@@ -6,6 +6,7 @@ import { emptyGlyph, type GlyphSimple, type Point } from '../tables/glyf.js'
 import { MaxpTable10 } from '../tables/maxp.js'
 import { assert, debug, range, toHex } from '../utils.js'
 import * as vec from '../vector.js'
+import { disassemble } from './disassemble.js'
 import { type GraphicsState, makeGraphicsState } from './graphics.js'
 import { Opcode } from './opcode.js'
 import { Stack } from './stack.js'
@@ -108,7 +109,25 @@ export class VirtualMachine {
     }
 
     while (this.pc < inst.length) {
-      if (this.step(inst) === ENDF) break
+      const pc = this.pc
+      try {
+        if (this.step(inst) === ENDF) break
+      } catch (e) {
+        const d = disassemble(inst)
+        // show enough context before and after?
+        const msg = []
+        const i = d.findIndex((i) => i.pc === pc)
+        const ctx = d.slice(i - 10, i + 5)
+        for (let i = 0; i < ctx.length; ++i) {
+          const c = ctx[i]
+          const arrow = i === 10 ? '->' : '  '
+          msg.push(`${arrow} ${c.pc}: ${c.name}`)
+        }
+
+        console.log(msg.join('\n'))
+
+        throw e
+      }
     }
 
     if (pc != null) {
