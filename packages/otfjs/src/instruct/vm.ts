@@ -95,6 +95,7 @@ export class VirtualMachine {
   runFpgm() {
     const inst = this.font.getTableOrNull('fpgm')
     if (inst) {
+      this.stack.clear()
       this.run(inst)
     }
   }
@@ -102,12 +103,14 @@ export class VirtualMachine {
   runPrep() {
     const inst = this.font.getTableOrNull('prep')
     if (inst) {
+      this.stack.clear()
       this.run(inst)
     }
   }
 
   runGlyph() {
     const inst = this.glyph.instructions
+    this.stack.clear()
     this.run(inst)
   }
 
