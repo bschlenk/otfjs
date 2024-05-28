@@ -3,13 +3,13 @@ import path from 'path'
 import { Readable } from 'stream'
 import { finished } from 'stream/promises'
 
-import fonts from './fonts.json' assert { type: 'json' }
-
 const args = process.argv.slice(2)
 if (args.length !== 1) {
   console.error('usage: fetch-fonts <output-dir>')
   process.exit(1)
 }
+
+const fonts = JSON.parse(fs.readFile('./fonts.json', 'utf8'))
 
 const outDir = args[0]
 
