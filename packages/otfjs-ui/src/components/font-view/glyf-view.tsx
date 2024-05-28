@@ -97,6 +97,7 @@ function SingleGlyphView({
     vm.runFpgm()
     vm.runPrep()
     vm.setGlyph(glyph)
+    vm.runGlyph()
     return vm
   }, [font, glyph])
 
