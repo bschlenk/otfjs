@@ -5,9 +5,7 @@ export function to26dot6(val: number) {
 }
 
 export function from26dot6(val: number) {
-  const mantissa = val >> 6
-  const fraction = (val & 0x3f) / 64
-  return mantissa + fraction
+  return (val | 0) / 64
 }
 
 export function to2dot14(val: number) {
