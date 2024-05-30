@@ -36,5 +36,13 @@ export function createFlagReader<T extends FlagConfig<any>>(
     }
   }
 
+  Flags.prototype.toJSON = function () {
+    const obj: Record<string, any> = { value: this.value }
+    for (const key of Object.keys(cfg)) {
+      obj[key] = this[key]
+    }
+    return obj
+  }
+
   return (flags: number) => new (Flags as any)(flags)
 }
