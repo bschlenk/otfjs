@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Font, glyphToSvgPath, VirtualMachine } from 'otfjs'
+import { Matrix } from 'otfjs/util'
+
+import { GlyphEditor } from './glyph-editor'
 
 import styles from './glyf-view.module.css'
 
@@ -10,9 +13,13 @@ export function GlyfView({ font }: { font: Font }) {
     return <AllGlyfView font={font} onClick={(i) => setGlyf(i)} />
   }
 
+  /*
   return (
     <SingleGlyphView font={font} index={glyf} onBack={() => setGlyf(null)} />
   )
+  */
+
+  return <GlyphEditor glyph={font.getGlyph(glyf)} />
 }
 
 export function AllGlyfView({
@@ -106,6 +113,8 @@ function SingleGlyphView({
   const width = glyph.advanceWidth
   const height = head.unitsPerEm // glyph.yMax - glyph.yMin
 
+  const m = new Matrix(1, 0, 0, -1, 0, height)
+
   return (
     <div>
       <button onClick={onBack}>Back</button>
@@ -115,21 +124,42 @@ function SingleGlyphView({
           height="100px"
           viewBox={`0 0 ${width} ${height}`}
           style={{ overflow: 'visible' }}
+          fill="none"
         >
-          <path d={glyphToSvgPath(glyph, height)} fill="currentcolor" />
+          <path d={glyphToSvgPath(glyph, height)} stroke="currentcolor" />
+          {glyph.points.map((point, i) => {
+            const p = m.transformPoint(point)
+            const props =
+              point.onCurve ?
+                { r: 3, fill: 'black' }
+              : { r: 2, strokeWidth: 2, stroke: 'black' }
+            return <circle key={i} cx={p.x} cy={p.y} {...props} />
+          })}
         </svg>
+        {/*
         <svg
           className={styles.glyph}
           height="100px"
           viewBox={`0 0 ${width} ${height}`}
           style={{ overflow: 'visible' }}
+          fill="none"
         >
-          <path d={glyphToSvgPath(hintedGlyph, height)} fill="currentcolor" />
+          <path d={glyphToSvgPath(hintedGlyph, height)} stroke="currentcolor" />
+          {glyph.points.map((point, i) => {
+            const p = m.transformPoint(point)
+            const props =
+              point.onCurve ?
+                { r: 10, fill: 'black' }
+              : { r: 8, strokeWidth: 4, stroke: 'black' }
+            return <circle key={i} cx={p.x} cy={p.y} {...props} />
+          })}
         </svg>
+        */}
       </div>
-      <div>
+      <details>
+        <summary>Virtual Machine</summary>
         <pre>{JSON.stringify(vm, null, 2)}</pre>
-      </div>
+      </details>
     </div>
   )
 }

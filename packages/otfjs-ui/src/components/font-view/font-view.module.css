@@ -36,6 +36,7 @@
 }
 
 .tableView {
+  position: relative;
   overflow: scroll;
 }
 
