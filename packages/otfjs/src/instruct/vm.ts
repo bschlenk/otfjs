@@ -761,8 +761,8 @@ export class VirtualMachine {
       }
 
       case Opcode.SHPIX: {
-        const points = this.loop()
         const magnitude = this.stack.pop26dot6()
+        const points = this.loop()
         const dv = vec.scale(this.gs.freedomVector, magnitude)
 
         for (const p of points) {
