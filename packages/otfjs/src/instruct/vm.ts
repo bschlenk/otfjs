@@ -78,8 +78,18 @@ export class VirtualMachine {
     this.glyph = glyph
     this.zonesOriginal = [
       range(this.maxp.maxTwilightPoints, () => ({ x: 0, y: 0, onCurve: true })),
-      // TODO: am I supposed to add 4 extra points here?
-      [...glyph.points],
+      [
+        ...glyph.points,
+        // phantom points
+        // glyph origin
+        { x: 0, y: 0, onCurve: true },
+        // advance width
+        { x: 0, y: 0, onCurve: true },
+        // top origin
+        { x: 0, y: 0, onCurve: true },
+        // advanc
+        { x: 0, y: 0, onCurve: true },
+      ],
     ]
     this.zones = structuredClone(this.zonesOriginal)
     this.touched = [new Set(), new Set()]
@@ -88,7 +98,7 @@ export class VirtualMachine {
   getGlyph() {
     return {
       ...this.glyph,
-      points: this.zones[1],
+      points: this.zones[1].slice(0, this.glyph.points.length),
     }
   }
 
