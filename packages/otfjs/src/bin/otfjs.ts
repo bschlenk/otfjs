@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 
-import { Font } from '../index.js'
+import { Font } from '../entry/index.js'
 
 const args = process.argv.slice(2)
 if (!args[0]) {
