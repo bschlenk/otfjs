@@ -125,6 +125,10 @@ export class Matrix {
     }
   }
 
+  inverseTransformPoint(p: IPoint) {
+    return this.invert()?.transformPoint(p)
+  }
+
   equals(other: Matrix) {
     for (let i = 0; i < 6; ++i) {
       if (this.values[i] !== other.values[i]) return false
