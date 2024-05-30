@@ -9,7 +9,7 @@ if (args.length !== 1) {
   process.exit(1)
 }
 
-const fonts = JSON.parse(fs.readFile('./fonts.json', 'utf8'))
+const fonts = JSON.parse(fs.readFileSync('./fonts.json', 'utf8'))
 
 const outDir = args[0]
 
