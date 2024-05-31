@@ -8,12 +8,18 @@ module.exports = {
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs'],
   parser: '@typescript-eslint/parser',
-  plugins: ['react-refresh', 'simple-import-sort'],
+  plugins: ['import', 'react-refresh', 'simple-import-sort'],
   rules: {
+    'import/first': 'error',
+    'import/newline-after-import': 'error',
+    'import/no-duplicates': 'error',
+
     'react-refresh/only-export-components': [
       'warn',
       { allowConstantExport: true },
     ],
+
+    'simple-import-sort/exports': 'error',
     'simple-import-sort/imports': [
       'error',
       {
@@ -36,6 +42,7 @@ module.exports = {
         ],
       },
     ],
+
     '@typescript-eslint/no-explicit-any': 'off',
   },
 }
