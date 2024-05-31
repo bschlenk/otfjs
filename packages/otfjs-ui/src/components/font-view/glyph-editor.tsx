@@ -2,6 +2,8 @@ import { RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { GlyphSimple, glyphToSvgPath } from 'otfjs'
 import { mat } from 'otfjs/util'
 
+import { relativeMouse } from '../../utils/event'
+
 import styles from './glyph-editor.module.css'
 
 export function GlyphEditor({ glyph }: { glyph: GlyphSimple }) {
@@ -86,13 +88,10 @@ function useMatrix(ref: RefObject<HTMLElement>) {
         if (ctrlKey) {
           // zoom
 
-          // get mouse relative to element
-          const box = (e.currentTarget! as HTMLElement).getBoundingClientRect()
-          const rx = Math.round(e.clientX - box.left)
-          const ry = Math.round(e.clientY - box.top)
+          const mouse = relativeMouse(e, e.currentTarget! as HTMLElement)
 
           setMatrix((m) => {
-            const p2 = mat.transformPoint({ x: rx, y: ry }, m)!
+            const p2 = mat.transformPoint(mouse, m)!
             return mat.mult(
               m,
               mat.translate(-p2.x, -p2.y),
