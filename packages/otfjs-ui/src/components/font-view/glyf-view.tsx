@@ -19,7 +19,14 @@ export function GlyfView({ font }: { font: Font }) {
   )
   */
 
-  return <GlyphEditor glyph={font.getGlyph(glyf)} />
+  return (
+    <>
+      <GlyphEditor glyph={font.getGlyph(glyf)} />
+      <button className={styles.backButton} onClick={() => setGlyf(null)}>
+        Back
+      </button>
+    </>
+  )
 }
 
 export function AllGlyfView({

@@ -1,7 +1,15 @@
-import { RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  RefObject,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { GlyphSimple, glyphToSvgPath } from 'otfjs'
-import { mat } from 'otfjs/util'
+import { mat, Vector } from 'otfjs/util'
 
+import { usePrevious } from '../../hooks/use-previous'
 import { relativeMouse } from '../../utils/event'
 
 import styles from './glyph-editor.module.css'
@@ -10,7 +18,9 @@ export function GlyphEditor({ glyph }: { glyph: GlyphSimple }) {
   const ref = useRef<SVGSVGElement>(null)
   const size = useSize(ref)
 
-  const matrix = useMatrix(ref as any)
+  const center = useMemo(() => centeredMatrix(glyph, size), [glyph, size])
+  const matrix = useMatrix(ref as any, center)
+
   const x = matrix.dx
   const y = matrix.dy
   const sx = matrix.xx
@@ -42,9 +52,10 @@ export function GlyphEditor({ glyph }: { glyph: GlyphSimple }) {
             key={i}
             cx={p.x}
             cy={p.y}
-            r={4 * sx}
+            r={p.onCurve ? 4 * sx : 3 * sx}
             fill={p.onCurve ? 'black' : 'none'}
-            stroke="black"
+            strokeWidth={2 * sx}
+            stroke={p.onCurve ? undefined : 'black'}
           />
         ))}
       </g>
@@ -69,13 +80,20 @@ function useSize(ref: RefObject<Element>) {
     observer.observe(ref.current!)
 
     return () => observer.disconnect()
-  })
+  }, [ref])
 
   return size
 }
 
-function useMatrix(ref: RefObject<HTMLElement>) {
-  const [matrix, setMatrix] = useState(mat.IDENTITY)
+function useMatrix(ref: RefObject<HTMLElement>, defaultMatrix = mat.IDENTITY) {
+  const [matrix, setMatrix] = useState(defaultMatrix)
+  const lastDefault = usePrevious(defaultMatrix)
+
+  useEffect(() => {
+    if (lastDefault && mat.equals(lastDefault, matrix)) {
+      setMatrix(defaultMatrix)
+    }
+  }, [defaultMatrix, lastDefault, matrix])
 
   useEffect(() => {
     ref.current!.addEventListener(
@@ -87,7 +105,6 @@ function useMatrix(ref: RefObject<HTMLElement>) {
 
         if (ctrlKey) {
           // zoom
-
           const mouse = relativeMouse(e, e.currentTarget! as HTMLElement)
 
           setMatrix((m) => {
@@ -101,7 +118,7 @@ function useMatrix(ref: RefObject<HTMLElement>) {
           })
         } else {
           // pan
-          setMatrix((m) => mat.mult(mat.translate(deltaX, deltaY), m))
+          setMatrix((m) => mat.mult(mat.translate(deltaX / 2, deltaY / 2), m))
         }
       },
       { passive: false },
@@ -109,4 +126,32 @@ function useMatrix(ref: RefObject<HTMLElement>) {
   }, [ref])
 
   return matrix
+}
+
+const MARGIN = 32
+
+function centeredMatrix(glyph: GlyphSimple, size: Vector) {
+  const { xMin, xMax, yMin, yMax } = glyph
+  const width = xMax - xMin
+  const height = yMax - yMin
+
+  const sw = size.x - MARGIN * 2
+  const sh = size.y - MARGIN * 2
+
+  const sx = sw / width
+  const sy = sh / height
+  const s = 1 / Math.min(sx, sy)
+
+  let x = 0
+  let y = 0
+
+  if (sy > sx) {
+    x = xMin - MARGIN * s
+    y = -(size.y * s - height) / 2
+  } else {
+    x = -(size.x * s - width) / 2
+    y = yMin - MARGIN * s
+  }
+
+  return mat.mat(s, 0, 0, s, x, y)
 }
