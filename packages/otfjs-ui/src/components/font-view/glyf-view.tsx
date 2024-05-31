@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Font, glyphToSvgPath, VirtualMachine } from 'otfjs'
-import { Matrix } from 'otfjs/util'
+import { mat } from 'otfjs/util'
 
 import { GlyphEditor } from './glyph-editor'
 
@@ -113,7 +113,7 @@ function SingleGlyphView({
   const width = glyph.advanceWidth
   const height = head.unitsPerEm // glyph.yMax - glyph.yMin
 
-  const m = new Matrix(1, 0, 0, -1, 0, height)
+  const m = mat.mat(1, 0, 0, -1, 0, height)
 
   return (
     <div>
@@ -128,7 +128,7 @@ function SingleGlyphView({
         >
           <path d={glyphToSvgPath(glyph, height)} stroke="currentcolor" />
           {glyph.points.map((point, i) => {
-            const p = m.transformPoint(point)
+            const p = mat.transformPoint(point, m)
             const props =
               point.onCurve ?
                 { r: 3, fill: 'black' }

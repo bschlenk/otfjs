@@ -1,4 +1,5 @@
 import { Reader } from './buffer.js'
+import * as mat from './matrix.js'
 import { parseFont } from './parser.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { readTableAsI16Array, readTableAsU8Array } from './tables/common.js'
@@ -136,7 +137,7 @@ export class Font {
       if (c.flags.argsAreXYValues) {
         const roundXYToGrid = c.flags.roundXYToGrid
         for (const p of subGlyph.points) {
-          const point = c.matrix.transformPoint(p)
+          const point = mat.transformPoint(p, c.matrix)
           if (roundXYToGrid) {
             point.x = Math.round(point.x)
             point.y = Math.round(point.y)

@@ -57,3 +57,7 @@ export function debug(n: number) {
   // TODO: return as all different numeric types
   return n
 }
+
+export function areClose(a: number, b: number, e = Number.EPSILON) {
+  return Math.abs(a - b) <= e
+}

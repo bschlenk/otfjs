@@ -1,3 +1,5 @@
+import { areClose } from './utils.js'
+
 export interface Vector {
   x: number
   y: number
@@ -18,10 +20,7 @@ export function withMagnitude(vec: Vector, magnitude: number) {
  * Takes PRECISION into account due to floating point rounding errors.
  */
 export function equals(a: Vector, b: Vector) {
-  return (
-    Math.abs(a.x - b.x) <= Number.EPSILON &&
-    Math.abs(a.y - b.y) <= Number.EPSILON
-  )
+  return areClose(a.x, b.x) && areClose(a.y, b.y)
 }
 
 export function scale(vec: Vector, scalar: number) {

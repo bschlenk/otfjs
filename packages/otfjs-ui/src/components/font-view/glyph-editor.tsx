@@ -1,6 +1,6 @@
 import { RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { GlyphSimple, glyphToSvgPath } from 'otfjs'
-import { Matrix } from 'otfjs/util'
+import { mat } from 'otfjs/util'
 
 import styles from './glyph-editor.module.css'
 
@@ -9,10 +9,10 @@ export function GlyphEditor({ glyph }: { glyph: GlyphSimple }) {
   const size = useSize(ref)
 
   const matrix = useMatrix(ref as any)
-  const x = matrix.values[4]
-  const y = matrix.values[5]
-  const sx = matrix.values[0]
-  const sy = matrix.values[3]
+  const x = matrix.dx
+  const y = matrix.dy
+  const sx = matrix.xx
+  const sy = matrix.yy
 
   const d = glyphToSvgPath(glyph, 16)
 
@@ -73,9 +73,7 @@ function useSize(ref: RefObject<Element>) {
 }
 
 function useMatrix(ref: RefObject<HTMLElement>) {
-  const [matrix, setMatrix] = useState<Matrix>(() => new Matrix())
-  const matrixRef = useRef(matrix)
-  matrixRef.current = matrix
+  const [matrix, setMatrix] = useState(mat.IDENTITY)
 
   useEffect(() => {
     ref.current!.addEventListener(
@@ -84,7 +82,6 @@ function useMatrix(ref: RefObject<HTMLElement>) {
         e.preventDefault()
 
         const { deltaX, deltaY, ctrlKey } = e
-        const m = matrixRef.current
 
         if (ctrlKey) {
           // zoom
@@ -94,17 +91,18 @@ function useMatrix(ref: RefObject<HTMLElement>) {
           const rx = Math.round(e.clientX - box.left)
           const ry = Math.round(e.clientY - box.top)
 
-          const p2 = m.transformPoint({ x: rx, y: ry })!
-
-          setMatrix(
-            m
-              .translate(-p2.x, -p2.y)
-              .scale(1 + deltaY / 100)
-              .translate(p2.x, p2.y),
-          )
+          setMatrix((m) => {
+            const p2 = mat.transformPoint({ x: rx, y: ry }, m)!
+            return mat.mult(
+              m,
+              mat.translate(-p2.x, -p2.y),
+              mat.scale(1 + deltaY / 100),
+              mat.translate(p2.x, p2.y),
+            )
+          })
         } else {
           // pan
-          setMatrix(m.preTranslate(deltaX, deltaY))
+          setMatrix((m) => mat.mult(mat.translate(deltaX, deltaY), m))
         }
       },
       { passive: false },

@@ -1,8 +1,8 @@
-import { Matrix } from './matrix.js'
+import * as mat from './matrix.js'
 import { Glyph, Point } from './tables/glyf.js'
 
 export function glyphToSvgPath(glyph: Glyph, capHeight: number) {
-  const path = new PathBuilder(new Matrix(1, 0, 0, -1, 0, capHeight))
+  const path = new PathBuilder(mat.mat(1, 0, 0, -1, 0, capHeight))
 
   if (glyph.type === 'composite') {
     console.log(glyph)
@@ -59,22 +59,22 @@ export function glyphToSvgPath(glyph: Glyph, capHeight: number) {
 class PathBuilder {
   private d = ''
 
-  constructor(private readonly matrix: Matrix | null = null) {}
+  constructor(private readonly matrix: mat.Matrix | null = null) {}
 
   public moveTo(p: IPoint) {
-    if (this.matrix) p = this.matrix.transformPoint(p)
+    if (this.matrix) p = mat.transformPoint(p, this.matrix)
     this.d += 'M' + join(p.x, p.y)
   }
 
   public lineTo(p: IPoint) {
-    if (this.matrix) p = this.matrix.transformPoint(p)
+    if (this.matrix) p = mat.transformPoint(p, this.matrix)
     this.d += 'L' + join(p.x, p.y)
   }
 
   public quadraticCurveTo(p1: IPoint, p2: IPoint) {
     if (this.matrix) {
-      p1 = this.matrix.transformPoint(p1)
-      p2 = this.matrix.transformPoint(p2)
+      p1 = mat.transformPoint(p1, this.matrix)
+      p2 = mat.transformPoint(p2, this.matrix)
     }
     this.d += 'Q' + join(p1.x, p1.y, p2.x, p2.y)
   }

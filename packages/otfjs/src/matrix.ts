@@ -1,147 +1,127 @@
-type MatrixArray = [number, number, number, number, number, number]
+import { areClose } from './utils.js'
+import { type Vector } from './vector.js'
 
-const IDENTITY = [1, 0, 0, 1, 0, 0] as MatrixArray
+interface MatrixMut {
+  xx: number
+  xy: number
+  yx: number
+  yy: number
+  dx: number
+  dy: number
+}
 
 /**
- * An affine transform matrix, storing values in column-major order.
+ * A 2D affine transformation matrix.
  */
-export class Matrix {
-  public readonly values: MatrixArray
+export type Matrix = Readonly<MatrixMut>
 
-  /** Construct an identity matrix. */
-  constructor()
+export const IDENTITY: Matrix = mat(1, 0, 0, 1, 0, 0)
 
-  /** Construct a matrix given each value as separate args. */
-  constructor(
-    xx: number,
-    xy: number,
-    yx: number,
-    yy: number,
-    dx: number,
-    dy: number,
+/**
+ * Create a new Matrix, passing values in column-major order.
+ */
+export function mat(
+  xx: number,
+  xy: number,
+  yx: number,
+  yy: number,
+  dx: number,
+  dy: number,
+): Matrix {
+  return { xx, xy, yx, yy, dx, dy }
+}
+
+export function translate(x: number, y: number): Matrix {
+  return mat(1, 0, 0, 1, x, y)
+}
+
+export function rotate(angle: number): Matrix {
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  return mat(cos, sin, -sin, cos, 0, 0)
+}
+
+export function scale(x: number, y = x): Matrix {
+  return mat(x, 0, 0, y, 0, 0)
+}
+
+function mult2(a: Matrix, b: Matrix): Matrix {
+  return mat(
+    a.xx * b.xx + a.xy * b.yx,
+    a.xx * b.xy + a.xy * b.yy,
+    a.yx * b.xx + a.yy * b.yx,
+    a.yx * b.xy + a.yy * b.yy,
+    a.dx * b.xx + a.dy * b.yx + b.dx,
+    a.dx * b.xy + a.dy * b.yy + b.dy,
   )
+}
 
-  /** Construct a matrix from a MatrixArray. */
-  constructor(values: MatrixArray)
+export function mult(m: Matrix, ...rest: Matrix[]): Matrix {
+  for (const o of rest) m = mult2(m, o)
+  return m
+}
 
-  constructor(...args: any[]) {
-    if (args.length === 6) {
-      this.values = args as MatrixArray
-    } else if (args.length === 1 && Array.isArray(args[0])) {
-      this.values = args[0] as MatrixArray
-    } else {
-      // args must be 0 length
-      this.values = IDENTITY
-    }
-  }
+export function determinant(m: Matrix) {
+  return m.xx * m.yy - m.xy * m.yx
+}
 
-  static identity() {
-    return new Matrix()
-  }
+export function invert(m: Matrix) {
+  const det = determinant(m)
+  if (det === 0) return null
 
-  static withTranslation(x: number, y: number): Matrix {
-    return new Matrix(1, 0, 0, 1, x, y)
-  }
+  return mat(
+    m.yy / det,
+    -m.xy / det,
+    -m.yx / det,
+    m.xx / det,
+    (m.yx * m.dy - m.yy * m.dx) / det,
+    (m.xy * m.dx - m.xx * m.dy) / det,
+  )
+}
 
-  static withRotation(angle: number): Matrix {
-    const cos = Math.cos(angle)
-    const sin = Math.sin(angle)
-    return new Matrix(cos, sin, -sin, cos, 0, 0)
-  }
-
-  static withScale(x: number, y = x): Matrix {
-    return new Matrix(x, 0, 0, y, 0, 0)
-  }
-
-  mult(other: Matrix) {
-    const [xx, xy, yx, yy, dx, dy] = this.values
-    const [oxx, oxy, oyx, oyy, odx, ody] = other.values
-
-    return new Matrix(
-      xx * oxx + xy * oyx,
-      xx * oxy + xy * oyy,
-      yx * oxx + yy * oyx,
-      yx * oxy + yy * oyy,
-      dx * oxx + dy * oyx + odx,
-      dx * oxy + dy * oyy + ody,
-    )
-  }
-
-  preMult(other: Matrix) {
-    return other.mult(this)
-  }
-
-  translate(x: number, y: number) {
-    return this.mult(Matrix.withTranslation(x, y))
-  }
-
-  preTranslate(x: number, y: number) {
-    return Matrix.withTranslation(x, y).mult(this)
-  }
-
-  rotate(angle: number) {
-    return this.mult(Matrix.withRotation(angle))
-  }
-
-  preRotate(angle: number) {
-    return Matrix.withRotation(angle).mult(this)
-  }
-
-  scale(x: number, y = x): Matrix {
-    return this.mult(Matrix.withScale(x, y))
-  }
-
-  preScale(x: number, y = x): Matrix {
-    return Matrix.withScale(x, y).mult(this)
-  }
-
-  determinant() {
-    const [xx, xy, yx, yy] = this.values
-    return xx * yy - xy * yx
-  }
-
-  invert() {
-    const det = this.determinant()
-    if (det === 0) return null
-
-    const invDet = 1 / det
-    const [xx, xy, yx, yy, dx, dy] = this.values
-
-    return new Matrix(
-      yy * invDet,
-      -xy * invDet,
-      -yx * invDet,
-      xx * invDet,
-      (yx * dy - yy * dx) * invDet,
-      (xy * dx - xx * dy) * invDet,
-    )
-  }
-
-  transformPoint({ x, y }: IPoint) {
-    const [xx, xy, yx, yy, dx, dy] = this.values
-    return {
-      x: xx * x + yx * y + dx,
-      y: xy * x + yy * y + dy,
-    }
-  }
-
-  inverseTransformPoint(p: IPoint) {
-    return this.invert()?.transformPoint(p)
-  }
-
-  equals(other: Matrix) {
-    for (let i = 0; i < 6; ++i) {
-      if (this.values[i] !== other.values[i]) return false
-    }
-    return true
-  }
-
-  isIdentity() {
-    return this.equals(Matrix.identity())
+export function transformPoint(v: Vector, m: Matrix) {
+  return {
+    x: m.xx * v.x + m.yx * v.y + m.dx,
+    y: m.xy * v.x + m.yy * v.y + m.dy,
   }
 }
 
-interface IPoint {
-  x: number
-  y: number
+export function inverseTransformPoint(v: Vector, m: Matrix) {
+  const mi = invert(m)
+  return mi ? transformPoint(v, mi) : null
+}
+
+export function equals(a: Matrix, b: Matrix) {
+  return (
+    areClose(a.xx, b.xx) &&
+    areClose(a.xy, b.xy) &&
+    areClose(a.yx, b.yx) &&
+    areClose(a.yy, b.yy) &&
+    areClose(a.dx, b.dx) &&
+    areClose(a.dy, b.dy)
+  )
+}
+
+export function isIdentity(m: Matrix) {
+  return equals(m, IDENTITY)
+}
+
+/**
+ * Generate a css transform property value from a Matrix.
+ *
+ * The only difference between this and `toSvg` is that the values
+ * are separated by commas instead of spaces.
+ */
+export function toCss(m: Matrix) {
+  return `matrix(${m.xx}, ${m.xy}, ${m.yx}, ${m.yy}, ${m.dx}, ${m.dy})`
+}
+
+/**
+ * Generate an SVG transform attribute from a Matrix.
+ *
+ * The only difference between this and `toCss` is that the values
+ * are separated by spaces instead of commas.
+ */
+export function toSvg(m: Matrix) {
+  return `matrix(${m.xx} ${m.xy} ${m.yx} ${m.yy} ${m.dx} ${m.dy})`
 }

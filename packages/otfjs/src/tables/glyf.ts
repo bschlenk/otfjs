@@ -2,7 +2,7 @@
 
 import { Reader } from '../buffer.js'
 import { createFlagReader } from '../flags.js'
-import { Matrix } from '../matrix.js'
+import * as mat from '../matrix.js'
 import { assert } from '../utils.js'
 
 interface GlyphBase<T extends string> {
@@ -31,7 +31,7 @@ interface GlyphCompositeComponent {
   glyphIndex: number
   arg1: number
   arg2: number
-  matrix: Matrix
+  matrix: mat.Matrix
 }
 
 export interface Point {
@@ -257,23 +257,27 @@ function readCompositeGlyphComponent(view: Reader) {
     extra.push(view.f2dot14())
   }
 
-  let matrix = Matrix.identity()
+  let matrix = mat.IDENTITY
 
   switch (extra.length) {
     case 1:
     case 2:
-      matrix = matrix.mult(Matrix.withScale(...(extra as [number, number])))
+      matrix = mat.mult(matrix, mat.scale(...(extra as [number, number])))
       break
     case 4:
-      matrix = matrix.mult(
-        new Matrix(...(extra as [number, number, number, number]), 0, 0),
+      matrix = mat.mult(
+        matrix,
+        mat.mat(...(extra as [number, number, number, number]), 0, 0),
       )
+      break
   }
 
   if (flags.argsAreXYValues) {
-    const translation = Matrix.withTranslation(arg1, arg2)
+    const translation = mat.translate(arg1, arg2)
     matrix =
-      xAndYAreScaled ? translation.mult(matrix) : matrix.mult(translation)
+      xAndYAreScaled ?
+        mat.mult(translation, matrix)
+      : mat.mult(matrix, translation)
   }
 
   const component: GlyphCompositeComponent = {
