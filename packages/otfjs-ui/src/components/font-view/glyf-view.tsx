@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Font, glyphToSvgPath, VirtualMachine } from 'otfjs'
-import { mat } from 'otfjs/util'
+import { useState } from 'react'
+import { Font, glyphToSvgPath } from 'otfjs'
 
 import { GlyphEditor } from './glyph-editor'
 
@@ -56,7 +55,7 @@ export function AllGlyfView({
     const width = glyph.advanceWidth
     const height = head.unitsPerEm // glyph.yMax - glyph.yMin
 
-    const d = glyphToSvgPath(glyph, height)
+    const d = glyphToSvgPath(glyph)
     const idx = i
 
     svgs.push(
@@ -69,7 +68,9 @@ export function AllGlyfView({
         viewBox={`0 0 ${width} ${height}`}
         style={{ overflow: 'visible' }}
       >
-        <path d={d} fill="currentcolor" />
+        <g transform={`matrix(1 0 0 -1 0 ${height})`}>
+          <path d={d} fill="currentcolor" />
+        </g>
       </svg>,
     )
   }
@@ -93,6 +94,7 @@ function GlyfContainer({ children }: React.PropsWithChildren) {
   )
 }
 
+/*
 function SingleGlyphView({
   font,
   index,
@@ -143,7 +145,6 @@ function SingleGlyphView({
             return <circle key={i} cx={p.x} cy={p.y} {...props} />
           })}
         </svg>
-        {/*
         <svg
           className={styles.glyph}
           height="100px"
@@ -161,7 +162,6 @@ function SingleGlyphView({
             return <circle key={i} cx={p.x} cy={p.y} {...props} />
           })}
         </svg>
-        */}
       </div>
       <details>
         <summary>Virtual Machine</summary>
@@ -170,3 +170,4 @@ function SingleGlyphView({
     </div>
   )
 }
+*/
