@@ -8,45 +8,62 @@ import {
   useState,
 } from 'react'
 import { GlyphSimple, glyphToSvgPath, renderGlyphToCanvas } from 'otfjs'
-import { mat, Vector } from 'otfjs/util'
+import { vec } from 'otfjs/util'
 
 import { usePrevious } from '../../hooks/use-previous'
 import { relativeMouse } from '../../utils/event'
 
 import styles from './glyph-editor.module.css'
 
-export function GlyphEditor({ glyph }: { glyph: GlyphSimple }) {
+export function GlyphEditor({
+  glyph,
+  ppem,
+}: {
+  glyph: GlyphSimple
+  ppem: number
+}) {
   const ref = useRef<SVGSVGElement>(null)
   const size = useSize(ref)
 
-  const center = useMemo(() => centeredMatrix(glyph, size), [glyph, size])
-  const matrix = useMatrix(ref as any, center)
+  // const center = useMemo(() => centeredMatrix(glyph, size), [glyph, size])
+  const { origin, scale: s } = useOriginScale(ref as any /*, center */)
+  const s2 = 16 / ppem
 
-  const x = matrix.dx
-  const y = matrix.dy
-  const sx = matrix.xx
-  const sy = matrix.yy
+  const x = origin.x
+  const y = origin.y
 
   const d = glyphToSvgPath(glyph)
+
+  const gCanvas = useMemo(
+    () => renderGlyph(glyph, { scale: s2, antialias: false }),
+    [glyph, s2],
+  )
 
   const canvas = useCallback(
     (canvas: HTMLCanvasElement | null) => {
       if (!canvas) return
 
-      const box = canvas.getBoundingClientRect()
-      canvas.width = 12
-      canvas.height = (box.height * 12) / box.width
+      canvas.width = size.x
+      canvas.height = size.y
 
       const ctx = canvas.getContext('2d')!
+      ctx.imageSmoothingEnabled = false
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.filter = `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"><filter id="f" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncA type="discrete" tableValues="0 1"/></feComponentTransfer></filter></svg>#f')`
-      const scale = 12 / (glyph.xMax - glyph.xMin)
-      ctx.scale(scale, scale)
-      ctx.transform(1, 0, 0, -1, 0, glyph.yMax)
-      renderGlyphToCanvas(glyph, ctx)
-      ctx.fill()
+      ctx.transform(s / s2, 0, 0, s / s2, x, y)
+
+      ctx.globalAlpha = 0.75
+      ctx.drawImage(gCanvas, 0, 0)
+
+      // for each px, clear a 1px line so we can see the individual pixels
+      for (let i = 0; i < gCanvas.width; ++i) {
+        ctx.clearRect(i, 0, (1 * s2) / s, gCanvas.height)
+      }
+
+      for (let i = 0; i < gCanvas.height; ++i) {
+        ctx.clearRect(0, i, gCanvas.width, (1 * s2) / s)
+      }
     },
-    [glyph],
+    [gCanvas, s, s2, size, x, y],
   )
 
   return (
@@ -55,38 +72,40 @@ export function GlyphEditor({ glyph }: { glyph: GlyphSimple }) {
       <svg
         className={styles.editor}
         ref={ref}
-        viewBox={`${x} ${y} ${size.x * sx} ${size.y * sy}`}
+        viewBox={`0 0 ${size.x} ${size.y}`}
         fill="none"
       >
-        <g transform={`matrix(1 0 0 -1 0 ${glyph.yMax})`}>
-          <line
-            x1={0}
-            y1={0}
-            x2={0}
-            y2={glyph.yMax}
-            stroke="red"
-            strokeWidth={sx / 2}
-          />
-          <line
-            x1={0}
-            y1={0}
-            x2={glyph.xMax}
-            stroke="red"
-            strokeWidth={sx / 2}
-          />
-          <circle cx={0} cy={0} r={4 * sx} fill="blue" />
-          <path d={d} stroke="black" strokeWidth={sx} />
-          {glyph.points.map((p, i) => (
-            <circle
-              key={i}
-              cx={p.x}
-              cy={p.y}
-              r={p.onCurve ? 4 * sx : 3 * sx}
-              fill={p.onCurve ? 'black' : 'none'}
-              strokeWidth={2 * sx}
-              stroke={p.onCurve ? undefined : 'black'}
+        <g transform={`matrix(${s} 0 0 ${s} ${x} ${y})`}>
+          <g transform={`matrix(1 0 0 -1 0 ${glyph.yMax})`}>
+            <line
+              x1={0}
+              y1={0}
+              x2={0}
+              y2={glyph.yMax}
+              stroke="red"
+              strokeWidth={0.5 / s}
             />
-          ))}
+            <line
+              x1={0}
+              y1={0}
+              x2={glyph.xMax}
+              stroke="red"
+              strokeWidth={0.5 / s}
+            />
+            <circle cx={0} cy={0} r={4 / s} fill="blue" />
+            <path d={d} stroke="var(--color-icon)" strokeWidth={1 / s} />
+            {glyph.points.map((p, i) => (
+              <circle
+                key={i}
+                cx={p.x}
+                cy={p.y}
+                r={p.onCurve ? 4 / s : 3 / s}
+                fill={p.onCurve ? 'var(--color-icon)' : 'none'}
+                strokeWidth={2 / s}
+                stroke={p.onCurve ? undefined : 'var(--color-icon)'}
+              />
+            ))}
+          </g>
         </g>
       </svg>
     </>
@@ -115,15 +134,24 @@ function useSize(ref: RefObject<Element>) {
   return size
 }
 
-function useMatrix(ref: RefObject<HTMLElement>, defaultMatrix = mat.IDENTITY) {
-  const [matrix, setMatrix] = useState(defaultMatrix)
-  const lastDefault = usePrevious(defaultMatrix)
+const DEFAULT = { origin: { x: 0, y: 0 }, scale: 1 }
+
+function useOriginScale(
+  ref: RefObject<HTMLElement>,
+  defaultOriginScale = DEFAULT,
+) {
+  const [originScale, setOriginScale] = useState(defaultOriginScale)
+  const lastDefault = usePrevious(defaultOriginScale)
 
   useEffect(() => {
-    if (lastDefault && mat.equals(lastDefault, matrix)) {
-      setMatrix(defaultMatrix)
+    if (
+      lastDefault &&
+      vec.equals(lastDefault.origin, originScale.origin) &&
+      lastDefault.scale === originScale.scale
+    ) {
+      setOriginScale(defaultOriginScale)
     }
-  }, [defaultMatrix, lastDefault, matrix])
+  }, [defaultOriginScale, lastDefault, originScale])
 
   useEffect(() => {
     ref.current!.addEventListener(
@@ -137,29 +165,37 @@ function useMatrix(ref: RefObject<HTMLElement>, defaultMatrix = mat.IDENTITY) {
           // zoom
           const mouse = relativeMouse(e, e.currentTarget! as HTMLElement)
 
-          setMatrix((m) => {
-            const p2 = mat.transformPoint(mouse, m)!
-            return mat.mult(
-              m,
-              mat.translate(-p2.x, -p2.y),
-              mat.scale(1 + deltaY / 100),
-              mat.translate(p2.x, p2.y),
+          setOriginScale((value) => {
+            const scaleBy = 1 - deltaY / 100
+
+            const origin = vec.subtract(
+              mouse,
+              vec.scale(vec.subtract(mouse, value.origin), scaleBy),
             )
+            const scale = value.scale * scaleBy
+
+            return { origin, scale }
           })
         } else {
           // pan
-          setMatrix((m) => mat.mult(mat.translate(deltaX / 2, deltaY / 2), m))
+          setOriginScale((value) => {
+            return {
+              ...value,
+              origin: vec.add(value.origin, { x: -deltaX / 2, y: -deltaY / 2 }),
+            }
+          })
         }
       },
       { passive: false },
     )
   }, [ref])
 
-  return matrix
+  return originScale
 }
 
-const MARGIN = 32
+// const MARGIN = 32
 
+/*
 function centeredMatrix(glyph: GlyphSimple, size: Vector) {
   const { xMin, xMax, yMin, yMax } = glyph
   const width = xMax - xMin
@@ -184,4 +220,45 @@ function centeredMatrix(glyph: GlyphSimple, size: Vector) {
   }
 
   return mat.mat(s, 0, 0, s, x, y)
+}
+*/
+
+const FILTER_ANTI_ALIAS = `url('data:image/svg+xml,\
+<svg xmlns="http://www.w3.org/2000/svg">\
+<filter id="f" color-interpolation-filters="sRGB">\
+<feComponentTransfer>\
+<feFuncA type="discrete" tableValues="0 0 0 1"/>\
+</feComponentTransfer>\
+</filter>\
+</svg>#f')`
+
+interface RenderGlyphOptions {
+  scale?: number
+  antialias?: boolean
+}
+
+function renderGlyph(
+  glyph: GlyphSimple,
+  { scale = 1, antialias = false }: RenderGlyphOptions,
+) {
+  const canvas = document.createElement('canvas')
+
+  const gWidth = glyph.xMax - glyph.xMin
+  const gHeight = glyph.yMax - glyph.yMin
+
+  canvas.width = Math.ceil(gWidth * scale)
+  canvas.height = Math.ceil(gHeight * scale)
+
+  const ctx = canvas.getContext('2d')!
+
+  if (!antialias) {
+    ctx.filter = FILTER_ANTI_ALIAS
+  }
+
+  ctx.scale(scale, scale)
+  ctx.transform(1, 0, 0, -1, 0, glyph.yMax)
+  renderGlyphToCanvas(glyph, ctx)
+  ctx.fill()
+
+  return canvas
 }

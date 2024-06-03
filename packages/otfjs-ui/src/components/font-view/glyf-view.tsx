@@ -7,20 +7,15 @@ import styles from './glyf-view.module.css'
 
 export function GlyfView({ font }: { font: Font }) {
   const [glyf, setGlyf] = useState<number | null>(null)
+  const head = font.getTable('head')
 
   if (!glyf) {
     return <AllGlyfView font={font} onClick={(i) => setGlyf(i)} />
   }
 
-  /*
-  return (
-    <SingleGlyphView font={font} index={glyf} onBack={() => setGlyf(null)} />
-  )
-  */
-
   return (
     <>
-      <GlyphEditor glyph={font.getGlyph(glyf)} />
+      <GlyphEditor glyph={font.getGlyph(glyf)} ppem={head.unitsPerEm} />
       <button className={styles.backButton} onClick={() => setGlyf(null)}>
         Back
       </button>
