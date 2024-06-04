@@ -32,7 +32,7 @@ export function App() {
             }}
           />
         </div>
-      : <FontView font={font} />}
+      : <FontView font={font} onBack={() => setFont(null)} />}
     </div>
   )
 }

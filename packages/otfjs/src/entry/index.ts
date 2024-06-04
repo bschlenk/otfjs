@@ -1,4 +1,5 @@
 export * from '../canvas.js'
+export * from '../enums.js'
 export * from '../font.js'
 export { disassemble } from '../instruct/disassemble.js'
 export { VirtualMachine } from '../instruct/vm.js'

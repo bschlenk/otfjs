@@ -1,9 +1,9 @@
 import { Reader } from '../buffer.js'
 import { NameId, PlatformId } from '../enums.js'
 
-export interface NameTable {}
+export type NameTable = ReturnType<typeof readNameTable>
 
-export function readNameTable(view: Reader): NameTable {
+export function readNameTable(view: Reader) {
   const version = view.u16()
   const count = view.u16()
   const storageOffset = view.u16()
@@ -16,10 +16,6 @@ export function readNameTable(view: Reader): NameTable {
     const length = view.u16()
     const stringOffset = view.u16()
 
-    const value = decoder.decode(
-      view.dataview(storageOffset + stringOffset, length),
-    )
-
     return {
       platformId,
       platformIdStr: PlatformId[platformId],
@@ -27,7 +23,11 @@ export function readNameTable(view: Reader): NameTable {
       languageId,
       nameId,
       nameIdStr: NameId[nameId],
-      value,
+      get value() {
+        return DECODER.decode(
+          view.dataview(storageOffset + stringOffset, length),
+        )
+      },
     }
   })
 
@@ -45,4 +45,4 @@ export function readNameTable(view: Reader): NameTable {
   return { version, nameRecords }
 }
 
-const decoder = new TextDecoder('utf-16be')
+const DECODER = new TextDecoder('utf-16be')

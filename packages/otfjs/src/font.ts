@@ -1,4 +1,5 @@
 import { Reader } from './buffer.js'
+import { NameId, PlatformId } from './enums.js'
 import * as mat from './matrix.js'
 import { parseFont } from './parser.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
@@ -74,6 +75,16 @@ export class Font {
     }
 
     return table
+  }
+
+  public getName(nameId: NameId, platformId: PlatformId = PlatformId.Windows) {
+    const name = this.getTable('name')
+    const record = name.nameRecords.find(
+      (record) => record.platformId === platformId && record.nameId === nameId,
+    )
+    if (!record) return null
+
+    return record.value
   }
 
   public getTableOrNull<T extends string>(tag: T): TableType<T> | null {

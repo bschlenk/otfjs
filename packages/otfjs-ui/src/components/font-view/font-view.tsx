@@ -1,6 +1,6 @@
 import { Fragment, JSXElementConstructor, useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { disassemble, Font } from 'otfjs'
+import { disassemble, Font, NameId } from 'otfjs'
 
 import { makeColor } from '../../utils/color'
 import { GlyfView } from './glyf-view'
@@ -26,6 +26,7 @@ const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
 
 interface FontViewProps {
   font: ArrayBuffer
+  onBack: () => void
 }
 
 export function FontView(props: FontViewProps) {
@@ -37,6 +38,10 @@ export function FontView(props: FontViewProps) {
   return (
     <div className={styles.wrapper}>
       <div className={styles.tablesList}>
+        <div className={styles.head}>
+          <FontName font={font} />
+          <button onClick={props.onBack}>⬅ Back</button>
+        </div>
         <ul>
           {font.tables.map((table) => (
             <li key={table}>
@@ -56,6 +61,11 @@ export function FontView(props: FontViewProps) {
       </div>
     </div>
   )
+}
+
+function FontName({ font }: { font: Font }) {
+  const name = font.getName(NameId.FullFontName)
+  return <h1 className={styles.fontName}>{name}</h1>
 }
 
 function DocLink({ tag }: { tag: string }) {

@@ -11,6 +11,8 @@
 }
 
 .tablesList {
+  width: 100px;
+
   border-right: 1px solid #333;
   overflow: scroll;
 
@@ -28,6 +30,7 @@
     width: 100%;
     text-align: left;
     border-radius: 0;
+    padding: calc(4rem / 16) calc(8rem / 16);
 
     &:not(.active) {
       background: unset;
@@ -43,4 +46,9 @@
 .cmapTable {
   display: flex;
   flex-direction: column;
+}
+
+.fontName {
+  font-size: 1.2rem;
+  padding-left: calc(8rem / 16);
 }
