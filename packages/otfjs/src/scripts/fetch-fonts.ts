@@ -24,7 +24,7 @@ for (const font of fonts.items) {
   const res = await fetch(font.files.regular)
   const stream = fs.createWriteStream(fname)
 
-  promises.push(finished(Readable.fromWeb(res.body!).pipe(stream)))
+  promises.push(finished(Readable.fromWeb(res.body as any).pipe(stream)))
 }
 
 await Promise.all(promises)
