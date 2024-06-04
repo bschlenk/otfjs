@@ -22,6 +22,7 @@
   -webkit-text-size-adjust: 100%;
 
   --color-icon: white;
+  --color-border: white;
 }
 
 body {
@@ -69,6 +70,7 @@ button:focus-visible {
     color: #213547;
     background-color: #ffffff;
     --color-icon: black;
+    --color-border: black;
   }
   a:hover {
     color: #747bff;

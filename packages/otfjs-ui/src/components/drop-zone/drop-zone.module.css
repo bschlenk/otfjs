@@ -1,6 +1,6 @@
 .dropZone {
   padding: 16px 32px;
-  border: 2px dashed white;
+  border: 2px dashed var(--color-border);
   border-radius: 13px;
 
   &:focus-within {
