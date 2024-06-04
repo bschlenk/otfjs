@@ -1,0 +1,17 @@
+:root {
+  color-scheme: light dark;
+
+  --color-bg: #fff;
+  --color-text: #213547;
+  --color-icon: black;
+  --color-border: black;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #242424;
+    --color-text: rgba(255, 255, 255, 0.87);
+    --color-icon: white;
+    --color-border: white;
+  }
+}
