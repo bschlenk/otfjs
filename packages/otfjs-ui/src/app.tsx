@@ -23,7 +23,10 @@ export function App() {
           </DropZone>
           <FontPicker
             onChange={(font) => {
-              fetch(font.files.regular!)
+              const url = new URL(font.files.regular!)
+              url.protocol = 'https:'
+
+              fetch(url)
                 .then((res) => res.arrayBuffer())
                 .then(setFont)
             }}
