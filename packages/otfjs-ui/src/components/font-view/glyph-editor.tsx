@@ -225,7 +225,7 @@ function centeredGlyph(glyph: GlyphSimple, size: Vector) {
 
   if (sy > sx) {
     x = MARGIN - xMin * s
-    y = (size.y - height * s) / 2 - yMin * s
+    y = (size.y - height * s) / 2
   } else {
     x = (size.x - width * s) / 2 - xMin * s
     y = MARGIN
