@@ -16,3 +16,10 @@ export interface TableRecord {
   /** Length of this table. */
   length: number
 }
+
+export interface RGBA {
+  r: number
+  g: number
+  b: number
+  a: number
+}

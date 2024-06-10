@@ -4,6 +4,7 @@ import * as mat from './matrix.js'
 import { parseFont } from './parser.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { readTableAsI16Array, readTableAsU8Array } from './tables/common.js'
+import { CpalTable, readCpalTable } from './tables/cpal.js'
 import { GlyphSimple, readGlyf } from './tables/glyf.js'
 import { GposTable, readGposTable } from './tables/gpos.js'
 import { HeadTable, readHeadTable } from './tables/head.js'
@@ -20,6 +21,7 @@ import { validateHeader, validateTable } from './validation.js'
 
 export interface TableMap {
   cmap: CmapTable
+  CPAL: CpalTable
   'cvt ': number[]
   fpgm: Uint8Array
   GPOS: GposTable
@@ -186,6 +188,8 @@ export class Font {
     switch (table.tag) {
       case 'cmap':
         return readCmapTable(view)
+      case 'CPAL':
+        return readCpalTable(view)
       case 'cvt ':
         return readTableAsI16Array(view)
       case 'fpgm':

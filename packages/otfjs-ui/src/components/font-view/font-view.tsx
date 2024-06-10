@@ -9,6 +9,7 @@ import styles from './font-view.module.css'
 
 const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   cmap: CmapView,
+  CPAL: CpalView,
   'cvt ': arrayView('cvt '),
   fpgm: instructionView('fpgm'),
   glyf: GlyfView,
@@ -205,6 +206,30 @@ function CmapView({ font }: { font: Font }) {
         </span>
       ))}
     </div>
+  )
+}
+
+function CpalView({ font }: { font: Font }) {
+  const table = font.getTable('CPAL')
+
+  return (
+    <>
+      <JsonView data={table} replacements={{ colorRecords: () => undefined }} />
+      {Array.from(table.iterPalettes(), (palette, i) => (
+        <div key={i} className="mt-2">
+          <h2>Palette {i}</h2>
+          <div className="flex flex-wrap gap-1">
+            {palette.map((c, j) => (
+              <div
+                key={j}
+                className="w-11 h-11 border-2 border-white"
+                style={{ background: `rgb(${c.r} ${c.g} ${c.b} / ${c.a})` }}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </>
   )
 }
 
