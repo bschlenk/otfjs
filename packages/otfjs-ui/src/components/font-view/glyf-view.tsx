@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Font, glyphToSvgPath } from 'otfjs'
+import { cloneElement, useState } from 'react'
+import { Extend, Font, glyphToSvgPath } from 'otfjs'
+import { vec } from 'otfjs/util'
 
 import { GlyphEditor } from './glyph-editor'
 
@@ -33,6 +34,7 @@ export function AllGlyfView({
   const svgs: JSX.Element[] = []
 
   const head = font.getTable('head')
+  const colr = font.getTableOrNull('COLR')
 
   let i = 0
 
@@ -53,6 +55,81 @@ export function AllGlyfView({
     const d = glyphToSvgPath(glyph)
     const idx = i
 
+    const defs: any = []
+    let path: any = []
+
+    if (
+      !colr?.colorGlyph(i, {
+        paintGlyph(glyphId) {
+          const g = font.getGlyph(glyphId)
+          const d = glyphToSvgPath(g)
+          path.push(<path d={d} fill="currentcolor" />)
+        },
+        paintSolid(paletteIndex: number, alpha: number) {
+          const c = font.getTable('CPAL').getPalette(0)[paletteIndex]
+          path[path.length - 1] = cloneElement(path[path.length - 1], {
+            fill: `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a * alpha})`,
+          })
+        },
+        paintLinearGradient(p0, p1, p2, extend, stops) {
+          const spreadMethod = (() => {
+            switch (extend) {
+              case Extend.PAD:
+                return 'pad'
+              case Extend.REFLECT:
+                return 'reflect'
+              case Extend.REPEAT:
+                return 'repeat'
+            }
+          })()
+
+          const palette = font.getTable('CPAL').getPalette(0)
+
+          const stopsEls = stops.map((stop, i) => {
+            const c = palette[stop.paletteIndex]
+            return (
+              <stop
+                key={i}
+                offset={stop.stopOffset}
+                stopColor={`rgb(${c.r} ${c.g} ${c.b} / ${c.a * stop.alpha})`}
+              />
+            )
+          })
+
+          const id = `gradient-${idx}-${defs.length}`
+
+          const p3 = vec.add(
+            p0,
+            vec.projectOnto(
+              vec.subtract(p1, p0),
+              vec.rotate90(vec.subtract(p2, p0)),
+            ),
+          )
+
+          defs.push(
+            <linearGradient
+              key={defs.length}
+              id={id}
+              x1={p0.x}
+              y1={p0.y}
+              x2={p3.x}
+              y2={p3.y}
+              spreadMethod={spreadMethod}
+              gradientUnits="userSpaceOnUse"
+            >
+              {stopsEls}
+            </linearGradient>,
+          )
+
+          path[path.length - 1] = cloneElement(path[path.length - 1], {
+            fill: `url('#${id}')`,
+          })
+        },
+      })
+    ) {
+      path = [<path d={d} fill="currentcolor" />]
+    }
+
     svgs.push(
       <svg
         onClick={() => onClick(idx)}
@@ -63,9 +140,8 @@ export function AllGlyfView({
         viewBox={`0 0 ${width} ${height}`}
         style={{ overflow: 'visible' }}
       >
-        <g transform={`matrix(1 0 0 -1 0 ${height})`}>
-          <path d={d} fill="currentcolor" />
-        </g>
+        {defs.length > 0 && <defs>{defs}</defs>}
+        <g transform={`matrix(1 0 0 -1 0 ${height})`}>{path}</g>
       </svg>,
     )
   }
