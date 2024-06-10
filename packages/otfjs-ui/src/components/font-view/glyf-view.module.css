@@ -15,12 +15,3 @@
     color: red;
   }
 }
-
-.view {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.backButton {
-  position: relative;
-}

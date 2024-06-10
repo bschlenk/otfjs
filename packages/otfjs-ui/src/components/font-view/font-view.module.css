@@ -1,15 +1,3 @@
-.wrapper {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 8px;
-  height: 100%;
-  overflow: hidden;
-
-  & > * {
-    min-width: 0;
-  }
-}
-
 .tablesList {
   width: 100px;
 
@@ -46,9 +34,4 @@
 .cmapTable {
   display: flex;
   flex-direction: column;
-}
-
-.fontName {
-  font-size: 1.2rem;
-  padding-left: calc(8rem / 16);
 }

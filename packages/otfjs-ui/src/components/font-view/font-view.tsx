@@ -38,7 +38,7 @@ export function FontView(props: FontViewProps) {
   const TableComponent = TABLE_MAP[tag] ?? null
 
   return (
-    <div className={styles.wrapper}>
+    <div className="grid grid-cols-[max-content_1fr] gap-8 h-full overflow-hidden [&>*]:min-w-0">
       <div className={styles.tablesList}>
         <div className={styles.head}>
           <FontName font={font} />
@@ -67,13 +67,13 @@ export function FontView(props: FontViewProps) {
 
 function FontName({ font }: { font: Font }) {
   const name = font.getName(NameId.FullFontName)
-  return <h1 className={styles.fontName}>{name}</h1>
+  return <h1 className="pl-2 text-lg">{name}</h1>
 }
 
 function DocLink({ tag }: { tag: string }) {
   const url = `https://learn.microsoft.com/en-us/typography/opentype/spec/${tag}`
   return (
-    <div style={{ padding: '16px 8px' }}>
+    <div className="py-4 px-2">
       <a href={url} target="_blank" rel="noreferrer">
         {url}
       </a>

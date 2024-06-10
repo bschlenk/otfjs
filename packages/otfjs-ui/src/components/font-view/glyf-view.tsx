@@ -16,7 +16,7 @@ export function GlyfView({ font }: { font: Font }) {
   return (
     <>
       <GlyphEditor glyph={font.getGlyph(glyf)} ppem={head.unitsPerEm} />
-      <button className={styles.backButton} onClick={() => setGlyf(null)}>
+      <button className="absolute" onClick={() => setGlyf(null)}>
         Back
       </button>
     </>
@@ -84,7 +84,7 @@ function GlyfContainer({ children }: React.PropsWithChildren) {
         value={scale}
         onChange={(e) => setScale(+e.target.value)}
       />
-      <div className={styles.view}>{children}</div>
+      <div className="flex flex-wrap">{children}</div>
     </div>
   )
 }
