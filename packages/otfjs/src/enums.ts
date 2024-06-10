@@ -44,3 +44,12 @@ export enum NameId {
   DarkBackgroundPalette = 24,
   VariationsPostScriptNamePrefix = 25,
 }
+
+export enum Extend {
+  /**	Use nearest color stop */
+  PAD = 0,
+  /**	Repeat from farthest color stop */
+  REPEAT = 1,
+  /**	Mirror color line from nearest end */
+  REFLECT = 2,
+}

@@ -1,3 +1,6 @@
+import type { Extend } from './enums.js'
+import type { Vector } from './vector.js'
+
 export interface Header {
   sfntVersion: number
   numTables: number
@@ -22,4 +25,16 @@ export interface RGBA {
   g: number
   b: number
   a: number
+}
+
+export interface ColorVisitor {
+  paintSolid(paletteIndex: number, alpha: number): void
+  paintLinearGradient(
+    p0: Vector,
+    p1: Vector,
+    p2: Vector,
+    extend: Extend,
+    stops: { stopOffset: number; paletteIndex: number; alpha: number }[],
+  ): void
+  paintGlyph(glyphId: number): void
 }

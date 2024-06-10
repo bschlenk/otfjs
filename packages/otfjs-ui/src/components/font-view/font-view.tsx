@@ -9,6 +9,7 @@ import styles from './font-view.module.css'
 
 const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   cmap: CmapView,
+  COLR: jsonView('COLR'),
   CPAL: CpalView,
   'cvt ': arrayView('cvt '),
   fpgm: instructionView('fpgm'),

@@ -3,6 +3,7 @@ import { NameId, PlatformId } from './enums.js'
 import * as mat from './matrix.js'
 import { parseFont } from './parser.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
+import { ColrTable, readColrTable } from './tables/colr.js'
 import { readTableAsI16Array, readTableAsU8Array } from './tables/common.js'
 import { CpalTable, readCpalTable } from './tables/cpal.js'
 import { GlyphSimple, readGlyf } from './tables/glyf.js'
@@ -21,6 +22,7 @@ import { validateHeader, validateTable } from './validation.js'
 
 export interface TableMap {
   cmap: CmapTable
+  COLR: ColrTable
   CPAL: CpalTable
   'cvt ': number[]
   fpgm: Uint8Array
@@ -188,6 +190,8 @@ export class Font {
     switch (table.tag) {
       case 'cmap':
         return readCmapTable(view)
+      case 'COLR':
+        return readColrTable(view)
       case 'CPAL':
         return readCpalTable(view)
       case 'cvt ':
