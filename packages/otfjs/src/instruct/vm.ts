@@ -46,6 +46,9 @@ export class VirtualMachine {
   zonesOriginal!: Point[][]
   touched!: Set<Touched>[]
 
+  upem: number
+  fontSize = 16
+
   private pcStack: number[] = []
   private maxp: MaxpTable10
 
@@ -57,16 +60,28 @@ export class VirtualMachine {
       'Only version 1.0 maxp tables are supported',
     )
 
+    const head = font.getTable('head')
+
     this.maxp = maxp
+    this.upem = head.unitsPerEm
     this.cvt = [...(font.getTableOrNull('cvt ') ?? [])]
     this.store = makeStore(maxp.maxStorage)
     this.stack = new Stack(maxp.maxStackElements)
+
     this.gs = makeGraphicsState()
 
     this.setGlyph(null)
   }
 
+  setFontSize(px: number) {
+    this.fontSize = px
+  }
+
   setGlyph(glyph: GlyphSimple | null) {
+    // reset each time a new glyph is set
+    // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM02/Chap2.html#graphics_state
+    this.gs = makeGraphicsState()
+
     if (!glyph) {
       this.glyph = emptyGlyph()
       this.zones = [[], []]
@@ -76,10 +91,13 @@ export class VirtualMachine {
     }
 
     this.glyph = glyph
+    // TODO: these need to be scaled first, all instructions expect to operate
+    // on pixel values
     this.zonesOriginal = [
       range(this.maxp.maxTwilightPoints, () => ({ x: 0, y: 0, onCurve: true })),
       [
         ...glyph.points,
+        // TODO: these are wrong
         // phantom points
         // glyph origin
         { x: 0, y: 0, onCurve: true },
@@ -222,11 +240,12 @@ export class VirtualMachine {
       }
 
       case Opcode.WCVTF: {
-        // TODO: something something convert to pixels?
-        // The value is scaled before being written to the table
         const value = this.stack.popU32()
         const c = this.stack.popU32()
-        this.cvt[c] = value
+
+        const scale = this.fontSize / this.upem
+
+        this.cvt[c] = value * scale
         break
       }
 
