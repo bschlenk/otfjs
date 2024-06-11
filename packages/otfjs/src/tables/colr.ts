@@ -116,6 +116,13 @@ export class ColrTable {
   layerRecordsOffset: number
   numLayerRecords: number
 
+  baseGlyphRecords?: {
+    glyphId: number
+    firstLayerIndex: number
+    numLayers: number
+  }[]
+  layerRecords?: { glyphId: number; paletteIndex: number }[]
+
   // version 1 only
   baseGlyphListOffset?: number
   layerListOffset?: number
@@ -139,6 +146,27 @@ export class ColrTable {
     this.baseGlyphRecordsOffset = view.u32()
     this.layerRecordsOffset = view.u32()
     this.numLayerRecords = view.u16()
+
+    if (this.baseGlyphRecordsOffset > 0) {
+      this.baseGlyphRecords = view
+        .subtable(this.baseGlyphRecordsOffset)
+        .array(this.numBaseGlyphRecords, (v) => {
+          const glyphId = v.u16()
+          const firstLayerIndex = v.u16()
+          const numLayers = v.u16()
+          return { glyphId, firstLayerIndex, numLayers }
+        })
+    }
+
+    if (this.layerRecordsOffset > 0) {
+      this.layerRecords = view
+        .subtable(this.layerRecordsOffset)
+        .array(this.numLayerRecords, (v) => {
+          const glyphId = v.u16()
+          const paletteIndex = v.u16()
+          return { glyphId, paletteIndex }
+        })
+    }
 
     if (this.version === 1) {
       this.baseGlyphListOffset = view.u32()
@@ -172,16 +200,50 @@ export class ColrTable {
   }
 
   colorGlyph(glyphId: number) {
-    const record = binarySearch(
-      this.baseGlyphPaintRecords!,
-      glyphId,
-      (r) => r.glyphId,
-    )
+    if (this.baseGlyphPaintRecords) {
+      const record = binarySearch(
+        this.baseGlyphPaintRecords,
+        glyphId,
+        (r) => r.glyphId,
+      )
 
-    if (!record) return null
+      if (record) {
+        const offset = this.baseGlyphListOffset! + record.paintOffset
+        return this.visitLayer(this.#view.subtable(offset))
+      }
+    }
 
-    const offset = this.baseGlyphListOffset! + record.paintOffset
-    return this.visitLayer(this.#view.subtable(offset))
+    if (this.baseGlyphRecords) {
+      const record = binarySearch(
+        this.baseGlyphRecords,
+        glyphId,
+        (r) => r.glyphId,
+      )
+
+      if (record) {
+        const layers: ColorLayer[] = []
+
+        for (let i = 0; i < record.numLayers; ++i) {
+          const idx = record.firstLayerIndex + i
+          const { glyphId, paletteIndex } = this.layerRecords![idx]
+          layers.push({
+            format: ColorRecordType.GLYPH,
+            props: { glyphId },
+            children: [
+              {
+                format: ColorRecordType.SOLID,
+                props: { paletteIndex, alpha: 1 },
+                children: [],
+              },
+            ],
+          })
+        }
+
+        return layers
+      }
+    }
+
+    return null
   }
 
   private visitLayer(view: Reader): ColorLayer[] {

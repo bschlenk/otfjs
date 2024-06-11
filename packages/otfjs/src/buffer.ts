@@ -106,10 +106,10 @@ export class Reader {
    * reading itself, and instead expects the callback to read the data from the view. If you need
    * a simple array of u8s, use the u8Array method instead.
    */
-  public array<T>(length: number, fn: () => T): T[] {
+  public array<T>(length: number, fn: (view: Reader) => T): T[] {
     const arr = []
     for (let i = 0; i < length; i++) {
-      arr.push(fn())
+      arr.push(fn(this))
     }
     return arr
   }
