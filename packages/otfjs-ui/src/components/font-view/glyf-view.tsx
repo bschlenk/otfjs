@@ -273,6 +273,7 @@ function SvgGlyph({
               walkAll(dest)
               const destId = `${glyph.id}-${defs.length}`
               latest.props.id = destId
+              latest.props.key = defs.length
               const destEl = popOnly()
 
               defs.push(destEl)
