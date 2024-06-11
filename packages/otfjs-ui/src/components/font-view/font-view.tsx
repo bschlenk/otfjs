@@ -33,7 +33,9 @@ interface FontViewProps {
 
 export function FontView(props: FontViewProps) {
   const font = useMemo(() => new Font(props.font), [props.font])
-  const [tag, setTag] = useState('glyf')
+  const [tag, setTag] = useState(() =>
+    font.hasTable('glyf') ? 'glyf' : 'head',
+  )
 
   const TableComponent = TABLE_MAP[tag] ?? null
 
