@@ -9,7 +9,7 @@ import {
   GlyphEnriched,
   glyphToSvgPath,
 } from 'otfjs'
-import { mat, vec } from 'otfjs/util'
+import { mat, Matrix, vec } from 'otfjs/util'
 
 import { rgbaToCss } from '../../utils/color'
 import { GlyphEditor } from './glyph-editor'
@@ -48,8 +48,6 @@ export function AllGlyfView({
   for (const glyph of font.glyphs()) {
     if (!glyph.points) continue
     if (glyph.advanceWidth === 0) continue
-
-    if (glyph.id !== 1335) continue
 
     svgs.push(
       <button
@@ -109,6 +107,7 @@ function SvgGlyph({
     const palette = font.getTable('CPAL').getPalette(0)
     const stack: any[] = [{ type: Fragment, props: {}, children: [] }]
     let latest = stack[0]
+    let matrix: Matrix | null = null
     let key = 0
 
     const push = (): any => {
@@ -177,6 +176,7 @@ function SvgGlyph({
               y1={p0.y}
               x2={p3.x}
               y2={p3.y}
+              gradientTransform={matrix ? mat.toSvg(matrix) : undefined}
               spreadMethod={spreadMethod}
               gradientUnits="userSpaceOnUse"
             >
@@ -184,6 +184,7 @@ function SvgGlyph({
             </linearGradient>,
           )
 
+          matrix = null
           latest.props.fill = `url('#${id}')`
           break
         }
@@ -215,6 +216,7 @@ function SvgGlyph({
               cx={p1.x}
               cy={p1.y}
               r={r1}
+              gradientTransform={matrix ? mat.toSvg(matrix) : undefined}
               spreadMethod={spreadMethod}
               gradientUnits="userSpaceOnUse"
             >
@@ -222,6 +224,7 @@ function SvgGlyph({
             </radialGradient>,
           )
 
+          matrix = null
           latest.props.fill = `url('#${id}')`
           break
         }
@@ -231,6 +234,16 @@ function SvgGlyph({
           const g = font.getGlyph(glyphId)
           const d = glyphToSvgPath(g)
 
+          let hasMatrix = false
+          if (matrix) {
+            const el = push()
+            el.type = 'g'
+            el.props.transform = mat.toSvg(matrix)
+
+            hasMatrix = true
+            matrix = null
+          }
+
           const el = push()
           el.type = 'path'
           el.props.d = d
@@ -239,19 +252,14 @@ function SvgGlyph({
 
           pop()
 
+          if (hasMatrix) pop()
+
           break
         }
 
         case ColorRecordType.TRANSFORM: {
-          const { matrix } = layer.props
-
-          const el = push()
-          el.type = 'g'
-          el.props.transform = mat.toSvg(matrix)
-
+          matrix = layer.props.matrix
           walkAll(layer.children)
-
-          pop()
 
           break
         }
@@ -270,7 +278,7 @@ function SvgGlyph({
               defs.push(destEl)
               const id = `${glyph.id}-${defs.length}`
               defs.push(
-                <filter key={key++} id={id}>
+                <filter key={defs.length} id={id}>
                   <feImage href={`#${destId}`} x="0" y="0" />
                   <feComposite in="SourceGraphic" operator="in" />
                 </filter>,
