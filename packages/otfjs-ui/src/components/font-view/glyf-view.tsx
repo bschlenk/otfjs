@@ -4,6 +4,7 @@ import {
   ColorRecordType,
   ColrTable,
   CompositeMode,
+  CpalTable,
   Extend,
   Font,
   GlyphEnriched,
@@ -39,10 +40,13 @@ export function AllGlyfView({
   font: Font
   onClick: (i: number) => void
 }) {
+  const [palette, setPalette] = useState(0)
+
   const svgs: JSX.Element[] = []
 
   const head = font.getTable('head')
   const colr = font.getTableOrNull('COLR')
+  const cpal = font.getTableOrNull('CPAL')
   const height = head.unitsPerEm
 
   for (const glyph of font.glyphs()) {
@@ -54,16 +58,39 @@ export function AllGlyfView({
         className="bg-transparent p-0"
         onClick={() => onClick(glyph.id)}
       >
-        <SvgGlyph glyph={glyph} font={font} height={height} colr={colr} />
+        <SvgGlyph
+          glyph={glyph}
+          font={font}
+          height={height}
+          colr={colr}
+          palette={palette}
+        />
       </button>,
     )
   }
 
-  return <GlyfContainer>{svgs}</GlyfContainer>
+  return (
+    <GlyfContainer cpal={cpal} palette={palette} setPalette={setPalette}>
+      {svgs}
+    </GlyfContainer>
+  )
 }
 
-function GlyfContainer({ children }: React.PropsWithChildren) {
+interface GlyfContainerProps {
+  cpal: CpalTable | null
+  children: React.ReactNode
+  palette: number
+  setPalette: (palette: number) => void
+}
+
+function GlyfContainer({
+  cpal,
+  children,
+  palette,
+  setPalette,
+}: GlyfContainerProps) {
   const [scale, setScale] = useState(60)
+
   return (
     <div style={{ '--glyph-height': `${scale}px` }}>
       <input
@@ -73,6 +100,21 @@ function GlyfContainer({ children }: React.PropsWithChildren) {
         value={scale}
         onChange={(e) => setScale(+e.target.value)}
       />
+      {cpal && (
+        <label>
+          Palette
+          <select
+            value={palette}
+            onChange={(e) => setPalette(+e.currentTarget.value)}
+          >
+            {Array.from({ length: cpal.numPalettes }, (_, i) => (
+              <option key={i} value={i}>
+                {i}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="flex flex-wrap">{children}</div>
     </div>
   )
@@ -83,11 +125,13 @@ function SvgGlyph({
   font,
   height,
   colr,
+  palette: paletteIdx,
 }: {
   glyph: GlyphEnriched
   font: Font
   height: number
   colr: ColrTable | null
+  palette: number
 }) {
   let width = glyph.advanceWidth
   if (width === 0) {
@@ -106,7 +150,7 @@ function SvgGlyph({
     // some nodes push their own latest record
     // when done, they need to pop and convert to jsx
 
-    const palette = font.getTable('CPAL').getPalette(0)
+    const palette = font.getTable('CPAL').getPalette(paletteIdx)
     const stack: any[] = [{ type: Fragment, props: {}, children: [] }]
     let latest = stack[0]
     let matrix: Matrix | null = null

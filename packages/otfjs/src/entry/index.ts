@@ -15,5 +15,6 @@ export {
   type ColorStop,
   CompositeMode,
 } from '../tables/colr.js'
+export type { CpalTable } from '../tables/cpal.js'
 export type { Glyph, GlyphSimple } from '../tables/glyf.js'
 export type * from '../types.js'
