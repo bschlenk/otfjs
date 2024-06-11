@@ -47,7 +47,6 @@ export function AllGlyfView({
 
   for (const glyph of font.glyphs()) {
     if (!glyph.points) continue
-    if (glyph.advanceWidth === 0) continue
 
     svgs.push(
       <button
@@ -90,7 +89,10 @@ function SvgGlyph({
   height: number
   colr: ColrTable | null
 }) {
-  const width = glyph.advanceWidth
+  let width = glyph.advanceWidth
+  if (width === 0) {
+    width = glyph.xMax - glyph.xMin
+  }
 
   const defs: any = []
   let path: any = []
