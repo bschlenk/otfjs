@@ -7,6 +7,10 @@ export interface Vector {
 
 export const ZERO: Vector = { x: 0, y: 0 }
 
+export function vec(x: number, y: number): Vector {
+  return { x, y }
+}
+
 /**
  * Return a vector pointing in the same direction
  * but with the given `magnitude`.

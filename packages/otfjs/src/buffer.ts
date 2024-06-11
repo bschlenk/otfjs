@@ -1,4 +1,4 @@
-import { from2dot14, to2dot14 } from './bit.js'
+import { from2dot14, from16dot16, to2dot14 } from './bit.js'
 import { computeChecksum } from './checksum.js'
 import {
   assert,
@@ -74,6 +74,11 @@ export class Reader {
   public f2dot14(): number {
     const val = this.i16()
     return from2dot14(val)
+  }
+
+  public f16dot16(): number {
+    const val = this.i32()
+    return from16dot16(val)
   }
 
   public date(): Date {

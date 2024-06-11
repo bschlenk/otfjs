@@ -1,4 +1,5 @@
 import type { Extend } from './enums.js'
+import type { Matrix } from './matrix.js'
 import type { Vector } from './vector.js'
 
 export interface Header {
@@ -37,4 +38,6 @@ export interface ColorVisitor {
     stops: { stopOffset: number; paletteIndex: number; alpha: number }[],
   ): void
   paintGlyph(glyphId: number): void
+  enterTransform(matrix: Matrix): void
+  exitTransform(): void
 }

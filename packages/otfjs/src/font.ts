@@ -40,7 +40,8 @@ export interface TableMap {
 
 type TableType<T extends string> = T extends keyof TableMap ? TableMap[T] : any
 
-interface GlyphEnriched extends GlyphSimple {
+export interface GlyphEnriched extends GlyphSimple {
+  id: number
   advanceWidth: number
 }
 
@@ -115,26 +116,27 @@ export class Font {
     return this.getTable('maxp').numGlyphs
   }
 
-  public getGlyph(index: number): GlyphEnriched {
+  public getGlyph(id: number): GlyphEnriched {
     const loca = this.getTable('loca')
     const hmtx = this.getTable('hmtx')
 
-    const offset = loca[index]
-    const length = loca[index + 1] - offset
+    const offset = loca[id]
+    const length = loca[id + 1] - offset
 
     const { advanceWidth } =
-      hmtx.longHorMetrics[index] ??
+      hmtx.longHorMetrics[id] ??
       hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
 
     const glyfTableRecord = this.#tables['glyf']
     const view = new Reader(this.#data, glyfTableRecord.offset + offset, length)
 
     const glyph = readGlyf(view)
-    if (glyph.type === 'simple') return { ...glyph, advanceWidth }
+    if (glyph.type === 'simple') return { ...glyph, id, advanceWidth }
 
     const { components, ...rest } = glyph
     const fullGlyph: GlyphEnriched = {
       ...rest,
+      id,
       type: 'simple',
       contoursOverlap: components[0].flags.overlapCompound,
       points: [],

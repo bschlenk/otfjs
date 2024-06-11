@@ -41,19 +41,16 @@ export function rotate(angle: number): Matrix {
   return mat(cos, sin, -sin, cos, 0, 0)
 }
 
+export function rotateAt(angle: number, cx: number, cy: number): Matrix {
+  return transformFrom(rotate(angle), cx, cy)
+}
+
 export function scale(x: number, y = x): Matrix {
   return mat(x, 0, 0, y, 0, 0)
 }
 
-function mult2(a: Matrix, b: Matrix): Matrix {
-  return mat(
-    a.xx * b.xx + a.xy * b.yx,
-    a.xx * b.xy + a.xy * b.yy,
-    a.yx * b.xx + a.yy * b.yx,
-    a.yx * b.xy + a.yy * b.yy,
-    a.dx * b.xx + a.dy * b.yx + b.dx,
-    a.dx * b.xy + a.dy * b.yy + b.dy,
-  )
+export function scaleAt(x: number, y: number, cx: number, cy: number): Matrix {
+  return transformFrom(scale(x, y), cx, cy)
 }
 
 export function mult(m: Matrix, ...rest: Matrix[]): Matrix {
@@ -124,4 +121,19 @@ export function toCss(m: Matrix) {
  */
 export function toSvg(m: Matrix) {
   return `matrix(${m.xx} ${m.xy} ${m.yx} ${m.yy} ${m.dx} ${m.dy})`
+}
+
+function mult2(a: Matrix, b: Matrix): Matrix {
+  return mat(
+    a.xx * b.xx + a.xy * b.yx,
+    a.xx * b.xy + a.xy * b.yy,
+    a.yx * b.xx + a.yy * b.yx,
+    a.yx * b.xy + a.yy * b.yy,
+    a.dx * b.xx + a.dy * b.yx + b.dx,
+    a.dx * b.xy + a.dy * b.yy + b.dy,
+  )
+}
+
+function transformFrom(m: Matrix, centerX: number, centerY: number): Matrix {
+  return mult(translate(centerX, centerY), m, translate(-centerX, -centerY))
 }

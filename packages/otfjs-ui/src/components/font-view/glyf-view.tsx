@@ -1,10 +1,18 @@
-import { cloneElement, useState } from 'react'
-import { Extend, Font, glyphToSvgPath } from 'otfjs'
-import { vec } from 'otfjs/util'
+import { createElement, Fragment, useState } from 'react'
+import {
+  ColorLayer,
+  ColorRecordType,
+  ColrTable,
+  CompositeMode,
+  Extend,
+  Font,
+  GlyphEnriched,
+  glyphToSvgPath,
+} from 'otfjs'
+import { mat, vec } from 'otfjs/util'
 
+import { rgbaToCss } from '../../utils/color'
 import { GlyphEditor } from './glyph-editor'
-
-import styles from './glyf-view.module.css'
 
 export function GlyfView({ font }: { font: Font }) {
   const [glyf, setGlyf] = useState<number | null>(null)
@@ -35,55 +43,110 @@ export function AllGlyfView({
 
   const head = font.getTable('head')
   const colr = font.getTableOrNull('COLR')
-
-  let i = 0
+  const height = head.unitsPerEm
 
   for (const glyph of font.glyphs()) {
-    if (!glyph.points) {
-      ++i
-      continue
+    if (!glyph.points) continue
+    if (glyph.advanceWidth === 0) continue
+
+    if (glyph.id !== 1335) continue
+
+    svgs.push(
+      <button
+        key={glyph.id}
+        className="bg-transparent p-0"
+        onClick={() => onClick(glyph.id)}
+      >
+        <SvgGlyph glyph={glyph} font={font} height={height} colr={colr} />
+      </button>,
+    )
+  }
+
+  return <GlyfContainer>{svgs}</GlyfContainer>
+}
+
+function GlyfContainer({ children }: React.PropsWithChildren) {
+  const [scale, setScale] = useState(60)
+  return (
+    <div style={{ '--glyph-height': `${scale}px` }}>
+      <input
+        type="range"
+        min="8"
+        max="200"
+        value={scale}
+        onChange={(e) => setScale(+e.target.value)}
+      />
+      <div className="flex flex-wrap">{children}</div>
+    </div>
+  )
+}
+
+function SvgGlyph({
+  glyph,
+  font,
+  height,
+  colr,
+}: {
+  glyph: GlyphEnriched
+  font: Font
+  height: number
+  colr: ColrTable | null
+}) {
+  const width = glyph.advanceWidth
+
+  const defs: any = []
+  let path: any = []
+
+  const tree = colr?.colorGlyph(glyph.id)
+
+  if (tree) {
+    // visit a node
+    // maybe push a new latest record
+    // some nodes just update props on the latest record
+    // some nodes push their own latest record
+    // when done, they need to pop and convert to jsx
+
+    const palette = font.getTable('CPAL').getPalette(0)
+    const stack: any[] = [{ type: Fragment, props: {}, children: [] }]
+    let latest = stack[0]
+    let key = 0
+
+    const push = (): any => {
+      const el = { type: 'path', props: { key: key++ }, children: [] }
+      stack.push(el)
+      latest = el
+      return el
     }
 
-    if (glyph.advanceWidth === 0) {
-      ++i
-      continue
+    const popOnly = () => {
+      const el = stack.pop()
+      latest = stack[stack.length - 1]
+
+      if (el.type === 'path' && !el.props.d) {
+        // make this a full size rect
+        el.type = 'rect'
+        Object.assign(el.props, { x: 0, y: 0, width, height })
+      }
+
+      return createElement(el.type, el.props, el.children)
     }
 
-    const width = glyph.advanceWidth
-    const height = head.unitsPerEm // glyph.yMax - glyph.yMin
+    const pop = () => {
+      const el = popOnly()
+      latest.children.push(el)
+    }
 
-    const d = glyphToSvgPath(glyph)
-    const idx = i
+    const walk = (layer: ColorLayer) => {
+      switch (layer.format) {
+        case ColorRecordType.SOLID: {
+          const { paletteIndex, alpha } = layer.props
+          latest.props.fill = rgbaToCss(palette[paletteIndex], alpha)
+          break
+        }
 
-    const defs: any = []
-    let path: any = []
-
-    if (
-      !colr?.colorGlyph(i, {
-        paintGlyph(glyphId) {
-          const g = font.getGlyph(glyphId)
-          const d = glyphToSvgPath(g)
-          path.push(<path d={d} fill="currentcolor" />)
-        },
-        paintSolid(paletteIndex: number, alpha: number) {
-          const c = font.getTable('CPAL').getPalette(0)[paletteIndex]
-          path[path.length - 1] = cloneElement(path[path.length - 1], {
-            fill: `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a * alpha})`,
-          })
-        },
-        paintLinearGradient(p0, p1, p2, extend, stops) {
-          const spreadMethod = (() => {
-            switch (extend) {
-              case Extend.PAD:
-                return 'pad'
-              case Extend.REFLECT:
-                return 'reflect'
-              case Extend.REPEAT:
-                return 'repeat'
-            }
-          })()
-
-          const palette = font.getTable('CPAL').getPalette(0)
+        case ColorRecordType.LINEAR_GRADIENT: {
+          const { p0, p1, p2, extend, stops } = layer.props
+          const spreadMethod = extendToSpreadMethod(extend)
 
           const stopsEls = stops.map((stop, i) => {
             const c = palette[stop.paletteIndex]
@@ -91,12 +154,12 @@ export function AllGlyfView({
               <stop
                 key={i}
                 offset={stop.stopOffset}
-                stopColor={`rgb(${c.r} ${c.g} ${c.b} / ${c.a * stop.alpha})`}
+                stopColor={rgbaToCss(c, stop.alpha)}
               />
             )
           })
 
-          const id = `gradient-${idx}-${defs.length}`
+          const id = `${glyph.id}-gradient-${defs.length}`
 
           const p3 = vec.add(
             p0,
@@ -121,47 +184,140 @@ export function AllGlyfView({
             </linearGradient>,
           )
 
-          path[path.length - 1] = cloneElement(path[path.length - 1], {
-            fill: `url('#${id}')`,
+          latest.props.fill = `url('#${id}')`
+          break
+        }
+
+        case ColorRecordType.RADIAL_GRADIENT: {
+          const { p0, p1, r0, r1, extend, stops } = layer.props
+          const spreadMethod = extendToSpreadMethod(extend)
+
+          const stopsEls = stops.map((stop, i) => {
+            const c = palette[stop.paletteIndex]
+            return (
+              <stop
+                key={i}
+                offset={stop.stopOffset}
+                stopColor={rgbaToCss(c, stop.alpha)}
+              />
+            )
           })
-        },
-      })
-    ) {
-      path = [<path d={d} fill="currentcolor" />]
+
+          const id = `${glyph.id}-radial-gradient-${defs.length}`
+
+          defs.push(
+            <radialGradient
+              key={defs.length}
+              id={id}
+              fx={p0.x}
+              fy={p0.y}
+              fr={r0}
+              cx={p1.x}
+              cy={p1.y}
+              r={r1}
+              spreadMethod={spreadMethod}
+              gradientUnits="userSpaceOnUse"
+            >
+              {stopsEls}
+            </radialGradient>,
+          )
+
+          latest.props.fill = `url('#${id}')`
+          break
+        }
+
+        case ColorRecordType.GLYPH: {
+          const { glyphId } = layer.props
+          const g = font.getGlyph(glyphId)
+          const d = glyphToSvgPath(g)
+
+          const el = push()
+          el.type = 'path'
+          el.props.d = d
+
+          walkAll(layer.children)
+
+          pop()
+
+          break
+        }
+
+        case ColorRecordType.TRANSFORM: {
+          const { matrix } = layer.props
+
+          const el = push()
+          el.type = 'g'
+          el.props.transform = mat.toSvg(matrix)
+
+          walkAll(layer.children)
+
+          pop()
+
+          break
+        }
+
+        case ColorRecordType.COMPOSITE: {
+          const { mode, src, dest } = layer.props
+
+          switch (mode) {
+            case CompositeMode.SRC_IN: {
+              push()
+              walkAll(dest)
+              const destId = `${glyph.id}-${defs.length}`
+              latest.props.id = destId
+              const destEl = popOnly()
+
+              defs.push(destEl)
+              const id = `${glyph.id}-${defs.length}`
+              defs.push(
+                <filter key={key++} id={id}>
+                  <feImage href={`#${destId}`} x="0" y="0" />
+                  <feComposite in="SourceGraphic" operator="in" />
+                </filter>,
+              )
+
+              const el = push()
+              el.type = 'g'
+              el.props.style = { filter: `url(#${id})` }
+              walkAll(src)
+              pop()
+              break
+            }
+
+            case CompositeMode.SOFT_LIGHT: {
+              break
+            }
+
+            default:
+              break
+          }
+        }
+      }
     }
 
-    svgs.push(
-      <svg
-        onClick={() => onClick(idx)}
-        key={idx}
-        className={styles.glyph}
-        data-glyph-index={i++}
-        height="100px"
-        viewBox={`0 0 ${width} ${height}`}
-        style={{ overflow: 'visible' }}
-      >
-        {defs.length > 0 && <defs>{defs}</defs>}
-        <g transform={`matrix(1 0 0 -1 0 ${height})`}>{path}</g>
-      </svg>,
-    )
+    const walkAll = (tree: ColorLayer[]) => {
+      for (const layer of tree) {
+        walk(layer)
+      }
+    }
+
+    walkAll(tree)
+
+    path = stack[0].children
+  } else {
+    path = [<path key={0} d={glyphToSvgPath(glyph)} />]
   }
 
-  return <GlyfContainer>{svgs}</GlyfContainer>
-}
-
-function GlyfContainer({ children }: React.PropsWithChildren) {
-  const [scale, setScale] = useState(60)
   return (
-    <div style={{ '--glyph-height': `${scale}px` }}>
-      <input
-        type="range"
-        min="8"
-        max="200"
-        value={scale}
-        onChange={(e) => setScale(+e.target.value)}
-      />
-      <div className="flex flex-wrap">{children}</div>
-    </div>
+    <svg
+      className="overflow-visible h-[var(--glyph-height,100px)]"
+      data-glyph-id={glyph.id}
+      height="100px"
+      viewBox={`0 0 ${width} ${height}`}
+    >
+      {defs.length > 0 && <defs>{defs}</defs>}
+      <g transform={`matrix(1 0 0 -1 0 ${height})`}>{path}</g>
+    </svg>
   )
 }
 
@@ -242,3 +398,14 @@ function SingleGlyphView({
   )
 }
 */
+
+function extendToSpreadMethod(extend: Extend) {
+  switch (extend) {
+    case Extend.PAD:
+      return 'pad'
+    case Extend.REFLECT:
+      return 'reflect'
+    case Extend.REPEAT:
+      return 'repeat'
+  }
+}
