@@ -112,6 +112,11 @@ function SvgGlyph({
     let matrix: Matrix | null = null
     let key = 0
 
+    const getColor = (paletteIndex: number, alpha: number) => {
+      if (paletteIndex === 0xffff) return 'currentcolor'
+      return rgbaToCss(palette[paletteIndex], alpha)
+    }
+
     const push = (): any => {
       const el = { type: 'path', props: { key: key++ }, children: [] }
       stack.push(el)
@@ -141,7 +146,7 @@ function SvgGlyph({
       switch (layer.format) {
         case ColorRecordType.SOLID: {
           const { paletteIndex, alpha } = layer.props
-          latest.props.fill = rgbaToCss(palette[paletteIndex], alpha)
+          latest.props.fill = getColor(paletteIndex, alpha)
           break
         }
 
@@ -149,16 +154,13 @@ function SvgGlyph({
           const { p0, p1, p2, extend, stops } = layer.props
           const spreadMethod = extendToSpreadMethod(extend)
 
-          const stopsEls = stops.map((stop, i) => {
-            const c = palette[stop.paletteIndex]
-            return (
-              <stop
-                key={i}
-                offset={stop.stopOffset}
-                stopColor={rgbaToCss(c, stop.alpha)}
-              />
-            )
-          })
+          const stopsEls = stops.map((stop, i) => (
+            <stop
+              key={i}
+              offset={stop.stopOffset}
+              stopColor={getColor(stop.paletteIndex, stop.alpha)}
+            />
+          ))
 
           const id = `${glyph.id}-gradient-${defs.length}`
 
@@ -195,16 +197,13 @@ function SvgGlyph({
           const { p0, p1, r0, r1, extend, stops } = layer.props
           const spreadMethod = extendToSpreadMethod(extend)
 
-          const stopsEls = stops.map((stop, i) => {
-            const c = palette[stop.paletteIndex]
-            return (
-              <stop
-                key={i}
-                offset={stop.stopOffset}
-                stopColor={rgbaToCss(c, stop.alpha)}
-              />
-            )
-          })
+          const stopsEls = stops.map((stop, i) => (
+            <stop
+              key={i}
+              offset={stop.stopOffset}
+              stopColor={getColor(stop.paletteIndex, stop.alpha)}
+            />
+          ))
 
           const id = `${glyph.id}-radial-gradient-${defs.length}`
 
