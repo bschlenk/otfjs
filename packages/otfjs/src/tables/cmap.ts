@@ -44,14 +44,17 @@ export class CmapTable {
     }
 
     const glyphIndexOffset =
-      subtable.idRangeOffsets![i] + (codePoint - subtable.startCodes![i]) * 2
+      subtable.idRangeOffsets![i] / 2 + (codePoint - subtable.startCodes![i])
 
-    // need to start from the offset of idRangeOffsets[i], which is going to be
-    // the start of the glyphIdArray - segCountX2 + i * 2
+    if (glyphIndexOffset === 0) return 0
 
-    return subtableView
-      .subtable(glyphIndexOffset - subtable.segCountX2! + i * 2)
-      .u16()
+    const thisIdRangeOffset = subtable.idRangeOffsetsStart! + i * 2
+
+    return (
+      (subtableView.subtable(thisIdRangeOffset + glyphIndexOffset * 2).u16() +
+        subtable.idDeltas![i]) %
+      65536
+    )
   }
 }
 
@@ -92,7 +95,6 @@ export function readCmapTable(view: Reader) {
 
 function readCmapSubtable(view: Reader) {
   const format = view.u16()
-  console.log('format', format)
 
   switch (format) {
     case 0: {
@@ -122,16 +124,8 @@ function readCmapSubtable(view: Reader) {
 
       const startCodes = view.array(segs, () => view.u16())
       const idDeltas = view.array(segs, () => view.i16())
+      const idRangeOffsetsStart = view.offset
       const idRangeOffsets = view.array(segs, () => view.u16())
-
-      /*
-      for (let i = 0; i < segs; ++i) {
-        const start = toHex(startCodes[i])
-        const end = toHex(endCodes[i])
-        const delta = idDeltas[i]
-        const offset = idRangeOffsets[i]
-      }
-      */
 
       return {
         format,
@@ -145,6 +139,7 @@ function readCmapSubtable(view: Reader) {
         startCodes,
         idDeltas,
         idRangeOffsets,
+        idRangeOffsetsStart,
       }
     }
 
