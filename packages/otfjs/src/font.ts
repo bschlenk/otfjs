@@ -1,4 +1,5 @@
 import { Reader } from './buffer.js'
+import { Cache, createCache } from './cache.js'
 import { NameId, PlatformId } from './enums.js'
 import * as mat from './matrix.js'
 import { parseFont } from './parser.js'
@@ -49,10 +50,12 @@ export class Font {
   public readonly sfntVersion: number
   #data: ArrayBuffer
   #tables: Record<string, TableRecord>
-  #tableCache = new Map<string, any>()
+  #tableCache: Cache<TableType<any>>
 
   constructor(data: ArrayBuffer) {
     this.#data = data
+    this.#tableCache = createCache((tag: string) => this.readTable(tag))
+  }
 
     const { header, tables } = parseFont(data)
     validateHeader(header)
@@ -82,6 +85,10 @@ export class Font {
     return table
   }
 
+  public getTableOrNull<T extends string>(tag: T): TableType<T> | null {
+    return this.#tableCache.get(tag)
+  }
+
   public getName(nameId: NameId, platformId: PlatformId = PlatformId.Windows) {
     const name = this.getTable('name')
     const record = name.nameRecords.find(
@@ -90,20 +97,6 @@ export class Font {
     if (!record) return null
 
     return record.value
-  }
-
-  public getTableOrNull<T extends string>(tag: T): TableType<T> | null {
-    let table = this.#tableCache.get(tag)
-
-    if (!table) {
-      const tableRec = this.#tables[tag]
-      if (!tableRec) return null
-
-      table = this.readTable(tableRec)
-      this.#tableCache.set(tag, table)
-    }
-
-    return table
   }
 
   public getTableReader(tag: string): Reader {
