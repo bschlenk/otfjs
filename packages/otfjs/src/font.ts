@@ -2,7 +2,6 @@ import { Reader } from './buffer.js'
 import { Cache, createCache } from './cache.js'
 import { NameId, PlatformId } from './enums.js'
 import * as mat from './matrix.js'
-import { parseFont } from './parser.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { ColrTable, readColrTable } from './tables/colr.js'
 import { readTableAsI16Array, readTableAsU8Array } from './tables/common.js'
@@ -10,6 +9,7 @@ import { CpalTable, readCpalTable } from './tables/cpal.js'
 import { GlyphSimple, readGlyf } from './tables/glyf.js'
 import { GposTable, readGposTable } from './tables/gpos.js'
 import { HeadTable, readHeadTable } from './tables/head.js'
+import { readHeader } from './tables/header.js'
 import { HheaTable, readHheaTable } from './tables/hhea.js'
 import { HmtxTable, readHmtxTable } from './tables/hmtx.js'
 import { LocaTable, readLocaTable } from './tables/loca.js'
@@ -17,7 +17,7 @@ import { MaxpTable, readMaxpTable } from './tables/maxp.js'
 import { NameTable, readNameTable } from './tables/name.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
 import { PostTable, readPostTable } from './tables/post.js'
-import { TableRecord } from './types.js'
+import { Header, TableRecord } from './types.js'
 import { toObject } from './utils.js'
 import { validateHeader, validateTable } from './validation.js'
 
@@ -47,25 +47,27 @@ export interface GlyphEnriched extends GlyphSimple {
 }
 
 export class Font {
-  public readonly sfntVersion: number
   #data: ArrayBuffer
+  #header: Header
   #tables: Record<string, TableRecord>
   #tableCache: Cache<TableType<any>>
 
   constructor(data: ArrayBuffer) {
     this.#data = data
+    this.#header = readHeader(new Reader(data))
+    this.#tables = toObject(this.#header.tables, (table) => table.tag)
     this.#tableCache = createCache((tag: string) => this.readTable(tag))
   }
 
-    const { header, tables } = parseFont(data)
-    validateHeader(header)
-    for (const table of tables) {
-      validateTable(data, table)
-    }
-
-    this.sfntVersion = header.sfntVersion
-    this.#tables = toObject(tables, (table) => table.tag)
+  public get sfntVersion(): number {
+    return this.#header.sfntVersion
   }
+
+  public get unitsPerEm() {
+    return this.getTable('head').unitsPerEm
+  }
+
+  // Table methods
 
   public get tables() {
     return Object.keys(this.#tables)
@@ -89,8 +91,11 @@ export class Font {
     return this.#tableCache.get(tag)
   }
 
+  // Name table methods
+
   public getName(nameId: NameId, platformId: PlatformId = PlatformId.Windows) {
     const name = this.getTable('name')
+    // TODO: can this be binary searched?
     const record = name.nameRecords.find(
       (record) => record.platformId === platformId && record.nameId === nameId,
     )
@@ -99,11 +104,7 @@ export class Font {
     return record.value
   }
 
-  public getTableReader(tag: string): Reader {
-    const table = this.#tables[tag]
-    if (!table) throw new Error(`table ${tag} not found`)
-    return new Reader(this.#data, table.offset, table.length)
-  }
+  // Glyph methods
 
   public get numGlyphs() {
     return this.getTable('maxp').numGlyphs
@@ -179,7 +180,21 @@ export class Font {
     }
   }
 
-  private readTable(table: TableRecord) {
+  // Validation
+
+  public validate() {
+    validateHeader(this.#header)
+    for (const table of this.#header.tables) {
+      validateTable(this.#data, table)
+    }
+  }
+
+  // Private methods
+
+  private readTable(tag: string) {
+    const table = this.#tables[tag]
+    if (!table) return null
+
     const view = new Reader(this.#data, table.offset, table.length)
 
     switch (table.tag) {

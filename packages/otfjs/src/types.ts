@@ -8,6 +8,7 @@ export interface Header {
   searchRange: number
   entrySelector: number
   rangeShift: number
+  tables: TableRecord[]
 }
 
 export interface TableRecord {
