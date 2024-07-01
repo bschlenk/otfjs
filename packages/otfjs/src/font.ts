@@ -13,6 +13,7 @@ import { readHeader } from './tables/header.js'
 import { HheaTable, readHheaTable } from './tables/hhea.js'
 import { HmtxTable, readHmtxTable } from './tables/hmtx.js'
 import { LocaTable, readLocaTable } from './tables/loca.js'
+import { MathTable, readMathTable } from './tables/math.js'
 import { MaxpTable, readMaxpTable } from './tables/maxp.js'
 import { NameTable, readNameTable } from './tables/name.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
@@ -32,6 +33,7 @@ export interface TableMap {
   hhea: HheaTable
   hmtx: HmtxTable
   loca: LocaTable
+  MATH: MathTable
   maxp: MaxpTable
   name: NameTable
   'OS/2': OS2Table
@@ -226,6 +228,8 @@ export class Font {
         const head = this.getTable('head')
         return readLocaTable(view, head.indexToLocFormat, this.numGlyphs)
       }
+      case 'MATH':
+        return readMathTable(view)
       case 'maxp':
         return readMaxpTable(view)
       case 'name':

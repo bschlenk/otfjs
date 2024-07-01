@@ -18,6 +18,7 @@ const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
   head: jsonView('head'),
   hhea: jsonView('hhea'),
   hmtx: jsonView('hmtx'),
+  MATH: jsonView('MATH'),
   maxp: jsonView('maxp', { version: toHex }),
   loca: jsonView('loca'),
   name: jsonView('name'),
