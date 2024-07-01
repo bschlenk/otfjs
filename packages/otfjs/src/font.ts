@@ -83,7 +83,7 @@ export class Font {
     const table = this.getTableOrNull(tag)
 
     if (!table) {
-      throw new Error(`table ${tag} not found`)
+      throw new Error(`"${tag}" table not found`)
     }
 
     return table
