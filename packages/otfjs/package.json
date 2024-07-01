@@ -23,6 +23,8 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
+    "@bschlenk/mat": "^0.0.3",
+    "@bschlenk/vec": "^0.0.1",
     "vitest": "^0.34.6"
   }
 }

@@ -38,6 +38,12 @@ importers:
 
   packages/otfjs:
     dependencies:
+      '@bschlenk/mat':
+        specifier: ^0.0.3
+        version: 0.0.3
+      '@bschlenk/vec':
+        specifier: ^0.0.1
+        version: 0.0.1
       vitest:
         specifier: ^0.34.6
         version: 0.34.6
@@ -201,6 +207,15 @@ packages:
   '@babel/types@7.23.0':
     resolution: {integrity: sha512-0oIyUfKoI3mSqMvsxBdclDwxXKXAUA8v/apZbc+iSyARYou1o8ZGDxbUYyLFoW2arqS2jDGqJuZvv1d/io1axg==}
     engines: {node: '>=6.9.0'}
+
+  '@bschlenk/mat@0.0.3':
+    resolution: {integrity: sha512-aAVrutpYr1Z8W11iHck+xWeaGG8h48JXYl3EuGOT0dPdfkbT1HwImEcleRvd9+ctfbU2I7TP4WKd3UYKPQTD9g==}
+
+  '@bschlenk/util@0.0.1':
+    resolution: {integrity: sha512-8vT7gR9l9rJzjUc6l5PNGK98LjRY27urqq+ZfVlNzpnCCiaxxwkaDGpa6s/i0Kht8efFxuDnzpXuJGLNj/Gy+g==}
+
+  '@bschlenk/vec@0.0.1':
+    resolution: {integrity: sha512-A3bRkhX9YjPo0N6jmPebJRHtaay/4IkpTl9/nz0wJt/4nPRdQAKqLADGAO8YLn/HMefOhEj0AN/NXaVZn1A7GQ==}
 
   '@esbuild/android-arm64@0.18.20':
     resolution: {integrity: sha512-Nz4rJcchGDtENV0eMKUNa6L12zz2zBDXuhj/Vjh18zGqB44Bi7MBMSXjgunJgjRhCmKOjnPuZp4Mb6OKqtMHLQ==}
@@ -2043,6 +2058,17 @@ snapshots:
       '@babel/helper-string-parser': 7.22.5
       '@babel/helper-validator-identifier': 7.22.20
       to-fast-properties: 2.0.0
+
+  '@bschlenk/mat@0.0.3':
+    dependencies:
+      '@bschlenk/util': 0.0.1
+      '@bschlenk/vec': 0.0.1
+
+  '@bschlenk/util@0.0.1': {}
+
+  '@bschlenk/vec@0.0.1':
+    dependencies:
+      '@bschlenk/util': 0.0.1
 
   '@esbuild/android-arm64@0.18.20':
     optional: true
