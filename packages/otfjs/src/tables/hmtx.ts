@@ -1,5 +1,6 @@
 import { Reader } from '../buffer.js'
 
+// TODO: give this a function to get metrics by glyph id
 export interface HmtxTable {
   longHorMetrics: { advanceWidth: number; leftSideBearing: number }[]
   leftSideBearings: number[]
