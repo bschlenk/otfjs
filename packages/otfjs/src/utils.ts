@@ -58,10 +58,6 @@ export function debug(n: number) {
   return n
 }
 
-export function areClose(a: number, b: number, e = Number.EPSILON) {
-  return Math.abs(a - b) <= e
-}
-
 export function binarySearch(arr: number[], target: number): number | null
 export function binarySearch<T>(
   arr: T[],

@@ -7,8 +7,8 @@ import {
   useRef,
   useState,
 } from 'react'
+import * as vec from '@bschlenk/vec'
 import { GlyphSimple, glyphToSvgPath, renderGlyphToCanvas } from 'otfjs'
-import { vec, Vector } from 'otfjs/util'
 
 import { usePrevious } from '../../hooks/use-previous'
 import { relativeMouse } from '../../utils/event'
@@ -208,7 +208,7 @@ function useOriginScale(
 
 const MARGIN = 32
 
-function centeredGlyph(glyph: GlyphSimple, size: Vector) {
+function centeredGlyph(glyph: GlyphSimple, size: vec.Vector) {
   const { xMin, xMax, yMin, yMax } = glyph
   const width = xMax - xMin
   const height = yMax - yMin

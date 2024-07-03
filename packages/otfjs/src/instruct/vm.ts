@@ -1,11 +1,12 @@
 // Temporary while I work on this
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
+import * as vec from '@bschlenk/vec'
+
 import type { Font } from '../font.js'
 import { emptyGlyph, type GlyphSimple, type Point } from '../tables/glyf.js'
 import { MaxpTable10 } from '../tables/maxp.js'
 import { assert, debug, range, toHex } from '../utils.js'
-import * as vec from '../vector.js'
 import { disassemble } from './disassemble.js'
 import { type GraphicsState, makeGraphicsState } from './graphics.js'
 import { Opcode } from './opcode.js'

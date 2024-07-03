@@ -1,8 +1,9 @@
+import * as mat from '@bschlenk/mat'
+import * as vec from '@bschlenk/vec'
+
 import { Reader } from '../buffer.js'
 import type { Extend } from '../enums.js'
-import * as mat from '../matrix.js'
 import { binarySearch } from '../utils.js'
-import * as vec from '../vector.js'
 
 export enum CompositeMode {
   CLEAR = 0,

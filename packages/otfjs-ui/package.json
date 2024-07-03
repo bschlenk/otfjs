@@ -11,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@bschlenk/mat": "^0.0.3",
+    "@bschlenk/vec": "^0.0.1",
     "clsx": "^2.0.0",
     "otfjs": "workspace:^",
     "react": "^18.2.0",

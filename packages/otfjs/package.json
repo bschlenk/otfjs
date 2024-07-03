@@ -7,8 +7,7 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    ".": "./dist/entry/index.js",
-    "./util": "./dist/entry/util.js",
+    ".": "./dist/index.js",
     "./package.json": "./package.json"
   },
   "scripts": {

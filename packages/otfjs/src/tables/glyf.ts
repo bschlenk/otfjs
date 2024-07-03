@@ -1,8 +1,9 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/glyf
 
+import * as mat from '@bschlenk/mat'
+
 import { Reader } from '../buffer.js'
 import { createFlagReader } from '../flags.js'
-import * as mat from '../matrix.js'
 import { assert } from '../utils.js'
 
 interface GlyphBase<T extends string> {

@@ -1,4 +1,4 @@
-import { Vector } from './vector.js'
+import { Vector } from '@bschlenk/vec'
 
 export interface PathBuilder {
   moveTo(p: Vector): void

@@ -1,7 +1,8 @@
+import * as mat from '@bschlenk/mat'
+
 import { Reader } from './buffer.js'
 import { Cache, createCache } from './cache.js'
 import { NameId, PlatformId } from './enums.js'
-import * as mat from './matrix.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { ColrTable, readColrTable } from './tables/colr.js'
 import { readTableAsI16Array, readTableAsU8Array } from './tables/common.js'
@@ -150,7 +151,7 @@ export class Font {
       if (c.flags.argsAreXYValues) {
         const roundXYToGrid = c.flags.roundXYToGrid
         for (const p of subGlyph.points) {
-          const point = mat.transformPoint(p, c.matrix)
+          const point = mat.transformPoint(c.matrix, p)
           if (roundXYToGrid) {
             point.x = Math.round(point.x)
             point.y = Math.round(point.y)

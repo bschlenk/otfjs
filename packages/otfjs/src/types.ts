@@ -1,6 +1,7 @@
+import type { Matrix } from '@bschlenk/mat'
+import type { Vector } from '@bschlenk/vec'
+
 import type { Extend } from './enums.js'
-import type { Matrix } from './matrix.js'
-import type { Vector } from './vector.js'
 
 export interface Header {
   sfntVersion: number

@@ -1,4 +1,6 @@
 import { createElement, Fragment, useState } from 'react'
+import * as mat from '@bschlenk/mat'
+import * as vec from '@bschlenk/vec'
 import {
   ColorLayer,
   ColorRecordType,
@@ -10,7 +12,6 @@ import {
   GlyphEnriched,
   glyphToSvgPath,
 } from 'otfjs'
-import { mat, Matrix, vec } from 'otfjs/util'
 
 import { rgbaToCss } from '../../utils/color'
 import { GlyphEditor } from './glyph-editor'
@@ -153,7 +154,7 @@ function SvgGlyph({
     const palette = font.getTable('CPAL').getPalette(paletteIdx)
     const stack: any[] = [{ type: Fragment, props: {}, children: [] }]
     let latest = stack[0]
-    let matrix: Matrix | null = null
+    let matrix: mat.Matrix | null = null
     let key = 0
 
     const getColor = (paletteIndex: number, alpha: number) => {
