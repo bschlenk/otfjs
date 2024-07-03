@@ -365,7 +365,7 @@ function SvgGlyph({
 
   return (
     <svg
-      className="overflow-visible h-[var(--glyph-height,100px)] fill-current"
+      className="h-[var(--glyph-height,100px)] overflow-visible fill-current"
       data-glyph-id={glyph.id}
       height="100px"
       viewBox={`0 0 ${width} ${height}`}

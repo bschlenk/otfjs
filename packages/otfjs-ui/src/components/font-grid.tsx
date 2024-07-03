@@ -49,8 +49,8 @@ function FontTile({ name, url, svg }: FontTileProps) {
       tabIndex={0}
       data-url={url}
     >
-      <div className="aspect-square w-full rounded-2xl grid place-content-center border border-solid border-[#3c3c3c] bg-[#2e2e2e] p-1">
-        <img className="w-full h-full object-contain" src={svg} alt="" />
+      <div className="grid aspect-square w-full place-content-center rounded-2xl border border-solid border-[#3c3c3c] bg-[#2e2e2e] p-1">
+        <img className="h-full w-full object-contain" src={svg} alt="" />
       </div>
       <span className="text-center text-[#ddd]">{name}</span>
     </div>

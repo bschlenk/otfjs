@@ -9,7 +9,8 @@
     "build": "pnpm -r build",
     "build:gh": "pnpm -r build:gh",
     "lint": "pnpm -r --parallel lint",
-    "lint:fix": "pnpm -r lint --fix"
+    "lint:fix": "pnpm -r lint --fix",
+    "prettier": "prettier --write ."
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.21.0",

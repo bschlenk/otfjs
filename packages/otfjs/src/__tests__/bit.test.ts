@@ -1,6 +1,6 @@
-import { describe, expect,it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { from2dot14,from26dot6, to2dot14, to26dot6 } from '../bit.js'
+import { from2dot14, from26dot6, to2dot14, to26dot6 } from '../bit.js'
 import { toHex } from '../utils.js'
 
 describe('bit', () => {

@@ -41,7 +41,7 @@ export function FontView(props: FontViewProps) {
   const TableComponent = TABLE_MAP[tag] ?? null
 
   return (
-    <div className="grid grid-cols-[max-content_1fr] gap-8 h-full overflow-hidden [&>*]:min-w-0">
+    <div className="grid h-full grid-cols-[max-content_1fr] gap-8 overflow-hidden [&>*]:min-w-0">
       <div className={styles.tablesList}>
         <div className={styles.head}>
           <FontName font={font} />
@@ -76,7 +76,7 @@ function FontName({ font }: { font: Font }) {
 function DocLink({ tag }: { tag: string }) {
   const url = `https://learn.microsoft.com/en-us/typography/opentype/spec/${tag}`
   return (
-    <div className="py-4 px-2">
+    <div className="px-2 py-4">
       <a href={url} target="_blank" rel="noreferrer">
         {url}
       </a>
@@ -226,7 +226,7 @@ function CpalView({ font }: { font: Font }) {
             {palette.map((c, j) => (
               <div
                 key={j}
-                className="w-11 h-11 border-2 border-white"
+                className="h-11 w-11 border-2 border-white"
                 style={{ background: `rgb(${c.r} ${c.g} ${c.b} / ${c.a})` }}
               />
             ))}
