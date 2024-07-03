@@ -1,8 +1,8 @@
 import fs from 'fs/promises'
 import path from 'path'
 
-import { Font } from '../font.js'
-import { glyphToSvgPath } from '../svg.js'
+import { Font, GlyphEnriched } from '../font.js'
+import { glyphToColorSvg, type Node } from '../svg.js'
 
 const args = process.argv.slice(2)
 if (args.length < 1) {
@@ -44,25 +44,69 @@ function generatePreview(font: Font): string | null {
 
   console.log('got glyph ids', glyphId1, glyphId2)
 
-  const g1 = font.getGlyph(glyphId1)
-  const g2 = font.getGlyph(glyphId2)
+  let g1!: GlyphEnriched, g2!: GlyphEnriched
 
-  const g1d = glyphToSvgPath(g1)
-  const g2d = glyphToSvgPath(g2)
+  try {
+    g1 = font.getGlyph(glyphId1)
+    g2 = font.getGlyph(glyphId2)
+  } catch {
+    // font doesn't have glyf table (cff or cff2 instead?)
+    // just return an empty svg for now
+    return `<svg viewBox="0 0 100 100" height="100" width="100" fill="black" xmlns="http://www.w3.org/2000/svg"></svg>`
+  }
 
-  console.log(g1)
+  const g1s = glyphToColorSvg(g1, font, 0)
+  const g2s = glyphToColorSvg(g2, font, 0)
 
   const min = g1.xMin
   const max = min + g1.advanceWidth + g2.xMax
 
+  const defs = [...g1s.defs, ...g2s.defs]
+
   return `\
-<svg viewBox="${min} 0 ${max - min} ${upem}" height="100" xmlns="http://www.w3.org/2000/svg">
-  <g transform="matrix(1 0 0 -1 0 ${upem})" fill="black">
-    <path d="${g1d}" />
-    <path d="${g2d}" transform="translate(${g1.advanceWidth} 0)" />
+<svg viewBox="${min} 0 ${max - min} ${upem}" height="100" fill="black" xmlns="http://www.w3.org/2000/svg">
+${
+  defs.length > 0 ?
+    `\
+  <defs>
+    ${nodesToSvg(defs)}
+  </defs>
+`
+  : ''
+}\
+  <g transform="matrix(1 0 0 -1 0 ${upem})">
+    ${nodesToSvg(g1s.paths)}
+    <g transform="translate(${g1.advanceWidth} 0)">
+      ${nodesToSvg(g2s.paths)}
+    </g>
   </g>
 </svg>
 `
+}
+
+function nodesToSvg(nodes: Node[]) {
+  let out = ''
+
+  function walk(node: Node) {
+    const attrs = []
+    for (const [k, v] of Object.entries(node.props)) {
+      if (v != null) attrs.push(`${k}="${v}"`)
+    }
+
+    out += `<${node.type} ${attrs.join(' ')}`
+
+    if (node.children.length) {
+      out += '>'
+      for (const child of node.children) walk(child)
+      out += `</${node.type}>`
+    } else {
+      out += '/>'
+    }
+  }
+
+  for (const node of nodes) walk(node)
+
+  return out
 }
 
 async function* iterFiles(files: string[]) {
