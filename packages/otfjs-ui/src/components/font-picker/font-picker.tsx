@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import fontsList from '/fonts.json?url'
 
-export type FontsList = typeof import('../../../public/fonts.json')
+export type FontsList = typeof import('../../fonts.json')
 export type Font = FontsList['items'][number]
 
 export interface FontPickerProps {

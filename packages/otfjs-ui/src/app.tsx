@@ -1,32 +1,29 @@
 import { useState } from 'react'
 
 import { DropZone } from './components/drop-zone/drop-zone'
-import { FontPicker } from './components/font-picker/font-picker'
+import { FontGrid } from './components/font-grid'
 import { FontView } from './components/font-view/font-view'
+import fonts from './fonts.json'
 import { preventDefault } from './utils/event'
-
-import styles from './app.module.css'
 
 export function App() {
   const [font, setFont] = useState<ArrayBuffer | null>(null)
 
   return (
     <div
-      className={styles.app}
+      className={'h-full'}
       onDragOver={preventDefault}
       onDrop={preventDefault}
     >
       {!font ?
-        <div className={styles.fullCenter}>
+        <div>
           <DropZone onLoad={setFont}>
             <p>Drag font here to load it on the page.</p>
           </DropZone>
-          <FontPicker
-            onChange={(font) => {
-              const url = new URL(font.files.regular!)
-              url.protocol = 'https:'
-
-              fetch(url)
+          <FontGrid
+            fonts={fonts.items}
+            onChange={(fontUrl) => {
+              fetch(fontUrl)
                 .then((res) => res.arrayBuffer())
                 .then(setFont)
             }}
