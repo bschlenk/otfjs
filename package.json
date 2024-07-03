@@ -21,5 +21,8 @@
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "prettier-plugin-tailwindcss": "^0.6.5"
   }
 }
