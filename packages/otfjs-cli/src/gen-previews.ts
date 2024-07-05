@@ -1,6 +1,8 @@
 import fs from 'fs/promises'
 import { Font, GlyphEnriched, glyphToColorSvg, type Node } from 'otfjs'
 import path from 'path'
+// @ts-expect-error types are bad
+import { optimize } from 'svgo'
 
 const args = process.argv.slice(2)
 if (args.length < 1) {
@@ -26,7 +28,9 @@ async function processFonts(fontFiles: string[], outDir: string) {
     const nakedName = path.basename(name, path.extname(name))
     const outPath = path.join(outDir, `${nakedName}.svg`)
 
-    fs.writeFile(outPath, preview)
+    const optimized = optimize(preview, { path: outPath, multipass: true })
+
+    fs.writeFile(outPath, optimized.data)
   }
 }
 
