@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@bschlenk/mat": "^0.0.3",
-    "@bschlenk/vec": "^0.0.1"
+    "@bschlenk/vec": "^0.0.1",
+    "otfjs": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.8.10",

@@ -1,7 +1,6 @@
 import fs from 'fs/promises'
+import { Font } from 'otfjs'
 import path from 'path'
-
-import { Font } from '../font.js'
 
 const args = process.argv.slice(2)
 if (args.length < 1) {

@@ -1,8 +1,6 @@
 import fs from 'fs/promises'
+import { Font, GlyphEnriched, glyphToColorSvg, type Node } from 'otfjs'
 import path from 'path'
-
-import { Font, GlyphEnriched } from '../font.js'
-import { glyphToColorSvg, type Node } from '../svg.js'
 
 const args = process.argv.slice(2)
 if (args.length < 1) {

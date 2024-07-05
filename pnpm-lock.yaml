@@ -67,6 +67,9 @@ importers:
       '@bschlenk/vec':
         specifier: ^0.0.1
         version: 0.0.1
+      otfjs:
+        specifier: workspace:^
+        version: link:../otfjs
     devDependencies:
       '@types/node':
         specifier: ^20.8.10
