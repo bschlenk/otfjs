@@ -39,12 +39,10 @@ function generatePreview(font: Font): string | null {
   const upem = font.unitsPerEm
   const cmap = font.getTable('cmap')
 
-  const glyphId1 = cmap.getGlyphIndex(0, 3, 'A'.codePointAt(0)!)
-  const glyphId2 = cmap.getGlyphIndex(0, 3, 'a'.codePointAt(0)!)
+  const glyphId1 = cmap.getGlyphIndex('A'.codePointAt(0)!)
+  const glyphId2 = cmap.getGlyphIndex('a'.codePointAt(0)!)
 
   if (glyphId1 == null || glyphId2 == null) return null
-
-  console.log('got glyph ids', glyphId1, glyphId2)
 
   let g1!: GlyphEnriched, g2!: GlyphEnriched
 

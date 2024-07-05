@@ -10,20 +10,23 @@ export class CmapTable {
     public readonly encodingRecords: EncodingRecord[],
   ) {}
 
-  public getGlyphIndex(
-    platformId: PlatformId,
-    encodingId: number,
-    codePoint: number,
-  ) {
-    if (codePoint > 0xffff) throw new Error('Codepoint out of range')
+  // TODO: maybe this doesn't need the params and can take a codepoint directly
+  // and then determine which encoding to use based on the codepoint
+  public getGlyphIndex(codePoint: number) {
+    const platformId = 3
+    let encodingId = 1
+
+    if (codePoint > 0xffff) {
+      encodingId = 10
+    }
 
     const record = this.encodingRecords.find(
       (record) =>
         record.platformId === platformId && record.encodingId === encodingId,
     )
 
-    // TODO: throw?
     if (!record) {
+      // TODO: is it necessary to error here?
       console.error(
         `Encoding record not found for platformId = ${platformId}, encodingId = ${encodingId}`,
       )
@@ -97,17 +100,6 @@ function readCmapSubtable(view: Reader) {
   const format = view.u16()
 
   switch (format) {
-    case 0: {
-      // Byte encoding table
-      // TODO: not commonly used
-      break
-    }
-
-    case 2: {
-      // High-byte mapping through table
-      break
-    }
-
     case 4: {
       // Segment mapping to delta values
       const length = view.u16()
@@ -143,35 +135,18 @@ function readCmapSubtable(view: Reader) {
       }
     }
 
-    case 6: {
-      // Trimmed table mapping
-      break
-    }
+    case 0: // Byte encoding table
+    case 2: // High-byte mapping through table
+    case 6: // Trimmed table mapping
+    case 8: // Mixed 16-bit and 32-bit coverage
+    case 10: // Trimmed array
+    case 12: // Segmented coverage
+    case 13: // Many-to-one range mappings
+    case 14: // Unicode Variation Sequences
+      throw new Error(`cmap subtable format ${format} not implemented`)
 
-    case 8: {
-      // Mixed 16-bit and 32-bit coverage
-      break
-    }
-
-    case 10: {
-      // Trimmed array
-      break
-    }
-
-    case 12: {
-      // Segmented coverage
-      break
-    }
-
-    case 13: {
-      // Many-to-one range mappings
-      break
-    }
-
-    case 14: {
-      // Unicode Variation Sequences
-      break
-    }
+    default:
+      throw new Error(`unknown cmap subtable format ${format}`)
   }
 
   return { format }
