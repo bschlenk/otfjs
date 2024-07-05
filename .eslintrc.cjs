@@ -8,11 +8,17 @@ module.exports = {
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs'],
   parser: '@typescript-eslint/parser',
-  plugins: ['import', 'react-refresh', 'simple-import-sort'],
+  plugins: ['import', 'react', 'react-refresh', 'simple-import-sort'],
+  settings: { react: { version: 'detect' } },
   rules: {
     'import/first': 'error',
     'import/newline-after-import': 'error',
     'import/no-duplicates': 'error',
+
+    'react/jsx-curly-brace-presence': [
+      'error',
+      { propElementValues: 'always' },
+    ],
 
     'react-refresh/only-export-components': [
       'warn',
