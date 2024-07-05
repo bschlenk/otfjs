@@ -17,13 +17,13 @@
     "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0 --color",
     "test": "vitest"
   },
-  "devDependencies": {
-    "@types/node": "^20.8.10",
-    "typescript": "^5.2.2"
-  },
   "dependencies": {
     "@bschlenk/mat": "^0.0.3",
-    "@bschlenk/vec": "^0.0.1",
+    "@bschlenk/vec": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.10",
+    "typescript": "^5.2.2",
     "vitest": "^0.34.6"
   }
 }

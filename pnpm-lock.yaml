@@ -48,6 +48,25 @@ importers:
       '@bschlenk/vec':
         specifier: ^0.0.1
         version: 0.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.8.10
+        version: 20.8.10
+      typescript:
+        specifier: ^5.2.2
+        version: 5.2.2
+      vitest:
+        specifier: ^0.34.6
+        version: 0.34.6
+
+  packages/otfjs-cli:
+    dependencies:
+      '@bschlenk/mat':
+        specifier: ^0.0.3
+        version: 0.0.3
+      '@bschlenk/vec':
+        specifier: ^0.0.1
+        version: 0.0.1
       vitest:
         specifier: ^0.34.6
         version: 0.34.6
@@ -57,7 +76,7 @@ importers:
         version: 20.8.10
       typescript:
         specifier: ^5.2.2
-        version: 5.2.2
+        version: 5.4.5
 
   packages/otfjs-ui:
     dependencies:
