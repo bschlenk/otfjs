@@ -35,7 +35,7 @@ export function FontPicker(props: FontPickerProps) {
           props.onChange(font)
         }}
       >
-        <option key={'-'} value={'-'}>
+        <option key="-" value="-">
           ---
         </option>
         {fonts.items.map((font, i) => (

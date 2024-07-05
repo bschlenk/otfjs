@@ -10,11 +10,7 @@ export function App() {
   const [font, setFont] = useState<ArrayBuffer | null>(null)
 
   return (
-    <div
-      className={'h-full'}
-      onDragOver={preventDefault}
-      onDrop={preventDefault}
-    >
+    <div className="h-full" onDragOver={preventDefault} onDrop={preventDefault}>
       {!font ?
         <div>
           <DropZone onLoad={setFont}>
