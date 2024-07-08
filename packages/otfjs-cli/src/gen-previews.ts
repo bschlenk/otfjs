@@ -4,13 +4,15 @@ import path from 'path'
 // @ts-expect-error types are bad
 import { optimize } from 'svgo'
 
+import { eat } from './lib/cli.js'
+
 const args = process.argv.slice(2)
 if (args.length < 1) {
   console.error('usage: gen-previews -d <out-dir> font-file.ttf+')
   process.exit(1)
 }
 
-const outDir = eat('-d', '.')
+const outDir = eat(args, '-d', '.')
 
 processFonts(args, outDir)
 
@@ -114,22 +116,4 @@ async function* iterFiles(files: string[]) {
     const file = await fs.readFile(name)
     yield { file, name }
   }
-}
-
-function eat(opt: string, orElse: string): string {
-  let positionalArgCount = 0
-
-  for (let i = 0; i < opt.length; ++i) {
-    if (args[i] === opt) {
-      return args.splice(i, 2)[1]
-    }
-
-    if (args[i].startsWith('-')) {
-      positionalArgCount = 0
-    } else if (++positionalArgCount == 2) {
-      break
-    }
-  }
-
-  return orElse
 }
