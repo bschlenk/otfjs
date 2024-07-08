@@ -1,30 +1,25 @@
 import fs from 'fs'
 import path from 'path'
 import { Readable } from 'stream'
-import { finished } from 'stream/promises'
 
 const args = process.argv.slice(2)
-if (args.length !== 1) {
-  console.error('usage: fetch-fonts <output-dir>')
+if (args.length !== 2) {
+  console.error('usage: fetch-fonts <fonts.json> <output-dir>')
   process.exit(1)
 }
 
-const fonts = JSON.parse(fs.readFileSync('./fonts.json', 'utf8'))
+const fonts = JSON.parse(fs.readFileSync(args[0], 'utf8'))
+const outDir = args[1]
 
-const outDir = args[0]
-
-const promises = []
+fs.mkdirSync(outDir, { recursive: true })
 
 for (const font of fonts.items) {
-  if (!font.files.regular) continue
-
-  const ext = path.extname(font.files.regular)
+  const url = font.menu
+  const ext = path.extname(url)
   const fname = path.join(outDir, `${font.family}${ext}`)
 
-  const res = await fetch(font.files.regular)
+  const res = await fetch(url)
   const stream = fs.createWriteStream(fname)
 
-  promises.push(finished(Readable.fromWeb(res.body as any).pipe(stream)))
+  Readable.fromWeb(res.body as any).pipe(stream)
 }
-
-await Promise.all(promises)
