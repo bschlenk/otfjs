@@ -24,8 +24,8 @@
     "svgo": "4.0.0-rc.0"
   },
   "devDependencies": {
-    "@types/node": "^20.8.10",
-    "typescript": "^5.2.2",
+    "@types/node": "^20.14.10",
+    "typescript": "^5.5.3",
     "vitest": "^0.34.6"
   }
 }
