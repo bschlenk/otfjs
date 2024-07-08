@@ -15,21 +15,21 @@ import { relativeMouse } from '../../utils/event'
 
 import styles from './glyph-editor.module.css'
 
-export function GlyphEditor({
-  glyph,
-  ppem,
-}: {
+export interface GlyphEditorProps {
   glyph: GlyphSimple
-  ppem: number
-}) {
+  upem: number
+}
+
+export function GlyphEditor({ glyph, upem }: GlyphEditorProps) {
   const ref = useRef<SVGSVGElement>(null)
   const size = useSize(ref)
 
-  const center = useMemo(() => centeredGlyph(glyph, size), [glyph, size])
+  const center = useMemo(
+    () => centeredGlyph(glyph, size, upem),
+    [glyph, size, upem],
+  )
   const { origin, scale: s } = useOriginScale(ref as any, center)
-  const gScale = 16 / ppem
-
-  console.log(origin, s, glyph.xMax - glyph.xMin, glyph.yMax - glyph.yMin)
+  const gScale = 16 / upem
 
   const x = origin.x
   const y = origin.y
@@ -91,17 +91,11 @@ export function GlyphEditor({
               x1={0}
               y1={0}
               x2={0}
-              y2={glyph.yMax}
+              y2={upem}
               stroke="red"
               strokeWidth={0.5 / s}
             />
-            <line
-              x1={0}
-              y1={0}
-              x2={glyph.xMax}
-              stroke="red"
-              strokeWidth={0.5 / s}
-            />
+            <line x1={0} y1={0} x2={upem} stroke="red" strokeWidth={0.5 / s} />
             {s >= 0.075 && <circle cx={0} cy={0} r={4 / s} fill="blue" />}
             {s >= 0.075 && (
               <path d={d} stroke="var(--color-icon)" strokeWidth={1 / s} />
@@ -208,10 +202,14 @@ function useOriginScale(
 
 const MARGIN = 32
 
-function centeredGlyph(glyph: GlyphSimple, size: vec.Vector) {
-  const { xMin, xMax, yMin, yMax } = glyph
-  const width = xMax - xMin
-  const height = yMax - yMin
+function centeredGlyph(glyph: GlyphSimple, size: vec.Vector, upem: number) {
+  const left = Math.min(0, glyph.xMin)
+  const right = Math.max(upem, glyph.xMax)
+  const top = Math.max(upem, glyph.yMax)
+  const bottom = Math.min(0, glyph.yMin)
+
+  const width = right - left
+  const height = top - bottom
 
   const sw = size.x - MARGIN * 2
   const sh = size.y - MARGIN * 2
@@ -224,11 +222,11 @@ function centeredGlyph(glyph: GlyphSimple, size: vec.Vector) {
   let y = 0
 
   if (sy > sx) {
-    x = MARGIN - xMin * s
-    y = (size.y - height * s) / 2
+    x = MARGIN
+    y = (size.y - height * s) / 2 - top * s
   } else {
-    x = (size.x - width * s) / 2 - xMin * s
-    y = MARGIN
+    x = (size.x - width * s) / 2 - left * s
+    y = MARGIN + (upem - glyph.yMax) * s
   }
 
   return { origin: { x, y }, scale: s }

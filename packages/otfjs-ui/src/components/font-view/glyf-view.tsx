@@ -26,7 +26,7 @@ export function GlyfView({ font }: { font: Font }) {
 
   return (
     <>
-      <GlyphEditor glyph={font.getGlyph(glyf)} ppem={head.unitsPerEm} />
+      <GlyphEditor glyph={font.getGlyph(glyf)} upem={head.unitsPerEm} />
       <button className="absolute" onClick={() => setGlyf(null)}>
         Back
       </button>
