@@ -2,5 +2,7 @@ node_modules/
 dist/
 /fonts/
 
+.vscode/settings.json
+
 .env
 .DS_Store
