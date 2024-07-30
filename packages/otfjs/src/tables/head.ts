@@ -1,6 +1,6 @@
 import { Reader } from '../buffer.js'
 import { createFlagReader } from '../flags.js'
-import { toHex } from '../utils.js'
+import { toHex } from '../utils/utils.js'
 
 export interface HeadTable {
   // Major version number of the font header table — set to 1.

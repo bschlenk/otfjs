@@ -20,7 +20,7 @@ import { NameTable, readNameTable } from './tables/name.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
 import { PostTable, readPostTable } from './tables/post.js'
 import { Header, TableRecord } from './types.js'
-import { toObject } from './utils.js'
+import { toObject } from './utils/utils.js'
 import { validateHeader, validateTable } from './validation.js'
 
 export interface TableMap {

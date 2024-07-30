@@ -1,11 +1,7 @@
-import { from2dot14, from16dot16, to2dot14 } from './bit.js'
 import { computeChecksum } from './checksum.js'
-import {
-  assert,
-  fromLongDateTime,
-  getAlignPadding,
-  toLongDateTime,
-} from './utils.js'
+import { from2dot14, from16dot16, to2dot14 } from './utils/bit.js'
+import { fromLongDateTime, toLongDateTime } from './utils/date.js'
+import { assert, getAlignPadding } from './utils/utils.js'
 
 export class Reader {
   private view: DataView

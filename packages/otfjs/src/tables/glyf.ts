@@ -4,7 +4,7 @@ import * as mat from '@bschlenk/mat'
 
 import { Reader } from '../buffer.js'
 import { createFlagReader } from '../flags.js'
-import { assert } from '../utils.js'
+import { assert } from '../utils/utils.js'
 
 interface GlyphBase<T extends string> {
   type: T

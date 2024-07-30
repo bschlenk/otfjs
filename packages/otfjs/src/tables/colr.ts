@@ -3,7 +3,7 @@ import * as vec from '@bschlenk/vec'
 
 import { Reader } from '../buffer.js'
 import type { Extend } from '../enums.js'
-import { binarySearch } from '../utils.js'
+import { binarySearch } from '../utils/binary-search.js'
 
 export enum CompositeMode {
   CLEAR = 0,

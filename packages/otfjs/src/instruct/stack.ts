@@ -1,4 +1,4 @@
-import { from2dot14, from26dot6, to2dot14, to26dot6 } from '../bit.js'
+import { from2dot14, from26dot6, to2dot14, to26dot6 } from '../utils/bit.js'
 
 export class Stack {
   private values: Int32Array

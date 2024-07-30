@@ -1,6 +1,6 @@
 import { Reader } from '../buffer.js'
 import { PostscriptGlyphName } from '../postscript.js'
-import { toHex } from '../utils.js'
+import { toHex } from '../utils/utils.js'
 
 interface PostTableBase<T extends number> {
   version: T

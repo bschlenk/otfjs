@@ -7,7 +7,7 @@
 
 import { Writer } from './buffer.js'
 import { SfntVersion } from './enums.js'
-import { padToMultiple } from './utils.js'
+import { padToMultiple } from './utils/utils.js'
 
 export function buildFont(props: {
   sfntVersion: SfntVersion

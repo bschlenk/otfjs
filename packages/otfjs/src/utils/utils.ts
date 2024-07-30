@@ -1,5 +1,3 @@
-const SECONDS_BETWEEN_1904_AND_1970 = 2_082_844_800n
-
 export function toHex(n: number, bytes = 4) {
   let h = n.toString(16)
   let neg = false
@@ -25,16 +23,6 @@ export function toObject<T>(arr: T[], getKey: (item: T) => string) {
   }, {})
 }
 
-export function fromLongDateTime(val: bigint) {
-  const epochTimestamp = Number(val - SECONDS_BETWEEN_1904_AND_1970)
-  return new Date(epochTimestamp * 1000)
-}
-
-export function toLongDateTime(val: Date) {
-  const epochTimestamp = Math.round(val.getTime() / 1000)
-  return BigInt(epochTimestamp) + SECONDS_BETWEEN_1904_AND_1970
-}
-
 /**
  * Get the amount of padding required to align a value of the given length to a
  * multiple of the given alignment.
@@ -53,37 +41,11 @@ export function assert(condition: boolean, msg: string): asserts condition {
   }
 }
 
+export function error(msg: string): never {
+  throw new Error(msg)
+}
+
 export function debug(n: number) {
   // TODO: return as all different numeric types
   return n
-}
-
-export function binarySearch(arr: number[], target: number): number | null
-export function binarySearch<T>(
-  arr: T[],
-  target: number,
-  fn: (item: T) => number,
-): T | null
-export function binarySearch<T>(
-  arr: T[],
-  target: number,
-  fn: (item: T) => number = (x) => x as number,
-): T | null {
-  let start = 0
-  let end = arr.length - 1
-
-  while (start <= end) {
-    const mid = (start + end) >>> 1
-    const value = fn(arr[mid])
-
-    if (value < target) {
-      start = mid + 1
-    } else if (value > target) {
-      end = mid - 1
-    } else {
-      return arr[mid]
-    }
-  }
-
-  return null
 }

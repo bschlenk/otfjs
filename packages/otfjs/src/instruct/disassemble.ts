@@ -1,4 +1,4 @@
-import { toHex } from '../utils.js'
+import { toHex } from '../utils/utils.js'
 import { Opcode } from './opcode.js'
 
 interface Instruction {
