@@ -12,6 +12,15 @@
       "program": "${workspaceFolder}/packages/otfjs/dist/bin/otfjs.js",
       "args": "${workspaceFolder}/fonts/inter.ttf",
       "outFiles": ["${workspaceFolder}/packages/otfjs/dist/**/*.js"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Gen previews",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/packages/otfjs-cli/dist/gen-previews.js",
+      "args": ["-d", "/tmp/previews", "${workspaceFolder}/fonts/*"],
+      "outFiles": ["${workspaceFolder}/packages/otfjs-cli/dist/**/*.js"]
     }
   ]
 }
