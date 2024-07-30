@@ -1,5 +1,20 @@
 import { createFlagReader } from '../flags.js'
+import { assert } from '../utils/utils.js'
+import { GraphicsState } from './graphics.js'
 import { Opcode } from './opcode.js'
+
+export const SQRT2_2 = Math.SQRT2 / 2
+
+export const enum DistanceType {
+  GRAY = 0,
+  BLACK = 1,
+  WHITE = 2,
+}
+
+export function asDistanceType(n: number) {
+  assert(n < 3, `Invalid distance type ${n}`)
+  return n
+}
 
 export const getinfoFlags = createFlagReader({
   version: 0,
@@ -64,4 +79,50 @@ export function makeStore(size: number) {
 export function deltaValue(magnitude: number) {
   const val = magnitude - 8
   return val < 0 ? val : val + 1
+}
+
+export function customRoundState(
+  value: number,
+  gridPeriod: number,
+): GraphicsState['roundStateCustom'] {
+  let period = 0
+  switch ((value >>> 6) & 0b11) {
+    case 0:
+      period = gridPeriod / 2
+      break
+    case 1:
+      period = gridPeriod
+      break
+    case 2:
+      period = gridPeriod * 2
+      break
+    case 3:
+      assert(false, 'Unsupported roundState period 3')
+  }
+
+  let phase = 0
+  switch ((value >>> 4) & 0b11) {
+    case 1:
+      phase = period / 4
+      break
+    case 2:
+      phase = period / 2
+      break
+    case 3:
+      phase = gridPeriod * 0.75
+      break
+  }
+
+  const thresholdEnum = value & 0b1111
+  let threshold = 0
+  switch (thresholdEnum) {
+    case 0:
+      threshold = period - 1
+      break
+    default:
+      threshold = ((thresholdEnum - 4) / 8) * period
+      break
+  }
+
+  return { period, phase, threshold }
 }

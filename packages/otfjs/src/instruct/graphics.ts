@@ -2,6 +2,16 @@ export type GraphicsState = typeof DEFAULTS
 
 const DEFAULTS = makeGraphicsState()
 
+export const enum RoundState {
+  HALF_GRID = 0,
+  GRID = 1,
+  DOUBLE_GRID = 2,
+  DOWN_TO_GRID = 3,
+  UP_TO_GRID = 4,
+  OFF = 5,
+  CUSTOM = 6,
+}
+
 export function makeGraphicsState() {
   return {
     autoFlip: true,
@@ -22,8 +32,8 @@ export function makeGraphicsState() {
     loop: 1,
     minimumDistance: 1,
     projectionVector: { x: 1, y: 0 },
-    // TODO: make an enum, 0 is halfGrid, 1 is grid, 2 is doubleGrid, 3 is roundDownToGrid, 4 is roundUpToGrid, 5 is off
-    roundState: 1,
+    roundState: RoundState.GRID,
+    roundStateCustom: { period: 0, phase: 0, threshold: 0 },
     rp0: 0,
     rp1: 0,
     rp2: 0,

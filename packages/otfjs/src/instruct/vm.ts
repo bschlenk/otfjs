@@ -6,16 +6,25 @@ import * as vec from '@bschlenk/vec'
 import type { Font } from '../font.js'
 import { emptyGlyph, type GlyphSimple, type Point } from '../tables/glyf.js'
 import { MaxpTable10 } from '../tables/maxp.js'
-import { assert, debug, range, toHex } from '../utils/utils.js'
+import { symmetricCeil, symmetricFloor, symmetricRound } from '../utils/math.js'
+import { assert, debug, error, range, toHex } from '../utils/utils.js'
 import { disassemble } from './disassemble.js'
-import { type GraphicsState, makeGraphicsState } from './graphics.js'
+import {
+  type GraphicsState,
+  makeGraphicsState,
+  RoundState,
+} from './graphics.js'
 import { Opcode } from './opcode.js'
 import { Stack } from './stack.js'
 import {
+  asDistanceType,
+  customRoundState,
   deltaValue,
+  DistanceType,
   getinfoFlags,
   makeStore,
   opcodeLength,
+  SQRT2_2,
   viewFor,
 } from './utils.js'
 
@@ -49,6 +58,7 @@ export class VirtualMachine {
 
   upem: number
   fontSize = 16
+  compensation = { black: 0, white: 0 }
 
   private pcStack: number[] = []
   private maxp: MaxpTable10
@@ -61,14 +71,11 @@ export class VirtualMachine {
       'Only version 1.0 maxp tables are supported',
     )
 
-    const head = font.getTable('head')
-
     this.maxp = maxp
-    this.upem = head.unitsPerEm
+    this.upem = font.unitsPerEm
     this.cvt = [...(font.getTableOrNull('cvt ') ?? [])]
     this.store = makeStore(maxp.maxStorage)
     this.stack = new Stack(maxp.maxStackElements)
-
     this.gs = makeGraphicsState()
 
     this.setGlyph(null)
@@ -119,6 +126,14 @@ export class VirtualMachine {
       ...this.glyph,
       points: this.zones[1].slice(0, this.glyph.points.length),
     }
+  }
+
+  /**
+   * Update how the instructions MDRP, MIRP, ROUND, NROUND compensate for
+   * distances spanning black or white space.
+   */
+  setCompensation(values: { black?: number; white?: number }) {
+    Object.assign(this.compensation, values)
   }
 
   runFpgm() {
@@ -425,46 +440,46 @@ export class VirtualMachine {
       }
 
       case Opcode.RTHG: {
-        this.gs.roundState = 0
+        this.gs.roundState = RoundState.HALF_GRID
         break
       }
 
       case Opcode.RTG: {
-        this.gs.roundState = 1
+        this.gs.roundState = RoundState.GRID
         break
       }
 
       case Opcode.RTDG: {
-        this.gs.roundState = 2
+        this.gs.roundState = RoundState.DOUBLE_GRID
         break
       }
 
       case Opcode.RDTG: {
-        this.gs.roundState = 3
+        this.gs.roundState = RoundState.DOWN_TO_GRID
         break
       }
 
       case Opcode.RUTG: {
-        this.gs.roundState = 4
+        this.gs.roundState = RoundState.UP_TO_GRID
         break
       }
 
       case Opcode.ROFF: {
-        this.gs.roundState = 5
+        this.gs.roundState = RoundState.OFF
         break
       }
 
       case Opcode.SROUND: {
-        // TODO: decompose this later??
-        // I think I'll need to mark that this isn't one of the above roundState enums, since they overlap
         const value = this.stack.popU32()
-        this.gs.roundState = value
+        this.gs.roundState = RoundState.CUSTOM
+        this.gs.roundStateCustom = customRoundState(value, 1)
         break
       }
 
       case Opcode.S45ROUND: {
         const value = this.stack.popU32()
-        this.gs.roundState = value
+        this.gs.roundState = RoundState.CUSTOM
+        this.gs.roundStateCustom = customRoundState(value, SQRT2_2)
         break
       }
 
@@ -1145,7 +1160,7 @@ export class VirtualMachine {
         }
 
         if (!done) {
-          throw new Error('unterminated IF block')
+          error('unterminated IF block')
         }
 
         break
@@ -1232,8 +1247,7 @@ export class VirtualMachine {
       case Opcode.ODD:
       case Opcode.EVEN: {
         const even = opcode === Opcode.EVEN
-        const e1 = this.stack.pop26dot6()
-        // TODO: need to round first
+        const e1 = this.round(this.stack.pop26dot6())
         const isEven = e1 % 2 === 0
         this.stack.push(Number(even === isEven))
         break
@@ -1330,16 +1344,10 @@ export class VirtualMachine {
       case Opcode.ROUND1:
       case Opcode.ROUND2:
       case Opcode.ROUND3: {
-        const ab = opcode & 0b11
-        const n1 = this.stack.pop()
-
-        // TODO: do I need to do anything here? might be cool to be able to
-        // define an "engine characteristic" here for experimentation
-
-        // TODO: round n2 based on round_state
-        const n2 = n1
-        this.stack.push(n2)
-
+        const distanceType = asDistanceType(opcode & 0b11)
+        const n1 = this.stack.pop26dot6()
+        const n2 = this.round(this.compensate(n1, distanceType))
+        this.stack.push26dot6(n2)
         break
       }
 
@@ -1476,7 +1484,7 @@ export class VirtualMachine {
       if (opcodes.includes(opcode)) return
     }
 
-    throw new Error(
+    error(
       `Expected ${opcodes.map((o) => Opcode[o]).join(' or ')} but reached the end of the program`,
     )
   }
@@ -1506,6 +1514,48 @@ export class VirtualMachine {
       const magnitude = deltaValue(arg & 0b1111) * step
 
       cb(i, magnitude)
+    }
+  }
+
+  private round(value: number) {
+    switch (this.gs.roundState) {
+      case RoundState.HALF_GRID:
+        return symmetricRound(value + 0.5) - 0.5
+      case RoundState.GRID:
+        return symmetricRound(value)
+      case RoundState.DOUBLE_GRID:
+        return symmetricRound(value * 2) / 2
+      case RoundState.DOWN_TO_GRID:
+        return symmetricFloor(value)
+      case RoundState.UP_TO_GRID:
+        return symmetricCeil(value)
+      case RoundState.OFF:
+        return value
+      case RoundState.CUSTOM: {
+        const { period, phase, threshold } = this.gs.roundStateCustom
+
+        const rounded =
+          symmetricFloor((value - phase + threshold) / period) * period + phase
+
+        // TODO: verify this is okay
+        if (value > 0 && rounded < 0) return phase
+        if (value < 0 && rounded > 0) phase === 0 ? phase : -period + phase
+
+        return rounded
+      }
+      default:
+        error(`Invalid round state value ${this.gs.roundState}`)
+    }
+  }
+
+  private compensate(value: number, distanceType: DistanceType) {
+    switch (distanceType) {
+      case DistanceType.GRAY:
+        return value
+      case DistanceType.BLACK:
+        return value + this.compensation.black
+      case DistanceType.WHITE:
+        return value + this.compensation.white
     }
   }
 
