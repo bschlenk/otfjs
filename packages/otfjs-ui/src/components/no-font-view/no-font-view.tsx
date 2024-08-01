@@ -1,7 +1,6 @@
 import { Font } from 'otfjs'
 
 import fonts from '../../fonts.json'
-import { DropZone } from '../drop-zone/drop-zone'
 import { FontGrid } from '../font-grid'
 
 export interface NoFontViewProps {
@@ -14,18 +13,13 @@ export function NoFontView({ onFont }: NoFontViewProps) {
   }
 
   return (
-    <div>
-      <DropZone onLoad={onLoad}>
-        <p>Drag font here to load it on the page.</p>
-      </DropZone>
-      <FontGrid
-        fonts={fonts.items}
-        onChange={(fontUrl) => {
-          fetch(fontUrl)
-            .then((res) => res.arrayBuffer())
-            .then(onLoad)
-        }}
-      />
-    </div>
+    <FontGrid
+      fonts={fonts.items}
+      onChange={(fontUrl) => {
+        fetch(fontUrl)
+          .then((res) => res.arrayBuffer())
+          .then(onLoad)
+      }}
+    />
   )
 }
