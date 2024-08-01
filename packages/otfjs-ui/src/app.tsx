@@ -1,30 +1,17 @@
 import { useState } from 'react'
+import { type Font } from 'otfjs'
 
-import { DropZone } from './components/drop-zone/drop-zone'
-import { FontGrid } from './components/font-grid'
 import { FontView } from './components/font-view/font-view'
-import fonts from './fonts.json'
-import { preventDefault } from './utils/event'
+import { NoFontView } from './components/no-font-view/no-font-view'
+import { PREVENT_DRAG } from './utils/event'
 
 export function App() {
-  const [font, setFont] = useState<ArrayBuffer | null>(null)
+  const [font, setFont] = useState<Font | null>(null)
 
   return (
-    <div className="h-full" onDragOver={preventDefault} onDrop={preventDefault}>
+    <div className="h-full" {...PREVENT_DRAG}>
       {!font ?
-        <div>
-          <DropZone onLoad={setFont}>
-            <p>Drag font here to load it on the page.</p>
-          </DropZone>
-          <FontGrid
-            fonts={fonts.items}
-            onChange={(fontUrl) => {
-              fetch(fontUrl)
-                .then((res) => res.arrayBuffer())
-                .then(setFont)
-            }}
-          />
-        </div>
+        <NoFontView onFont={setFont} />
       : <FontView font={font} onBack={() => setFont(null)} />}
     </div>
   )

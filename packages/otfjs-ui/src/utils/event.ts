@@ -1,6 +1,11 @@
 import * as vec from '@bschlenk/vec'
 import type React from 'react'
 
+export const PREVENT_DRAG = {
+  onDragOver: preventDefault,
+  onDrop: preventDefault,
+}
+
 export function preventDefault(e: Event | React.SyntheticEvent) {
   return e.preventDefault()
 }

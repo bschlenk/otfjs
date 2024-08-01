@@ -28,14 +28,15 @@ const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
 }
 
 interface FontViewProps {
-  font: ArrayBuffer
+  font: Font
   onBack: () => void
 }
 
-export function FontView(props: FontViewProps) {
-  const font = useMemo(() => new Font(props.font), [props.font])
+export function FontView({ font, onBack }: FontViewProps) {
   const [tag, setTag] = useState(() =>
-    font.hasTable('glyf') ? 'glyf' : 'head',
+    font.hasTable('glyf') ? 'glyf'
+    : font.hasTable('head') ? 'head'
+    : font.tables[0],
   )
 
   const TableComponent = TABLE_MAP[tag] ?? null
@@ -45,7 +46,7 @@ export function FontView(props: FontViewProps) {
       <div className={styles.tablesList}>
         <div className={styles.head}>
           <FontName font={font} />
-          <button onClick={props.onBack}>⬅ Back</button>
+          <button onClick={onBack}>⬅ Back</button>
         </div>
         <ul>
           {font.tables.map((table) => (
