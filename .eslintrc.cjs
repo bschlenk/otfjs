@@ -19,6 +19,7 @@ module.exports = {
       'error',
       { propElementValues: 'always' },
     ],
+    'react/self-closing-comp': ['error', { component: true, html: true }],
 
     'react-refresh/only-export-components': [
       'warn',
