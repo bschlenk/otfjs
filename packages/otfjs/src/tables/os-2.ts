@@ -36,20 +36,33 @@ export function readOS2Table(view: Reader) {
   const sTypoLineGap = view.i16()
   const usWinAscent = view.u16()
   const usWinDescent = view.u16()
-  const ulCodePageRange1 = view.u32()
-  const ulCodePageRange2 = view.u32()
-  const sxHeight = view.i16()
-  const sCapHeight = view.i16()
-  const usDefaultChar = view.u16()
-  const usBreakChar = view.u16()
-  const usMaxContext = view.u16()
 
+  let ulCodePageRange1 = null
+  let ulCodePageRange2 = null
+  let sxHeight = null
+  let sCapHeight = null
+  let usDefaultChar = null
+  let usBreakChar = null
+  let usMaxContext = null
   let usLowerOpticalPointSize = null
   let usUpperOpticalPointSize = null
 
-  if (version >= 5) {
-    usLowerOpticalPointSize = view.u16()
-    usUpperOpticalPointSize = view.u16()
+  if (version >= 1) {
+    ulCodePageRange1 = view.u32()
+    ulCodePageRange2 = view.u32()
+
+    if (version >= 2) {
+      sxHeight = view.i16()
+      sCapHeight = view.i16()
+      usDefaultChar = view.u16()
+      usBreakChar = view.u16()
+      usMaxContext = view.u16()
+
+      if (version >= 5) {
+        usLowerOpticalPointSize = view.u16()
+        usUpperOpticalPointSize = view.u16()
+      }
+    }
   }
 
   return {
