@@ -192,7 +192,7 @@ function CmapView({ font }: { font: Font }) {
 
   for (const char of chars) {
     const codePoint = char.codePointAt(0)!
-    const glyphIndex = table.getGlyphIndex(0, 3, codePoint)
+    const glyphIndex = table.getGlyphIndex(codePoint)
     glyphIndices.push([char, glyphIndex])
   }
 
