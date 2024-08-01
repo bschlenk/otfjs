@@ -16,22 +16,14 @@ export function FontGrid({ fonts, onChange }: FontGridProps) {
         onChange(url)
       }}
     >
-      {fonts.map((font) => {
-        const url = new URL(
-          getItemOrFirst(font.files as Record<string, string>, 'regular')!,
-        )
-        url.protocol = 'https:'
-
-        const svg = `/previews/${font.family}.svg`
-        return (
-          <FontTile
-            key={font.family}
-            name={font.family}
-            url={url.toString()}
-            svg={svg}
-          />
-        )
-      })}
+      {fonts.map((font) => (
+        <FontTile
+          key={font.family}
+          name={font.family}
+          url={urlForFont(font)}
+          svg={`/previews/${font.family}.svg`}
+        />
+      ))}
     </div>
   )
 }
@@ -55,4 +47,12 @@ function FontTile({ name, url, svg }: FontTileProps) {
       <span className="text-center text-[#ddd]">{name}</span>
     </div>
   )
+}
+
+function urlForFont(font: FontGridProps['fonts'][number]) {
+  const url = new URL(
+    getItemOrFirst(font.files as Record<string, string>, 'regular')!,
+  )
+  url.protocol = 'https:'
+  return url.toString()
 }
