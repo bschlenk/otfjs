@@ -1,4 +1,16 @@
-# React + TypeScript + Vite
+# Otfjs UI
+
+A UI for exploring the tables that make up a font file.
+
+## Preview sprite
+
+So I don't forget, this is how I generated the font preview sprite:
+
+```bash
+npx svg-sprite-generator -d public/previews -o /public/preview.svg
+```
+
+## Original vite generated README
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
@@ -7,7 +19,7 @@ Currently, two official plugins are available:
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Expanding the ESLint configuration
+### Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
 
