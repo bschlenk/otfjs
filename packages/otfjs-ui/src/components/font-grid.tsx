@@ -8,7 +8,7 @@ export interface FontGridProps {
 export function FontGrid({ fonts, onChange }: FontGridProps) {
   return (
     <div
-      className="grid grid-cols-5 gap-10 p-7"
+      className="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-10 p-7"
       onClick={(e) => {
         const url = (e.target as HTMLElement).getAttribute('data-url')
         if (!url) return
@@ -17,12 +17,7 @@ export function FontGrid({ fonts, onChange }: FontGridProps) {
       }}
     >
       {fonts.map((font) => (
-        <FontTile
-          key={font.family}
-          name={font.family}
-          url={urlForFont(font)}
-          svg={`/previews/${font.family}.svg`}
-        />
+        <FontTile key={font.family} name={font.family} url={urlForFont(font)} />
       ))}
     </div>
   )
@@ -31,10 +26,9 @@ export function FontGrid({ fonts, onChange }: FontGridProps) {
 interface FontTileProps {
   name: string
   url: string
-  svg: string
 }
 
-function FontTile({ name, url, svg }: FontTileProps) {
+function FontTile({ name, url }: FontTileProps) {
   return (
     <div
       className="flex flex-col items-center gap-3 text-[#dfdfdf] [&_*]:pointer-events-none"
@@ -42,7 +36,11 @@ function FontTile({ name, url, svg }: FontTileProps) {
       data-url={url}
     >
       <div className="grid aspect-square w-full place-content-center rounded-2xl border border-solid border-[#3c3c3c] bg-[#2e2e2e] p-1">
-        <img className="h-full w-full object-contain" src={svg} alt="" />
+        <svg width={100} height={100}>
+          <use
+            href={`/preview.svg#${name.toLowerCase().replaceAll(' ', '-')}`}
+          />
+        </svg>
       </div>
       <span className="text-center text-[#ddd]">{name}</span>
     </div>
