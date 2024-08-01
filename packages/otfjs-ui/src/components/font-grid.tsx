@@ -8,7 +8,7 @@ export interface FontGridProps {
 export function FontGrid({ fonts, onChange }: FontGridProps) {
   return (
     <div
-      className="grid grid-cols-5 gap-10"
+      className="grid grid-cols-5 gap-10 p-7"
       onClick={(e) => {
         const url = (e.target as HTMLElement).getAttribute('data-url')
         if (!url) return
