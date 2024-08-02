@@ -38,7 +38,7 @@ function FontTile({ name, url }: FontTileProps) {
       <div className="grid aspect-square w-full place-content-center rounded-2xl border border-solid border-[#3c3c3c] bg-[#2e2e2e] p-1">
         <svg width={100} height={100}>
           <use
-            href={`/preview.svg#${name.toLowerCase().replaceAll(' ', '-')}`}
+            href={`preview.svg#${name.toLowerCase().replaceAll(' ', '-')}`}
           />
         </svg>
       </div>
