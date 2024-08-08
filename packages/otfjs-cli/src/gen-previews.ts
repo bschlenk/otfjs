@@ -99,14 +99,14 @@ function nodesToSvg(nodes: Node[]) {
 
     if (node.children.length) {
       out += '>'
-      for (const child of node.children) walk(child)
+      node.children.forEach(walk)
       out += `</${node.type}>`
     } else {
       out += '/>'
     }
   }
 
-  for (const node of nodes) walk(node)
+  nodes.forEach(walk)
 
   return out
 }

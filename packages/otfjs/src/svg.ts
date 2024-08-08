@@ -13,6 +13,9 @@ import {
 } from './tables/colr.js'
 import { Glyph } from './tables/glyf.js'
 
+// The gradient coords of a color glyph are always relative to the em square
+const gradientUnits = 'userSpaceOnUse'
+
 export function glyphToSvgPath(glyph: Glyph) {
   const path = new SvgPathBuilder()
   walkGlyphPath(glyph, path)
@@ -25,6 +28,16 @@ export interface Node {
   children: Node[]
 }
 
+/**
+ * Takes a glyph and returns an object describing all the paths and defs
+ * required to render as an SVG. The returned paths array is in the order
+ * required to render within an SVG element. The defs should be rendered
+ * inside a `<defs>` element. Ids linking defs to paths are scoped using
+ * the given glyph's id, so should not conflict with other glyphs on the
+ * page as long as they are all from the same font.
+ *
+ * TODO: allow scoping ids?
+ */
 export function glyphToColorSvg(
   glyph: GlyphEnriched,
   font: Font,
@@ -32,23 +45,18 @@ export function glyphToColorSvg(
 ): { paths: Node[]; defs: Node[] } {
   const colr = font.getTableOrNull('COLR')
   const tree = colr?.colorGlyph(glyph.id)
+  const defs: Node[] = []
+
+  if (!tree) {
+    const d = glyphToSvgPath(glyph)
+    return { paths: [node('path', { d })], defs }
+  }
 
   const width = glyph.advanceWidth
   const height = font.unitsPerEm
 
-  const defs: Node[] = []
-
-  if (!tree) {
-    return {
-      paths: [
-        { type: 'path', props: { d: glyphToSvgPath(glyph) }, children: [] },
-      ],
-      defs,
-    }
-  }
-
   const palette = font.getTable('CPAL').getPalette(paletteIdx)
-  const stack: Node[] = [{ type: '', props: {}, children: [] }]
+  const stack: Node[] = [node('')]
   let latest = stack[0]
   let matrix: mat.Matrix | null = null
 
@@ -69,6 +77,7 @@ export function glyphToColorSvg(
     latest = stack[stack.length - 1]
 
     if (el.type === 'path' && !el.props.d) {
+      // TODO: explain this
       // make this a full size rect
       el.type = 'rect'
       Object.assign(el.props, { x: 0, y: 0, width, height })
@@ -122,7 +131,7 @@ export function glyphToColorSvg(
               y2: p3.y,
               gradientTransform: matrix ? mat.toSvg(matrix) : undefined,
               spreadMethod,
-              gradientUnits: 'userSpaceOnUse',
+              gradientUnits,
             },
             stopsEls,
           ),
@@ -137,7 +146,7 @@ export function glyphToColorSvg(
         const { p0, p1, r0, r1, extend, stops } = layer.props
         const spreadMethod = extendToSpreadMethod(extend)
 
-        const stopsEls: Node[] = stops.map((stop) =>
+        const stopsEls = stops.map((stop) =>
           node('stop', {
             offset: stop.stopOffset,
             'stop-color': getColor(stop.paletteIndex, stop.alpha),
@@ -159,7 +168,7 @@ export function glyphToColorSvg(
               r: r1,
               gradientTransform: matrix ? mat.toSvg(matrix) : undefined,
               spreadMethod,
-              gradientUnits: 'userSpaceOnUse',
+              gradientUnits,
             },
             stopsEls,
           ),

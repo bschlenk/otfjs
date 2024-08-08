@@ -139,8 +139,12 @@ export class ColrTable {
 
     this.version = view.u16()
 
-    if (this.version !== 0 && this.version !== 1) {
-      throw new Error(`Unsupported COLR table version: ${this.version}`)
+    switch (this.version) {
+      case 0:
+      case 1:
+        break
+      default:
+        throw new Error(`Unsupported COLR table version: ${this.version}`)
     }
 
     this.numBaseGlyphRecords = view.u16()
@@ -151,22 +155,20 @@ export class ColrTable {
     if (this.baseGlyphRecordsOffset > 0) {
       this.baseGlyphRecords = view
         .subtable(this.baseGlyphRecordsOffset)
-        .array(this.numBaseGlyphRecords, (v) => {
-          const glyphId = v.u16()
-          const firstLayerIndex = v.u16()
-          const numLayers = v.u16()
-          return { glyphId, firstLayerIndex, numLayers }
-        })
+        .array(this.numBaseGlyphRecords, (v) => ({
+          glyphId: v.u16(),
+          firstLayerIndex: v.u16(),
+          numLayers: v.u16(),
+        }))
     }
 
     if (this.layerRecordsOffset > 0) {
       this.layerRecords = view
         .subtable(this.layerRecordsOffset)
-        .array(this.numLayerRecords, (v) => {
-          const glyphId = v.u16()
-          const paletteIndex = v.u16()
-          return { glyphId, paletteIndex }
-        })
+        .array(this.numLayerRecords, (v) => ({
+          glyphId: v.u16(),
+          paletteIndex: v.u16(),
+        }))
     }
 
     if (this.version === 1) {
@@ -181,12 +183,10 @@ export class ColrTable {
         const numBaseGlyphPaintRecords = baseGlyphListTable.u32()
         this.baseGlyphPaintRecords = baseGlyphListTable.array(
           numBaseGlyphPaintRecords,
-          () => {
-            const glyphId = baseGlyphListTable.u16()
-            const paintOffset = baseGlyphListTable.u32()
-
-            return { glyphId, paintOffset }
-          },
+          () => ({
+            glyphId: baseGlyphListTable.u16(),
+            paintOffset: baseGlyphListTable.u32(),
+          }),
         )
       }
 
@@ -227,17 +227,11 @@ export class ColrTable {
         for (let i = 0; i < record.numLayers; ++i) {
           const idx = record.firstLayerIndex + i
           const { glyphId, paletteIndex } = this.layerRecords![idx]
-          layers.push({
-            format: ColorRecordType.GLYPH,
-            props: { glyphId },
-            children: [
-              {
-                format: ColorRecordType.SOLID,
-                props: { paletteIndex, alpha: 1 },
-                children: [],
-              },
-            ],
-          })
+          layers.push(
+            layer(ColorRecordType.GLYPH, { glyphId }, [
+              layer(ColorRecordType.SOLID, { paletteIndex, alpha: 1 }),
+            ]),
+          )
         }
 
         return layers
@@ -274,7 +268,7 @@ export class ColrTable {
       case 2: {
         const paletteIndex = view.u16()
         const alpha = view.f2dot14()
-        return [{ format, props: { paletteIndex, alpha }, children: [] }]
+        return [layer(format, { paletteIndex, alpha })]
       }
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-4-and-5-paintlineargradient-paintvarlineargradient
@@ -298,7 +292,7 @@ export class ColrTable {
           return []
         }
 
-        return [{ format, props: { p0, p1, p2, extend, stops }, children: [] }]
+        return [layer(format, { p0, p1, p2, extend, stops })]
       }
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-6-and-7-paintradialgradient-paintvarradialgradient
@@ -316,9 +310,7 @@ export class ColrTable {
         const p0 = vec.vec(x0, y0)
         const p1 = vec.vec(x1, y1)
 
-        return [
-          { format, props: { p0, p1, r0, r1, extend, stops }, children: [] },
-        ]
+        return [layer(format, { p0, p1, r0, r1, extend, stops })]
       }
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#format-10-paintglyph
@@ -328,7 +320,7 @@ export class ColrTable {
 
         const children = this.visitLayer(view.subtable(paintOffset))
 
-        return [{ format, props: { glyphId }, children }]
+        return [layer(format, { glyphId }, children)]
       }
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#format-11-paintcolrglyph
@@ -345,7 +337,7 @@ export class ColrTable {
 
         const children = this.visitLayer(view.subtable(paintOffset))
 
-        return [{ format, props: { matrix }, children }]
+        return [layer(format, { matrix }, children)]
       }
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-14-and-15-painttranslate-paintvartranslate
@@ -357,9 +349,7 @@ export class ColrTable {
 
         const children = this.visitLayer(view.subtable(paintOffset))
 
-        return [
-          { format: ColorRecordType.TRANSFORM, props: { matrix }, children },
-        ]
+        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
       }
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-16-to-23-paintscale-and-variant-scaling-formats
@@ -371,9 +361,7 @@ export class ColrTable {
 
         const children = this.visitLayer(view.subtable(paintOffset))
 
-        return [
-          { format: ColorRecordType.TRANSFORM, props: { matrix }, children },
-        ]
+        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
       }
 
       case 18: {
@@ -386,9 +374,7 @@ export class ColrTable {
 
         const children = this.visitLayer(view.subtable(paintOffset))
 
-        return [
-          { format: ColorRecordType.TRANSFORM, props: { matrix }, children },
-        ]
+        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
       }
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#format-32-paintcomposite
@@ -400,7 +386,7 @@ export class ColrTable {
         const src = this.visitLayer(view.subtable(sourcePaintOffset))
         const dest = this.visitLayer(view.subtable(destPaintOffset))
 
-        return [{ format, props: { mode, src, dest }, children: [] }]
+        return [layer(format, { mode, src, dest })]
       }
 
       default:
@@ -413,27 +399,33 @@ export function readColrTable(view: Reader) {
   return new ColrTable(view)
 }
 
+function layer<T extends ColorRecordType>(
+  format: T,
+  props: ColorRecordPropsMap[T],
+  children: ColorLayer[] = [],
+) {
+  return { format, props, children }
+}
+
 function readAffine2x3(view: Reader) {
   const xx = view.f16dot16()
   const xy = view.f16dot16()
   const yx = view.f16dot16()
   const yy = view.f16dot16()
-  const dx = view.f16dot16()
-  const dy = view.f16dot16()
+  const tx = view.f16dot16()
+  const ty = view.f16dot16()
 
-  return mat.mat(xx, xy, yx, yy, dx, dy)
+  return mat.mat(xx, xy, yx, yy, tx, ty)
 }
 
 function readColorLine(view: Reader) {
   const extend = view.u8()
   const numStops = view.u16()
-  const stops = view.array(numStops, () => {
-    const stopOffset = view.f2dot14()
-    const paletteIndex = view.u16()
-    const alpha = view.f2dot14()
-
-    return { stopOffset, paletteIndex, alpha }
-  })
+  const stops = view.array(numStops, () => ({
+    stopOffset: view.f2dot14(),
+    paletteIndex: view.u16(),
+    alpha: view.f2dot14(),
+  }))
 
   return { extend, stops }
 }

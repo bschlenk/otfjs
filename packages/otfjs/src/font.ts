@@ -42,7 +42,8 @@ export interface TableMap {
   prep: Uint8Array
 }
 
-type TableType<T extends string> = T extends keyof TableMap ? TableMap[T] : any
+type TableType<T extends string> =
+  T extends keyof TableMap ? TableMap[T] : unknown
 
 export interface GlyphEnriched extends GlyphSimple {
   id: number

@@ -14,14 +14,15 @@ export function binarySearch<T>(
 
   while (start <= end) {
     const mid = (start + end) >>> 1
-    const value = fn(arr[mid])
+    const item = arr[mid]
+    const value = fn(item)
 
     if (value < target) {
       start = mid + 1
     } else if (value > target) {
       end = mid - 1
     } else {
-      return arr[mid]
+      return item
     }
   }
 

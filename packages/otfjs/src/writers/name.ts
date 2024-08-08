@@ -35,7 +35,5 @@ export function writeNameTable(names: NameRecord[]) {
 }
 
 function encodeUtf16(str: string, writer: Writer, offset: number) {
-  return writer.at(offset, (w) => {
-    w.utf16(str)
-  })
+  return writer.at(offset, (w) => w.utf16(str))
 }
