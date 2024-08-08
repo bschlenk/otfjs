@@ -1,11 +1,12 @@
-import { getItemOrFirst } from '../utils/object'
+import { filterMap, getItemOrFirst } from '../../utils/object'
 
 export interface FontGridProps {
-  fonts: (typeof import('../fonts.json'))['items']
+  fonts: (typeof import('../../fonts.json'))['items']
+  filter?: string
   onChange: (fontUrl: string) => void
 }
 
-export function FontGrid({ fonts, onChange }: FontGridProps) {
+export function FontGrid({ fonts, filter, onChange }: FontGridProps) {
   return (
     <div
       className="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-10 p-7"
@@ -16,9 +17,17 @@ export function FontGrid({ fonts, onChange }: FontGridProps) {
         onChange(url)
       }}
     >
-      {fonts.map((font) => (
-        <FontTile key={font.family} name={font.family} url={urlForFont(font)} />
-      ))}
+      {filterMap(
+        fonts,
+        (font) => !filter || font.family.toLowerCase().includes(filter),
+        (font) => (
+          <FontTile
+            key={font.family}
+            name={font.family}
+            url={urlForFont(font)}
+          />
+        ),
+      )}
     </div>
   )
 }

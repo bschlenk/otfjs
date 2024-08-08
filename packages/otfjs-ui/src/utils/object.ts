@@ -13,3 +13,19 @@ export function getFirstKey(obj: Record<string, any>) {
   }
   return null
 }
+
+export function filterMap<T, U>(
+  items: T[],
+  predicate: (item: T) => boolean,
+  fn: (item: T) => U,
+): U[] {
+  const mapped: U[] = []
+
+  for (const item of items) {
+    if (predicate(item)) {
+      mapped.push(fn(item))
+    }
+  }
+
+  return mapped
+}
