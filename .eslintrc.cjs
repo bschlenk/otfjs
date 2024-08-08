@@ -11,6 +11,8 @@ module.exports = {
   plugins: ['import', 'react', 'react-refresh', 'simple-import-sort'],
   settings: { react: { version: 'detect' } },
   rules: {
+    eqeqeq: ['error', 'smart'],
+
     'import/first': 'error',
     'import/newline-after-import': 'error',
     'import/no-duplicates': 'error',
