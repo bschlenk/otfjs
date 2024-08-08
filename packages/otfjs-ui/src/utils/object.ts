@@ -20,8 +20,11 @@ export function filterMap<T, U>(
   fn: (item: T) => U,
 ): U[] {
   const mapped: U[] = []
+  const n = items.length
 
-  for (const item of items) {
+  for (let i = 0; i < n; ++i) {
+    const item = items[i]
+
     if (predicate(item)) {
       mapped.push(fn(item))
     }
