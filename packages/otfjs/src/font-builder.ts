@@ -6,22 +6,22 @@
 // font at least)
 
 import { Writer } from './buffer/writer.js'
+import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
 import { padToMultiple } from './utils/utils.js'
 
 export function buildFont(props: {
   sfntVersion: SfntVersion
-  tables: Record<string, Writer>
+  tables: Record<string, Writer | ArrayBuffer | Uint8Array>
 }) {
   let tableOffset = 12
   let tablesSize = 0
   for (const table of Object.values(props.tables)) {
     tableOffset += 16
-    tablesSize += padToMultiple(table.length, 4)
+    tablesSize += padToMultiple(table.byteLength, 4)
   }
 
-  const data = new ArrayBuffer(tableOffset + tablesSize)
-  const writer = new Writer(data)
+  const writer = new Writer(tableOffset + tablesSize)
 
   const tags = Object.keys(props.tables).sort()
   const numTables = tags.length
@@ -35,9 +35,9 @@ export function buildFont(props: {
 
   for (const tag of tags) {
     const table = props.tables[tag]
-    const checksum = table.checksum()
+    const checksum = computeChecksumHelper(table)
     const offset = tableOffset
-    const length = table.length
+    const length = table.byteLength
     tableOffset += padToMultiple(length, 4)
 
     writer.tag(tag)
@@ -46,10 +46,19 @@ export function buildFont(props: {
     writer.u32(length)
   }
 
+  // TODO: need to correct checksum of head table
+
   for (const tag of tags) {
     const table = props.tables[tag]
     writer.buffer(table, 4)
   }
 
-  return data
+  return writer.toBuffer()
+}
+
+function computeChecksumHelper(data: Writer | ArrayBuffer | Uint8Array) {
+  if (data instanceof Writer) return data.checksum()
+
+  const view = new DataView(data instanceof ArrayBuffer ? data : data.buffer)
+  return computeChecksum(view)
 }

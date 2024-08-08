@@ -1,5 +1,6 @@
 import { from2dot14, from16dot16 } from '../utils/bit.js'
 import { fromLongDateTime } from '../utils/date.js'
+import { error } from '../utils/utils.js'
 
 export class Reader {
   private view: DataView
@@ -82,6 +83,41 @@ export class Reader {
 
   public tag(): string {
     return String.fromCharCode(this.u8(), this.u8(), this.u8(), this.u8())
+  }
+
+  // woff2 specific https://www.w3.org/TR/WOFF2/#255UInt16-0
+  public u16225(): number {
+    const code = this.u8()
+
+    if (code === 253) return this.u16()
+    if (code === 255) return this.u8() + 253
+    if (code === 254) return this.u8() + 253 * 2
+
+    return code
+  }
+
+  // woff2 specific https://www.w3.org/TR/WOFF2/#UIntBase128-0
+  public uBase128(): number {
+    let accum = 0
+
+    for (let i = 0; i < 5; ++i) {
+      const byte = this.u8()
+
+      // No leading 0's
+      if (i === 0 && byte === 0x80) {
+        error('UIntBase128 sequence has leading zeros')
+      }
+
+      // If any of top 7 bits are set then << 7 would overflow
+      if (accum & 0xfe000000) error('UIntBase128 sequence exceeds 5 bytes')
+
+      accum = (accum << 7) | (byte & 0x7f)
+
+      // Spin until most significant bit of data byte is false
+      if ((byte & 0x80) === 0) return accum
+    }
+
+    error('UIntBase128 sequence exceeds 5 bytes')
   }
 
   public skip(n: number): void {
