@@ -9,8 +9,8 @@ export class Writer {
   public offset: number = 0
   private maxOffset: number = 0
 
-  constructor(data?: ArrayBuffer) {
-    this.data = data ?? new ArrayBuffer(1024)
+  constructor(size: number = 1024) {
+    this.data = new ArrayBuffer(size)
     this.view = new DataView(this.data)
   }
 
@@ -18,8 +18,18 @@ export class Writer {
     return Math.max(this.offset, this.maxOffset)
   }
 
+  // alias for length, to be compatible with ArrayBuffer
+  get byteLength(): number {
+    return this.length
+  }
+
   get capacity(): number {
     return this.data.byteLength
+  }
+
+  public toBuffer(): ArrayBuffer {
+    if (this.capacity === this.length) return this.data
+    return this.data.slice(0, this.length)
   }
 
   public u8(val: number) {
@@ -125,11 +135,16 @@ export class Writer {
   }
 
   public at(offset: number, fn: (writer: Writer) => void) {
-    const writer = new Writer(this.data)
-    writer.offset = offset
-    fn(writer)
-    this.maxOffset = Math.max(this.maxOffset, writer.length)
-    return writer.length - offset
+    const oldOffset = this.offset
+    this.offset = offset
+
+    fn(this)
+
+    const newOffset = this.offset
+    this.maxOffset = this.length
+    this.offset = oldOffset
+
+    return newOffset - offset
   }
 
   public checksum() {
