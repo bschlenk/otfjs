@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 import { filterMap, getItemOrFirst } from '../../utils/object'
 
 export interface FontGridProps {
@@ -6,7 +8,11 @@ export interface FontGridProps {
   onChange: (fontUrl: string) => void
 }
 
-export function FontGrid({ fonts, filter, onChange }: FontGridProps) {
+export const FontGrid = memo(function FontGrid({
+  fonts,
+  filter,
+  onChange,
+}: FontGridProps) {
   return (
     <div
       className="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-10 p-7"
@@ -30,7 +36,7 @@ export function FontGrid({ fonts, filter, onChange }: FontGridProps) {
       )}
     </div>
   )
-}
+})
 
 interface FontTileProps {
   name: string

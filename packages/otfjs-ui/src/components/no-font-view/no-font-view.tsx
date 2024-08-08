@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useDeferredValue, useState } from 'react'
 
 import fonts from '../../fonts.json'
 import { FontGrid } from './font-grid'
@@ -8,19 +8,25 @@ export interface NoFontViewProps {
 }
 
 export function NoFontView({ onLoad }: NoFontViewProps) {
-  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('')
+  const deferredSearch = useDeferredValue(filter)
+
+  const onChange = useCallback(
+    (fontUrl: string) => {
+      fetch(fontUrl)
+        .then((res) => res.arrayBuffer())
+        .then(onLoad)
+    },
+    [onLoad],
+  )
 
   return (
     <div className="relative">
-      <SearchBar onChange={setSearch} />
+      <SearchBar onChange={setFilter} />
       <FontGrid
         fonts={fonts.items}
-        filter={search}
-        onChange={(fontUrl) => {
-          fetch(fontUrl)
-            .then((res) => res.arrayBuffer())
-            .then(onLoad)
-        }}
+        filter={deferredSearch}
+        onChange={onChange}
       />
     </div>
   )

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Font } from 'otfjs'
 
 import { FontView } from './components/font-view/font-view'
@@ -8,7 +8,9 @@ import { NoFontView } from './components/no-font-view/no-font-view'
 export function App() {
   const [font, setFont] = useState<Font | null>(null)
 
-  const onLoad = (buff: ArrayBuffer) => setFont(new Font(buff))
+  const onLoad = useCallback((buff: ArrayBuffer) => {
+    setFont(new Font(buff))
+  }, [])
 
   return (
     <FullScreenDropZone onLoad={onLoad}>
