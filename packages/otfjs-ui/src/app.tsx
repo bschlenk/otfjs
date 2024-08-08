@@ -8,10 +8,12 @@ import { NoFontView } from './components/no-font-view/no-font-view'
 export function App() {
   const [font, setFont] = useState<Font | null>(null)
 
+  const onLoad = (buff: ArrayBuffer) => setFont(new Font(buff))
+
   return (
-    <FullScreenDropZone onLoad={(buffer) => setFont(new Font(buffer))}>
+    <FullScreenDropZone onLoad={onLoad}>
       {!font ?
-        <NoFontView onFont={setFont} />
+        <NoFontView onLoad={onLoad} />
       : <FontView font={font} onBack={() => setFont(null)} />}
     </FullScreenDropZone>
   )
