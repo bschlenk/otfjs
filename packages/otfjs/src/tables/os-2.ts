@@ -1,6 +1,6 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/os2
 
-import { Reader } from '../buffer.js'
+import { Reader } from '../buffer/reader.js'
 
 export type OS2Table = ReturnType<typeof readOS2Table>
 

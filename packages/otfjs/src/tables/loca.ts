@@ -1,6 +1,6 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/loca
 
-import { Reader } from '../buffer.js'
+import { Reader } from '../buffer/reader.js'
 
 export type LocaTable = number[]
 

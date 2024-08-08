@@ -1,4 +1,4 @@
-import { Reader } from '../buffer.js'
+import { Reader } from '../buffer/reader.js'
 
 export type MathTable = ReturnType<typeof readMathTable>
 

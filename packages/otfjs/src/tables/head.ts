@@ -1,4 +1,4 @@
-import { Reader } from '../buffer.js'
+import { Reader } from '../buffer/reader.js'
 import { createFlagReader } from '../flags.js'
 import { toHex } from '../utils/utils.js'
 

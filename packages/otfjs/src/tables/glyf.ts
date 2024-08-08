@@ -2,7 +2,7 @@
 
 import * as mat from '@bschlenk/mat'
 
-import { Reader } from '../buffer.js'
+import { Reader } from '../buffer/reader.js'
 import { createFlagReader } from '../flags.js'
 import { assert } from '../utils/utils.js'
 

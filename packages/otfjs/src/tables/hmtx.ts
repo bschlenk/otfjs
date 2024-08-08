@@ -1,4 +1,4 @@
-import { Reader } from '../buffer.js'
+import { Reader } from '../buffer/reader.js'
 
 // TODO: give this a function to get metrics by glyph id
 export interface HmtxTable {

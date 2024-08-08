@@ -1,4 +1,4 @@
-import { Writer } from '../buffer.js'
+import { Writer } from '../buffer/writer.js'
 import { NameId } from '../enums.js'
 
 interface NameRecord {

@@ -1,4 +1,4 @@
-import { Reader } from '../buffer.js'
+import { Reader } from '../buffer/reader.js'
 import { Header, TableRecord } from '../types.js'
 
 export function readHeader(view: Reader) {

@@ -1,6 +1,6 @@
 import * as mat from '@bschlenk/mat'
 
-import { Reader } from './buffer.js'
+import { Reader } from './buffer/reader.js'
 import { Cache, createCache } from './cache.js'
 import { NameId, PlatformId } from './enums.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'

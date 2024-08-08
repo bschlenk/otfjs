@@ -1,4 +1,4 @@
-import { Reader } from '../buffer.js'
+import { Reader } from '../buffer/reader.js'
 import { NameId, PlatformId } from '../enums.js'
 
 export type NameTable = ReturnType<typeof readNameTable>
