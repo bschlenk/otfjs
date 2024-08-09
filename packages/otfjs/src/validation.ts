@@ -1,6 +1,6 @@
 import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
-import { Header, TableRecord } from './types.js'
+import type { Header, TableRecord } from './tables/header.js'
 import { getAlignPadding, toHex } from './utils/utils.js'
 
 export function validateHeader(header: Header) {

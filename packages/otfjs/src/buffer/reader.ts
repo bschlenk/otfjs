@@ -157,4 +157,8 @@ export class Reader {
   public subtable(offset: number, length?: number): Reader {
     return new Reader(this.view.buffer, this.view.byteOffset + offset, length)
   }
+
+  public stream(length: number): Reader {
+    return new Reader(this.u8Array(length))
+  }
 }

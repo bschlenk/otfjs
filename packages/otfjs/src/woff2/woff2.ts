@@ -1,7 +1,12 @@
 import decompress from 'brotli/decompress.js'
 
-import { Reader, Writer } from '../buffer.js'
+import { Reader } from '../buffer/reader.js'
+import { type Writer } from '../buffer/writer.js'
+import { buildFont } from '../font-builder.js'
 import { assert, error } from '../utils/utils.js'
+import { writeGlyfTable } from '../writers/glyf.js'
+import { writeLocaTable } from '../writers/loca.js'
+import { decodeGlyfTransform0 } from './glyf-transform.js'
 import { KNOWN_TAGS } from './tags.js'
 
 // wOF2
@@ -19,25 +24,25 @@ export function decodeWoff2File(buffer: ArrayBuffer) /*: ArrayBuffer*/ {
 
   if (view.u32() !== SIGNATURE) error('Invalid WOFF2 signature')
 
-  const flavor = view.u32()
-  const length = view.u32()
+  const _flavor = view.u32()
+  const _length = view.u32()
   const numTables = view.u16()
 
   view.skip(2) // reserved
 
-  const totalSfntSize = view.u32()
-  const totalCompressedSize = view.u32()
-  const majorVersion = view.u16()
-  const minorVersion = view.u16()
-  const metaOffset = view.u32()
-  const metaLength = view.u32()
-  const metaOrigLength = view.u32()
-  const privOffset = view.u32()
-  const privLength = view.u32()
+  const _totalSfntSize = view.u32()
+  const _totalCompressedSize = view.u32()
+  const _majorVersion = view.u16()
+  const _minorVersion = view.u16()
+  const _metaOffset = view.u32()
+  const _metaLength = view.u32()
+  const _metaOrigLength = view.u32()
+  const _privOffset = view.u32()
+  const _privLength = view.u32()
 
   // start reading table entries
 
-  const tables: TableDirectoryEntry[] = view.array(numTables, () => {
+  const tableInfo: TableDirectoryEntry[] = view.array(numTables, () => {
     const flags = view.u8()
     const tagIndex = flags & 0x3f
     const transform = (flags >>> 6) & 0b11
@@ -54,20 +59,21 @@ export function decodeWoff2File(buffer: ArrayBuffer) /*: ArrayBuffer*/ {
 
   const data = decompress(Buffer.from(view.data, view.offset))
   assert(
-    data.length === tables.reduce((acc, t) => acc + t.length, 0),
+    data.length === tableInfo.reduce((acc, t) => acc + t.length, 0),
     'Unexpected decompressed stream size',
   )
 
-  let loca = null
+  const loca: number[] = []
+  let locaEncountered = false
   let offset = 0
-  const tableMap: Record<string, Writer | Uint8Array> = {}
+  const tables: Record<string, Writer | Uint8Array> = {}
 
-  for (const table of tables) {
+  for (const table of tableInfo) {
     const buff = new Uint8Array(data, offset, table.length)
     offset += table.length
 
     if (table.isNullTransform) {
-      tableMap[table.tag] = buff
+      tables[table.tag] = buff
       continue
     }
 
@@ -77,9 +83,14 @@ export function decodeWoff2File(buffer: ArrayBuffer) /*: ArrayBuffer*/ {
           error(`Unrecognized glyf transform ${table.transform}`)
         }
 
-        const result = decodeGlyfTransform0(buff)
-        tableMap[table.tag] = result.buffer
-        loca = result.loca
+        if (locaEncountered) {
+          error('Encountered loca table before glyf table')
+        }
+
+        const { glyphs, indexFormat } = decodeGlyfTransform0(buff)
+        tables[table.tag] = writeGlyfTable(glyphs, loca)
+        tables['loca'] = writeLocaTable(loca, indexFormat)
+
         break
       }
 
@@ -88,7 +99,7 @@ export function decodeWoff2File(buffer: ArrayBuffer) /*: ArrayBuffer*/ {
           error(`Unrecognized loca transform ${table.transform}`)
         }
 
-        // already decoded as part of glyf decode
+        locaEncountered = true
         break
       }
 
@@ -97,8 +108,8 @@ export function decodeWoff2File(buffer: ArrayBuffer) /*: ArrayBuffer*/ {
           error(`Unrecognized hmtx transform ${table.transform}`)
         }
 
-        decodeHmtxTransform0(``)
-
+        error('TODO: decode hmtx transform 1')
+        // decodeHmtxTransform0(``)
         break
       }
 
@@ -107,26 +118,9 @@ export function decodeWoff2File(buffer: ArrayBuffer) /*: ArrayBuffer*/ {
     }
   }
 
-  // need to:
-  // sort the tables by tag
-  // reconstruct the font file header w/ tables
-  // reverse-transform any transformed tables
-  // reconstruct the loca table based on glyphs
-  // handle checksums
-
-  return {
-    flavor,
-    length,
-    numTables,
-    totalSfntSize,
-    totalCompressedSize,
-    majorVersion,
-    minorVersion,
-    metaOffset,
-    metaLength,
-    metaOrigLength,
-    privOffset,
-    privLength,
-    tables,
+  if (loca.length && !locaEncountered) {
+    error('Expected entry for loca table after glyf table')
   }
+
+  return buildFont({ tables })
 }

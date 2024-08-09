@@ -1,7 +1,7 @@
 import { computeChecksum } from '../checksum.js'
 import { to2dot14 } from '../utils/bit.js'
 import { toLongDateTime } from '../utils/date.js'
-import { assert, getAlignPadding } from '../utils/utils.js'
+import { assert, getAlignPadding, padToMultiple } from '../utils/utils.js'
 
 export class Writer {
   public data: ArrayBuffer
@@ -27,9 +27,8 @@ export class Writer {
     return this.data.byteLength
   }
 
-  public toBuffer(): ArrayBuffer {
-    if (this.capacity === this.length) return this.data
-    return this.data.slice(0, this.length)
+  public toBuffer(): Uint8Array {
+    return new Uint8Array(this.data, 0, this.length)
   }
 
   public u8(val: number) {
@@ -96,12 +95,12 @@ export class Writer {
 
   public tag(val: string) {
     assert(val.length === 4, 'Tag must be 4 characters long')
+    // do this first to avoid potentially resizing more than once
     this.maybeResize(4)
-    this.view.setUint8(this.offset, val.charCodeAt(0))
-    this.view.setUint8(this.offset + 1, val.charCodeAt(1))
-    this.view.setUint8(this.offset + 2, val.charCodeAt(2))
-    this.view.setUint8(this.offset + 3, val.charCodeAt(3))
-    this.offset += 4
+    this.u8(val.charCodeAt(0))
+    this.u8(val.charCodeAt(1))
+    this.u8(val.charCodeAt(2))
+    this.u8(val.charCodeAt(3))
   }
 
   public utf16(val: string) {
@@ -115,23 +114,19 @@ export class Writer {
     this.offset += n
   }
 
+  public pad(n: number): void {
+    const p = getAlignPadding(this.length, n)
+    if (p) this.skip(p)
+  }
+
   public buffer(val: Writer | ArrayBuffer, align = 0) {
-    let size = 0
-    if (val instanceof Writer) {
-      size = val.length
-      val = val.data
-    } else {
-      size = val.byteLength
-    }
+    const buff = val instanceof Writer ? val.toBuffer() : new Uint8Array(val)
+    let length = buff.byteLength
+    length += align ? getAlignPadding(this.offset + length, align) : 0
 
-    this.maybeResize(size)
-    new Uint8Array(this.data).set(new Uint8Array(val, 0, size), this.offset)
-    this.offset += size
-
-    if (align) {
-      const padding = getAlignPadding(this.offset, align)
-      this.offset += padding
-    }
+    this.maybeResize(length)
+    new Uint8Array(this.data).set(buff, this.offset)
+    this.offset += length
   }
 
   public at(offset: number, fn: (writer: Writer) => void) {

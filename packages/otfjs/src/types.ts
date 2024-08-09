@@ -2,25 +2,41 @@ import type { Matrix } from '@bschlenk/mat'
 import type { Vector } from '@bschlenk/vec'
 
 import type { Extend } from './enums.js'
+import { GlyphCompositeFlags } from './glyph-utils.js'
 
-export interface Header {
-  sfntVersion: number
-  numTables: number
-  searchRange: number
-  entrySelector: number
-  rangeShift: number
-  tables: TableRecord[]
+interface GlyphBase<T extends string> {
+  type: T
+  xMin: number
+  yMin: number
+  xMax: number
+  yMax: number
+  instructions: Uint8Array
 }
 
-export interface TableRecord {
-  /** Table identifier. */
-  tag: string
-  /** Checksum for this table. */
-  checksum: number
-  /** Offset from beginning of font file. */
-  offset: number
-  /** Length of this table. */
-  length: number
+export interface GlyphSimple extends GlyphBase<'simple'> {
+  endPtsOfContours: number[]
+  points: Point[]
+  contoursOverlap: boolean
+}
+
+export interface GlyphComposite extends GlyphBase<'composite'> {
+  components: GlyphCompositeComponent[]
+}
+
+export type Glyph = GlyphSimple | GlyphComposite
+
+export interface GlyphCompositeComponent {
+  flags: GlyphCompositeFlags
+  glyphIndex: number
+  arg1: number
+  arg2: number
+  extra: number[]
+}
+
+export interface Point {
+  x: number
+  y: number
+  onCurve: boolean
 }
 
 export interface RGBA {
