@@ -69,7 +69,7 @@ export function decodeWoff2File(buffer: ArrayBuffer) /*: ArrayBuffer*/ {
   const tables: Record<string, Writer | Uint8Array> = {}
 
   for (const table of tableInfo) {
-    const buff = new Uint8Array(data, offset, table.length)
+    const buff = new Uint8Array(data.buffer, offset, table.length)
     offset += table.length
 
     if (table.isNullTransform) {

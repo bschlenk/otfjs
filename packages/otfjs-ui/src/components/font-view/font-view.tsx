@@ -133,7 +133,7 @@ function ArrayView({
 
 function arrayView(tag: string, bytesPerItem?: number) {
   return ({ font }: { font: Font }) => {
-    const table = font.getTable(tag)
+    const table: any = font.getTable(tag)
     return <ArrayView data={table} bytesPerItem={bytesPerItem} />
   }
 }
@@ -179,7 +179,7 @@ function InstructionView({ data }: { data: Uint8Array }) {
 
 function instructionView(tag: string) {
   return ({ font }: { font: Font }) => {
-    const table = font.getTable(tag)
+    const table: any = font.getTable(tag)
     return <InstructionView data={table} />
   }
 }

@@ -8,7 +8,7 @@ import { assert } from '../utils/utils.js'
 export function writeGlyfTable(glyphs: Glyph[], loca: number[]) {
   const writer = new Writer()
 
-  for (let i = 0; i < glyphs.length; i++) {
+  for (let i = 0; i < glyphs.length; ++i) {
     const glyph = glyphs[i]
 
     loca.push(writer.length)
@@ -31,6 +31,11 @@ export function writeGlyfTable(glyphs: Glyph[], loca: number[]) {
 }
 
 function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
+  if (glyph.endPtsOfContours.length === 0 && glyph.instructions.length === 0) {
+    // empty glyph can be represented as a 0 offset in the loca table
+    return
+  }
+
   writer.i16(glyph.endPtsOfContours.length)
   writeMinMax(writer, glyph)
 
@@ -54,7 +59,7 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
 
     const { x, y } = vec.subtract(point, lastPoint)
 
-    if (lastPoint.x === point.x) {
+    if (x === 0) {
       flag.xIsSameOrPositiveXShortVector = true
     } else {
       const smallX = Math.abs(x)
@@ -67,7 +72,7 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
       }
     }
 
-    if (lastPoint.y === point.y) {
+    if (y === 0) {
       flag.yIsSameOrPositiveYShortVector = true
     } else {
       const smallY = Math.abs(y)
@@ -76,7 +81,7 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
         flag.yIsSameOrPositiveYShortVector = y >= 0
         yCoordinates.push(smallY)
       } else {
-        yCoordinates.push(x)
+        yCoordinates.push(y)
       }
     }
 
@@ -91,7 +96,6 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
     const lastGroup = flagGroups[flagGroups.length - 1]
 
     if (lastGroup && lastGroup.flags.value === flags.value) {
-      lastGroup.flags.repeat = true
       lastGroup.repeat++
     } else {
       flagGroups.push({ flags, repeat: 0 })
@@ -99,10 +103,9 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
   }
 
   for (const { flags, repeat } of flagGroups) {
+    if (repeat) flags.repeat = true
     writer.u8(flags.value)
-    if (repeat) {
-      writer.u8(repeat)
-    }
+    if (repeat) writer.u8(repeat)
   }
 
   const writeCoord = (val: number) => {
@@ -157,6 +160,8 @@ function writeCompositeGlyph(writer: Writer, glyph: GlyphComposite) {
       writer.f2dot14(extra[1])
       writer.f2dot14(extra[2])
       writer.f2dot14(extra[3])
+    } else {
+      assert(extra.length === 0, 'Extra array should be empty')
     }
   }
 }

@@ -38,17 +38,15 @@ export function decodeGlyfTransform0(buff: Uint8Array) {
     const hasBBox = readBit(bboxBitmap, i)
 
     switch (numContours) {
+      // empty glyph
       case 0: {
-        // empty glyph
-
         assert(!hasBBox, 'Empty glyph should not have explicit bbox')
         glyphs.push(emptyGlyph())
         break
       }
 
+      // composite glyph
       case -1: {
-        // composite glyph
-
         assert(hasBBox, 'Composite glyph must have explicit bbox')
 
         const components: GlyphCompositeComponent[] = []
@@ -71,9 +69,8 @@ export function decodeGlyfTransform0(buff: Uint8Array) {
         break
       }
 
+      // simple glyph
       default: {
-        // simple glyph
-
         const contourPoints = nPointsStream.array(numContours, (v) =>
           v.u16225(),
         )
@@ -82,7 +79,7 @@ export function decodeGlyfTransform0(buff: Uint8Array) {
         const flags = flagStream.u8Array(nPoints)
 
         const points: Point[] = []
-        let lastPoint = vec.ZERO
+        let lastPoint: Point = { ...vec.ZERO, onCurve: true }
         let xMin = Infinity
         let yMin = Infinity
         let xMax = -Infinity
@@ -91,14 +88,16 @@ export function decodeGlyfTransform0(buff: Uint8Array) {
         for (let j = 0; j < nPoints; j++) {
           const flag = flags[j]
           const point = readPoint(flag, glyphStream)
+          Object.assign(point, vec.add(lastPoint, point))
+          lastPoint = point
+
           points.push(point)
 
           if (!hasBBox) {
-            lastPoint = vec.add(lastPoint, point)
-            xMin = Math.min(xMin, lastPoint.x)
-            yMin = Math.min(yMin, lastPoint.y)
-            xMax = Math.max(xMax, lastPoint.x)
-            yMax = Math.max(yMax, lastPoint.y)
+            xMin = Math.min(xMin, point.x)
+            yMin = Math.min(yMin, point.y)
+            xMax = Math.max(xMax, point.x)
+            yMax = Math.max(yMax, point.y)
           }
         }
 
@@ -109,7 +108,7 @@ export function decodeGlyfTransform0(buff: Uint8Array) {
         const instructions = readInstructions()
 
         const contoursOverlap =
-          overlapSimpleBitmap == null || readBit(overlapSimpleBitmap, i)
+          overlapSimpleBitmap != null && readBit(overlapSimpleBitmap, i)
 
         glyphs.push({
           type: 'simple',
@@ -139,6 +138,8 @@ function readHeader(buff: Uint8Array) {
   const optionFlags = view.u16()
   const numGlyphs = view.u16()
 
+  const bitmapSize = 4 * Math.floor((numGlyphs + 31) / 32)
+
   const indexFormat = view.u16() as 0 | 1
   assert(
     indexFormat === 0 || indexFormat === 1,
@@ -158,11 +159,11 @@ function readHeader(buff: Uint8Array) {
   const flagStream = view.stream(flagStreamSize)
   const glyphStream = view.stream(glyphStreamSize)
   const compositeStream = view.stream(compositeStreamSize)
-  const bboxBitmap = view.u8Array(numGlyphs)
+  const bboxBitmap = view.u8Array(bitmapSize)
   const bboxStream = view.stream(bboxStreamSize)
   const instructionStream = view.stream(instructionStreamSize)
 
-  const overlapSimpleBitmap = optionFlags & 1 ? view.u8Array(numGlyphs) : null
+  const overlapSimpleBitmap = optionFlags & 1 ? view.u8Array(bitmapSize) : null
 
   return {
     numGlyphs,

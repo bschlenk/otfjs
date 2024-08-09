@@ -167,6 +167,6 @@ export class Reader {
   }
 
   public stream(length: number): Reader {
-    return new Reader(this.u8Array(length))
+    return Reader.of(this.u8Array(length))
   }
 }

@@ -122,6 +122,8 @@ export class Writer {
   public buffer(val: Writer | ArrayBuffer, align = 0) {
     const buff = val instanceof Writer ? val.toBuffer() : new Uint8Array(val)
     let length = buff.byteLength
+    if (length === 0) return
+
     length += align ? getAlignPadding(this.offset + length, align) : 0
 
     this.maybeResize(length)
