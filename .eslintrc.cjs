@@ -12,6 +12,8 @@ module.exports = {
   settings: { react: { version: 'detect' } },
   rules: {
     eqeqeq: ['error', 'smart'],
+    // handled by prettier
+    'no-extra-semi': 'off',
 
     'import/first': 'error',
     'import/newline-after-import': 'error',
@@ -53,5 +55,19 @@ module.exports = {
     ],
 
     '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        args: 'all',
+        argsIgnorePattern: '^_',
+        caughtErrors: 'all',
+        // prefer omitting the binding instead
+        // caughtErrorsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        // prefer an empty space between commas
+        ignoreRestSiblings: false,
+      },
+    ],
   },
 }
