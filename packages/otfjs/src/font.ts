@@ -7,10 +7,10 @@ import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { ColrTable, readColrTable } from './tables/colr.js'
 import { readTableAsI16Array, readTableAsU8Array } from './tables/common.js'
 import { CpalTable, readCpalTable } from './tables/cpal.js'
-import { GlyphSimple, readGlyf } from './tables/glyf.js'
+import { readGlyf } from './tables/glyf.js'
 import { GposTable, readGposTable } from './tables/gpos.js'
 import { HeadTable, readHeadTable } from './tables/head.js'
-import { readHeader } from './tables/header.js'
+import { type Header, readHeader, type TableRecord } from './tables/header.js'
 import { HheaTable, readHheaTable } from './tables/hhea.js'
 import { HmtxTable, readHmtxTable } from './tables/hmtx.js'
 import { LocaTable, readLocaTable } from './tables/loca.js'
@@ -19,7 +19,7 @@ import { MaxpTable, readMaxpTable } from './tables/maxp.js'
 import { NameTable, readNameTable } from './tables/name.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
 import { PostTable, readPostTable } from './tables/post.js'
-import { Header, TableRecord } from './types.js'
+import type { GlyphSimple } from './types.js'
 import { toObject } from './utils/utils.js'
 import { validateHeader, validateTable } from './validation.js'
 
@@ -154,6 +154,7 @@ export class Font {
         for (const p of subGlyph.points) {
           const point = mat.transformPoint(c.matrix, p)
           if (roundXYToGrid) {
+            // TODO: this needs to be done after scaling based on pt size
             point.x = Math.round(point.x)
             point.y = Math.round(point.y)
           }
@@ -161,6 +162,8 @@ export class Font {
           fullGlyph.points.push(newPoint)
         }
       } else {
+        // TODO: this is supposed to use arg1 and arg2 as point indices to align
+        // from parent and child
         fullGlyph.points.push(...subGlyph.points)
       }
 

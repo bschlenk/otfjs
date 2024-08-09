@@ -11,7 +11,8 @@ import { SfntVersion } from './enums.js'
 import { padToMultiple } from './utils/utils.js'
 
 export function buildFont(props: {
-  sfntVersion: SfntVersion
+  // Defaults to OPEN_TYPE
+  sfntVersion?: SfntVersion
   tables: Record<string, Writer | ArrayBuffer | Uint8Array>
 }) {
   let tableOffset = 12
@@ -27,17 +28,28 @@ export function buildFont(props: {
   const numTables = tags.length
   const searchRange = 2 ** Math.floor(Math.log2(numTables)) * 16
 
-  writer.u32(props.sfntVersion)
+  writer.u32(props.sfntVersion ?? SfntVersion.OPEN_TYPE)
   writer.u16(numTables)
   writer.u16(searchRange)
   writer.u16(Math.floor(Math.log2(numTables)))
   writer.u16(numTables * 16 - searchRange)
 
+  let headOffset = 0
+
   for (const tag of tags) {
     const table = props.tables[tag]
-    const checksum = computeChecksumHelper(table)
+    const data = asDataView(table)
     const offset = tableOffset
     const length = table.byteLength
+
+    if (tag === 'head') {
+      // the head table's checksumAdjustment field must be cleared before
+      // we compute its checksum
+      data.setUint32(8, 0)
+      headOffset = offset
+    }
+
+    const checksum = computeChecksum(data)
     tableOffset += padToMultiple(length, 4)
 
     writer.tag(tag)
@@ -46,19 +58,21 @@ export function buildFont(props: {
     writer.u32(length)
   }
 
-  // TODO: need to correct checksum of head table
-
   for (const tag of tags) {
     const table = props.tables[tag]
     writer.buffer(table, 4)
   }
 
+  const checksum = writer.checksum()
+  writer.at(headOffset + 8, (w) => w.u32(0xb1b0afba - checksum))
+
   return writer.toBuffer()
 }
 
-function computeChecksumHelper(data: Writer | ArrayBuffer | Uint8Array) {
-  if (data instanceof Writer) return data.checksum()
-
-  const view = new DataView(data instanceof ArrayBuffer ? data : data.buffer)
-  return computeChecksum(view)
+function asDataView(data: Writer | ArrayBuffer | Uint8Array) {
+  const buffer =
+    data instanceof Writer ? data.data
+    : data instanceof Uint8Array ? data.buffer
+    : data
+  return new DataView(buffer)
 }

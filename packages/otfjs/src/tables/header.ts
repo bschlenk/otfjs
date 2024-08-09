@@ -1,5 +1,24 @@
 import { Reader } from '../buffer/reader.js'
-import { Header, TableRecord } from '../types.js'
+
+export interface Header {
+  sfntVersion: number
+  numTables: number
+  searchRange: number
+  entrySelector: number
+  rangeShift: number
+  tables: TableRecord[]
+}
+
+export interface TableRecord {
+  /** Table identifier. */
+  tag: string
+  /** Checksum for this table. */
+  checksum: number
+  /** Offset from beginning of font file. */
+  offset: number
+  /** Length of this table. */
+  length: number
+}
 
 export function readHeader(view: Reader): Header {
   const sfntVersion = view.u32()

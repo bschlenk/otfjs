@@ -1,5 +1,6 @@
 import fs from 'fs/promises'
 import { decodeWoff2File } from 'otfjs'
+import path from 'path'
 
 const args = process.argv.slice(2)
 if (args.length < 1) {
@@ -7,7 +8,12 @@ if (args.length < 1) {
   process.exit(1)
 }
 
-const data = await fs.readFile(args[0])
+const name = args[0]
+const data = await fs.readFile(name)
 const woff2 = decodeWoff2File(data.buffer)
 
-console.log(woff2)
+const dirname = path.dirname(name)
+const nakedName = path.basename(name, path.extname(name))
+const outPath = path.join(dirname, `${nakedName}.ttf`)
+
+fs.writeFile(outPath, woff2)

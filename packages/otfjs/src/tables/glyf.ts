@@ -1,72 +1,19 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/glyf
 
-import * as mat from '@bschlenk/mat'
-
-import { Reader } from '../buffer/reader.js'
-import { createFlagReader } from '../flags.js'
-import { assert } from '../utils/utils.js'
-
-interface GlyphBase<T extends string> {
-  type: T
-  xMin: number
-  yMin: number
-  xMax: number
-  yMax: number
-}
-
-export interface GlyphSimple extends GlyphBase<'simple'> {
-  endPtsOfContours: number[]
-  instructions: Uint8Array
-  points: Point[]
-  contoursOverlap: boolean
-}
-
-export interface GlyphComposite extends GlyphBase<'composite'> {
-  components: GlyphCompositeComponent[]
-}
-
-export type Glyph = GlyphSimple | GlyphComposite
-
-interface GlyphCompositeComponent {
-  flags: ReturnType<typeof newCompositeFlag>
-  glyphIndex: number
-  arg1: number
-  arg2: number
-  matrix: mat.Matrix
-}
-
-export interface Point {
-  x: number
-  y: number
-  onCurve: boolean
-}
-
-const newFlag = createFlagReader({
-  onCurvePoint: 0,
-  xShortVector: 1,
-  yShortVector: 2,
-  repeat: 3,
-  xIsSameOrPositiveXShortVector: 4,
-  yIsSameOrPositiveYShortVector: 5,
-  contoursOverlap: 6,
-})
-
-type Flag = ReturnType<typeof newFlag>
-
-const newCompositeFlag = createFlagReader({
-  arg1And2AreWords: 0,
-  argsAreXYValues: 1,
-  roundXYToGrid: 2,
-  weHaveAScale: 3,
-  moreComponents: 5,
-  weHaveAnXAndYScale: 6,
-  weHaveATwoByTwo: 7,
-  weHaveInstructions: 8,
-  useMyMetrics: 9,
-  overlapCompound: 10,
-  scaledComponentOffset: 11,
-  unscaledComponentOffset: 12,
-})
+import type { Reader } from '../buffer/reader.js'
+import {
+  type GlyphFlags,
+  glyphFlags,
+  readCompositeGlyphComponent,
+} from '../glyph-utils.js'
+import type {
+  Glyph,
+  GlyphComposite,
+  GlyphCompositeComponent,
+  GlyphSimple,
+  Point,
+} from '../types.js'
+import { assert, EMPTY_U8_ARRAY } from '../utils/utils.js'
 
 /**
  * This reader is a special case, where the `view` is expected to already
@@ -93,14 +40,14 @@ export function readGlyf(view: Reader): Glyph {
   const yMax = view.i16()
 
   if (isComposite) {
-    const components = readCompositeGlyph(view)
+    const parts = readCompositeGlyph(view)
     const glyph: GlyphComposite = {
       type: 'composite',
       xMin,
       yMin,
       xMax,
       yMax,
-      components,
+      ...parts,
     }
     return glyph
   }
@@ -132,9 +79,9 @@ export function readGlyf(view: Reader): Glyph {
 }
 
 function readFlags(count: number, view: Reader) {
-  const flags: Flag[] = []
+  const flags: GlyphFlags[] = []
   while (flags.length < count) {
-    const flag = newFlag(view.u8())
+    const flag = glyphFlags(view.u8())
     flags.push(flag)
 
     if (flag.repeat) {
@@ -150,7 +97,7 @@ function readFlags(count: number, view: Reader) {
   return { flags, contoursOverlap }
 }
 
-function readXCoordinates(flags: Flag[], view: Reader) {
+function readXCoordinates(flags: GlyphFlags[], view: Reader) {
   const xCoordinates: number[] = []
   for (const flag of flags) {
     if (flag.xShortVector) {
@@ -169,7 +116,7 @@ function readXCoordinates(flags: Flag[], view: Reader) {
   return xCoordinates
 }
 
-function readYCoordinates(flags: Flag[], view: Reader) {
+function readYCoordinates(flags: GlyphFlags[], view: Reader) {
   const yCoordinates: number[] = []
   for (const flag of flags) {
     if (flag.yShortVector) {
@@ -189,7 +136,7 @@ function readYCoordinates(flags: Flag[], view: Reader) {
 }
 
 function combinePoints(
-  flags: Flag[],
+  flags: GlyphFlags[],
   xCoordinates: number[],
   yCoordinates: number[],
 ) {
@@ -208,88 +155,21 @@ function combinePoints(
 function readCompositeGlyph(view: Reader) {
   const components: GlyphCompositeComponent[] = []
   let component!: GlyphCompositeComponent
+  let weHaveInstructions = false
 
   do {
     component = readCompositeGlyphComponent(view)
     components.push(component)
+    weHaveInstructions ||= component.flags.weHaveInstructions
   } while (component.flags.moreComponents)
 
-  return components
-}
-
-function readCompositeGlyphComponent(view: Reader) {
-  const flags = newCompositeFlag(view.u16())
-  const glyphIndex = view.u16()
-
-  const xAndYAreScaled =
-    flags.scaledComponentOffset && !flags.unscaledComponentOffset
-
-  let arg1: number, arg2: number
-
-  if (flags.arg1And2AreWords) {
-    if (flags.argsAreXYValues) {
-      arg1 = view.i16()
-      arg2 = view.i16()
-    } else {
-      arg1 = view.u16()
-      arg2 = view.u16()
-    }
-  } else {
-    if (flags.argsAreXYValues) {
-      arg1 = view.i8()
-      arg2 = view.i8()
-    } else {
-      arg1 = view.u8()
-      arg2 = view.u8()
-    }
+  let instructions = EMPTY_U8_ARRAY
+  if (weHaveInstructions) {
+    const instructionLength = view.u16()
+    instructions = view.u8Array(instructionLength)
   }
 
-  const extra: number[] = []
-
-  if (flags.weHaveAScale) {
-    extra.push(view.f2dot14())
-  } else if (flags.weHaveAnXAndYScale) {
-    extra.push(view.f2dot14())
-    extra.push(view.f2dot14())
-  } else if (flags.weHaveATwoByTwo) {
-    extra.push(view.f2dot14())
-    extra.push(view.f2dot14())
-    extra.push(view.f2dot14())
-    extra.push(view.f2dot14())
-  }
-
-  let matrix = mat.IDENTITY
-
-  switch (extra.length) {
-    case 1:
-    case 2:
-      matrix = mat.mult(matrix, mat.scale(...(extra as [number, number])))
-      break
-    case 4:
-      matrix = mat.mult(
-        matrix,
-        mat.mat(...(extra as [number, number, number, number]), 0, 0),
-      )
-      break
-  }
-
-  if (flags.argsAreXYValues) {
-    const translation = mat.translate(arg1, arg2)
-    matrix =
-      xAndYAreScaled ?
-        mat.mult(translation, matrix)
-      : mat.mult(matrix, translation)
-  }
-
-  const component: GlyphCompositeComponent = {
-    flags,
-    glyphIndex,
-    arg1,
-    arg2,
-    matrix,
-  }
-
-  return component
+  return { components, instructions }
 }
 
 export function emptyGlyph(): GlyphSimple {
