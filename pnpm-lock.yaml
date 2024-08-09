@@ -45,8 +45,8 @@ importers:
   packages/otfjs:
     dependencies:
       '@bschlenk/mat':
-        specifier: ^0.0.3
-        version: 0.0.3
+        specifier: ^0.0.5
+        version: 0.0.5
       '@bschlenk/vec':
         specifier: ^0.0.1
         version: 0.0.1
@@ -95,8 +95,8 @@ importers:
   packages/otfjs-ui:
     dependencies:
       '@bschlenk/mat':
-        specifier: ^0.0.3
-        version: 0.0.3
+        specifier: ^0.0.5
+        version: 0.0.5
       '@bschlenk/vec':
         specifier: ^0.0.1
         version: 0.0.1
@@ -254,11 +254,17 @@ packages:
   '@bschlenk/mat@0.0.3':
     resolution: {integrity: sha512-aAVrutpYr1Z8W11iHck+xWeaGG8h48JXYl3EuGOT0dPdfkbT1HwImEcleRvd9+ctfbU2I7TP4WKd3UYKPQTD9g==}
 
+  '@bschlenk/mat@0.0.5':
+    resolution: {integrity: sha512-q5bE4VRkILSzCFHsaidMmuNIA8VAr178H9qwCIAR0ZZrzm5RPr1QV8eZ1yFNrgtSLqAhuX+4XQr6jzEpyKNr5w==}
+
   '@bschlenk/util@0.0.1':
     resolution: {integrity: sha512-8vT7gR9l9rJzjUc6l5PNGK98LjRY27urqq+ZfVlNzpnCCiaxxwkaDGpa6s/i0Kht8efFxuDnzpXuJGLNj/Gy+g==}
 
   '@bschlenk/vec@0.0.1':
     resolution: {integrity: sha512-A3bRkhX9YjPo0N6jmPebJRHtaay/4IkpTl9/nz0wJt/4nPRdQAKqLADGAO8YLn/HMefOhEj0AN/NXaVZn1A7GQ==}
+
+  '@bschlenk/vec@0.0.2':
+    resolution: {integrity: sha512-n4Z55hGiHYU7mW4blXzncR39Zc30qchQBSfjRR9JZMYlQMuucwCQMyRtOyfYpSOFK6oo/ejl4ZpQ0dgv4eGBag==}
 
   '@esbuild/android-arm64@0.18.20':
     resolution: {integrity: sha512-Nz4rJcchGDtENV0eMKUNa6L12zz2zBDXuhj/Vjh18zGqB44Bi7MBMSXjgunJgjRhCmKOjnPuZp4Mb6OKqtMHLQ==}
@@ -2312,9 +2318,18 @@ snapshots:
       '@bschlenk/util': 0.0.1
       '@bschlenk/vec': 0.0.1
 
+  '@bschlenk/mat@0.0.5':
+    dependencies:
+      '@bschlenk/util': 0.0.1
+      '@bschlenk/vec': 0.0.2
+
   '@bschlenk/util@0.0.1': {}
 
   '@bschlenk/vec@0.0.1':
+    dependencies:
+      '@bschlenk/util': 0.0.1
+
+  '@bschlenk/vec@0.0.2':
     dependencies:
       '@bschlenk/util': 0.0.1
 
