@@ -3,6 +3,7 @@ import * as mat from '@bschlenk/mat'
 import { Reader } from './buffer/reader.js'
 import { Cache, createCache } from './cache.js'
 import { NameId, PlatformId } from './enums.js'
+import { compositeGlyphComponentMatrix } from './glyph-utils.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { ColrTable, readColrTable } from './tables/colr.js'
 import { readTableAsI16Array, readTableAsU8Array } from './tables/common.js'
@@ -150,9 +151,10 @@ export class Font {
       )
 
       if (c.flags.argsAreXYValues) {
+        const matrix = compositeGlyphComponentMatrix(c)
         const roundXYToGrid = c.flags.roundXYToGrid
         for (const p of subGlyph.points) {
-          const point = mat.transformPoint(c.matrix, p)
+          const point = mat.transformPoint(matrix, p)
           if (roundXYToGrid) {
             // TODO: this needs to be done after scaling based on pt size
             point.x = Math.round(point.x)

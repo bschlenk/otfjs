@@ -15,6 +15,5 @@ export {
   CompositeMode,
 } from './tables/colr.js'
 export type { CpalTable } from './tables/cpal.js'
-export type { Glyph, GlyphSimple } from './tables/glyf.js'
 export type * from './types.js'
 export * from './woff2/woff2.js'

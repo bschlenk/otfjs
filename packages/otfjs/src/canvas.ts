@@ -1,6 +1,6 @@
 import { walkGlyphPath } from './glyph-utils.js'
 import { CanvasPathBuilder } from './path-builder.js'
-import { Glyph } from './tables/glyf.js'
+import type { Glyph } from './types.js'
 
 export function renderGlyphToCanvas(
   glyph: Glyph,

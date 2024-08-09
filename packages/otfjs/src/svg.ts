@@ -11,7 +11,7 @@ import {
   ColorRecordType,
   CompositeMode,
 } from './tables/colr.js'
-import { Glyph } from './tables/glyf.js'
+import type { Glyph } from './types.js'
 
 // The gradient coords of a color glyph are always relative to the em square
 const gradientUnits = 'userSpaceOnUse'

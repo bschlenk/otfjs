@@ -4,8 +4,9 @@
 import * as vec from '@bschlenk/vec'
 
 import type { Font } from '../font.js'
-import { emptyGlyph, type GlyphSimple, type Point } from '../tables/glyf.js'
+import { emptyGlyph } from '../tables/glyf.js'
 import { MaxpTable10 } from '../tables/maxp.js'
+import type { GlyphSimple, Point } from '../types.js'
 import { symmetricCeil, symmetricFloor, symmetricRound } from '../utils/math.js'
 import { assert, debug, error, range, toHex } from '../utils/utils.js'
 import { disassemble } from './disassemble.js'
