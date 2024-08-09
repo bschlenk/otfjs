@@ -132,7 +132,7 @@ export function decodeGlyfTransform0(buff: Uint8Array) {
 }
 
 function readHeader(buff: Uint8Array) {
-  const view = new Reader(buff)
+  const view = Reader.of(buff)
 
   view.skip(2) // reserved
 
