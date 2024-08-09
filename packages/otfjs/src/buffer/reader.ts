@@ -14,6 +14,14 @@ export class Reader {
     this.view = new DataView(data, offset, length)
   }
 
+  public static of(data: {
+    buffer: ArrayBuffer
+    byteOffset: number
+    byteLength: number
+  }): Reader {
+    return new Reader(data.buffer, data.byteOffset, data.byteLength)
+  }
+
   get length(): number {
     return this.view.byteLength
   }
