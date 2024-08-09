@@ -56,12 +56,20 @@ export function readGlyf(view: Reader): Glyph {
   const instructionLength = view.u16()
   const instructions = view.u8Array(instructionLength)
 
-  const numEntries = endPtsOfContours[endPtsOfContours.length - 1] + 1
+  let points: Point[] = []
+  let contoursOverlap = false
 
-  const { flags, contoursOverlap } = readFlags(numEntries, view)
-  const xCoordinates = readXCoordinates(flags, view)
-  const yCoordinates = readYCoordinates(flags, view)
-  const points = combinePoints(flags, xCoordinates, yCoordinates)
+  if (numberOfContours > 0) {
+    const numEntries = endPtsOfContours[endPtsOfContours.length - 1] + 1
+
+    const result = readFlags(numEntries, view)
+    contoursOverlap = result.contoursOverlap
+
+    const flags = result.flags
+    const xCoordinates = readXCoordinates(flags, view)
+    const yCoordinates = readYCoordinates(flags, view)
+    points = combinePoints(flags, xCoordinates, yCoordinates)
+  }
 
   const glyph: GlyphSimple = {
     type: 'simple',
@@ -180,7 +188,7 @@ export function emptyGlyph(): GlyphSimple {
     xMax: 0,
     yMax: 0,
     endPtsOfContours: [],
-    instructions: new Uint8Array(0),
+    instructions: EMPTY_U8_ARRAY,
     points: [],
     contoursOverlap: false,
   }

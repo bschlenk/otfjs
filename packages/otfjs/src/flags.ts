@@ -5,7 +5,7 @@ export function createFlagReader<T extends FlagConfig<any>>(
   cfg: T,
 ): (flags: number) => {
   [K in keyof T]: (typeof cfg)[K] extends number ? boolean
-  : (typeof cfg)[K] extends (...args: any) => any ? ReturnType<(typeof cfg)[K]>
+  : (typeof cfg)[K] extends (...args: any) => infer U ? U
   : never
 } & { value: number } {
   function Flags(this: { value: number }, value: number) {
@@ -22,10 +22,10 @@ export function createFlagReader<T extends FlagConfig<any>>(
     } else {
       Object.defineProperty(Flags.prototype, key, {
         get() {
-          return Boolean(this.value & (1 << (value as number)))
+          return Boolean(this.value & (1 << value))
         },
         set(val: boolean) {
-          const k = 1 << (value as number)
+          const k = 1 << value
           if (val) {
             this.value |= k
           } else {
