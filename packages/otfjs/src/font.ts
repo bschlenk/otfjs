@@ -57,9 +57,9 @@ export class Font {
   #tables: Record<string, TableRecord>
   #tableCache: Cache<TableType<any>>
 
-  constructor(data: ArrayBuffer) {
+  constructor(data: ArrayBuffer | Uint8Array) {
     this.#data = data
-    this.#header = readHeader(new Reader(data))
+    this.#header = readHeader(Reader.of(data))
     this.#tables = toObject(this.#header.tables, (table) => table.tag)
     this.#tableCache = createCache((tag: string) => this.readTable(tag))
   }
@@ -127,7 +127,7 @@ export class Font {
       hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
 
     const glyfTableRecord = this.#tables['glyf']
-    const view = new Reader(this.#data, glyfTableRecord.offset + offset, length)
+    const view = Reader.of(this.#data, glyfTableRecord.offset + offset, length)
 
     const glyph = readGlyf(view)
     if (glyph.type === 'simple') return { ...glyph, id, advanceWidth }
@@ -204,7 +204,7 @@ export class Font {
     const table = this.#tables[tag]
     if (!table) return null
 
-    const view = new Reader(this.#data, table.offset, table.length)
+    const view = Reader.of(this.#data, table.offset, table.length)
 
     switch (table.tag) {
       case 'cmap':
