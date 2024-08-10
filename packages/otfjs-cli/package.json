@@ -18,14 +18,14 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@bschlenk/mat": "^0.0.3",
-    "@bschlenk/vec": "^0.0.1",
+    "@bschlenk/mat": "^0.0.5",
+    "@bschlenk/vec": "^0.0.2",
     "otfjs": "workspace:*",
     "svgo": "4.0.0-rc.0"
   },
   "devDependencies": {
-    "@types/node": "^20.14.10",
-    "typescript": "^5.5.3",
-    "vitest": "^0.34.6"
+    "@types/node": "^22.2.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
   }
 }
