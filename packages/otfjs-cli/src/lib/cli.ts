@@ -8,7 +8,7 @@ export function eat(args: string[], opt: string, orElse: string): string {
 
     if (args[i].startsWith('-')) {
       positionalArgCount = 0
-    } else if (++positionalArgCount == 2) {
+    } else if (++positionalArgCount === 2) {
       break
     }
   }
