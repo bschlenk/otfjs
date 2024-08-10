@@ -1,5 +1,5 @@
 import fs from 'fs/promises'
-import { decodeWoff2File } from 'otfjs'
+import { decodeWoff2 } from 'otfjs/woff2'
 import path from 'path'
 
 const args = process.argv.slice(2)
@@ -10,7 +10,7 @@ if (args.length < 1) {
 
 const name = args[0]
 const data = await fs.readFile(name)
-const woff2 = decodeWoff2File(data.buffer)
+const woff2 = decodeWoff2(data.buffer)
 
 const dirname = path.dirname(name)
 const nakedName = path.basename(name, path.extname(name))

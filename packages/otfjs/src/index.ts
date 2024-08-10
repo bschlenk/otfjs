@@ -16,4 +16,4 @@ export {
 } from './tables/colr.js'
 export type { CpalTable } from './tables/cpal.js'
 export type * from './types.js'
-export * from './woff2/woff2.js'
+export { isWoff2 } from './woff2/utils.js'

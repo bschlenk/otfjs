@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Font } from 'otfjs'
+import { Font, isWoff2 } from 'otfjs'
 
 import { FontView } from './components/font-view/font-view'
 import { FullScreenDropZone } from './components/full-screen-drop-zone/full-screen-drop-zone'
@@ -9,7 +9,7 @@ export function App() {
   const [font, setFont] = useState<Font | null>(null)
 
   const onLoad = useCallback((buff: ArrayBuffer) => {
-    setFont(new Font(buff))
+    readFont(buff).then(setFont)
   }, [])
 
   return (
@@ -19,4 +19,13 @@ export function App() {
       : <FontView font={font} onBack={() => setFont(null)} />}
     </FullScreenDropZone>
   )
+}
+
+async function readFont(buff: ArrayBuffer) {
+  if (isWoff2(buff)) {
+    const woff2 = await import('otfjs/woff2')
+    buff = woff2.decodeWoff2(buff)
+  }
+
+  return new Font(buff)
 }

@@ -8,9 +8,7 @@ import { writeGlyfTable } from '../writers/glyf.js'
 import { writeLocaTable } from '../writers/loca.js'
 import { decodeGlyfTransform0 } from './glyf-transform.js'
 import { KNOWN_TAGS } from './tags.js'
-
-// wOF2
-const SIGNATURE = 0x774f4632
+import { WOFF2_SIGNATURE } from './utils.js'
 
 interface TableDirectoryEntry {
   tag: string
@@ -19,10 +17,10 @@ interface TableDirectoryEntry {
   length: number
 }
 
-export function decodeWoff2File(buffer: ArrayBuffer) /*: ArrayBuffer*/ {
+export function decodeWoff2(buffer: ArrayBuffer): Uint8Array {
   const view = new Reader(buffer)
 
-  if (view.u32() !== SIGNATURE) error('Invalid WOFF2 signature')
+  if (view.u32() !== WOFF2_SIGNATURE) error('Invalid WOFF2 signature')
 
   const _flavor = view.u32()
   const _length = view.u32()
@@ -57,7 +55,7 @@ export function decodeWoff2File(buffer: ArrayBuffer) /*: ArrayBuffer*/ {
     return { tag, transform, isNullTransform, length }
   })
 
-  const data = decompress(Buffer.from(view.data, view.offset))
+  const data = decompress(new Uint8Array(view.data, view.offset) as any)
   assert(
     data.length === tableInfo.reduce((acc, t) => acc + t.length, 0),
     'Unexpected decompressed stream size',
