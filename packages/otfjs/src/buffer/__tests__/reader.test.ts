@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
+import { asDataView } from '../../utils/utils.js'
 import { Reader } from '../reader.js'
 
 describe('reader.ts', () => {
   describe('Reader', () => {
     it('should read u24', () => {
       const data = new Uint8Array([0x01, 0x02, 0x03, 0x04])
-      const reader = new Reader(data.buffer)
+      const reader = new Reader(new Uint8Array(data.buffer))
       expect(reader.u24()).toBe(0x010203)
     })
 
@@ -21,8 +22,8 @@ describe('reader.ts', () => {
       ]
 
       for (const [val, expected] of cases) {
-        const data = new ArrayBuffer(2)
-        new DataView(data).setUint16(0, val)
+        const data = new Uint8Array(2)
+        asDataView(data).setUint16(0, val)
         const reader = new Reader(data)
         expect(reader.f2dot14()).toBeCloseTo(expected, 6)
       }

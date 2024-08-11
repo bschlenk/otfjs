@@ -1,31 +1,13 @@
 import { from2dot14, from16dot16 } from '../utils/bit.js'
 import { fromLongDateTime } from '../utils/date.js'
-import { error } from '../utils/utils.js'
+import { asDataView, asUint8Array, error } from '../utils/utils.js'
 
 export class Reader {
   private view: DataView
   public offset: number = 0
 
-  constructor(
-    public readonly data: ArrayBuffer,
-    offset = 0,
-    length?: number,
-  ) {
-    this.view = new DataView(data, offset, length)
-  }
-
-  public static of(
-    data: ArrayBuffer | ArrayBufferView,
-    offset = 0,
-    length?: number,
-  ): Reader {
-    return ArrayBuffer.isView(data) ?
-        new Reader(
-          data.buffer,
-          data.byteOffset + offset,
-          length ?? data.byteLength,
-        )
-      : new Reader(data, offset, length)
+  constructor(public readonly data: Uint8Array) {
+    this.view = asDataView(data)
   }
 
   get length(): number {
@@ -161,18 +143,20 @@ export class Reader {
     return arr
   }
 
+  // TODO: figure out how to make it clear why we have 3 separate but similar methods
+
   public dataview(
     offset = this.offset,
     length = this.view.byteLength - this.offset,
   ): DataView {
-    return new DataView(this.view.buffer, this.view.byteOffset + offset, length)
+    return asDataView(this.data, offset, length)
   }
 
   public subtable(offset: number, length?: number): Reader {
-    return new Reader(this.view.buffer, this.view.byteOffset + offset, length)
+    return new Reader(asUint8Array(this.data, offset, length))
   }
 
   public stream(length: number): Reader {
-    return Reader.of(this.u8Array(length))
+    return new Reader(this.u8Array(length))
   }
 }

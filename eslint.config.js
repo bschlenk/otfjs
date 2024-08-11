@@ -50,6 +50,14 @@ export default [
       eqeqeq: ['error', 'smart'],
       // handled by prettier
       'no-extra-semi': 'off',
+      'no-restricted-globals': [
+        'error',
+        // https://sindresorhus.com/blog/goodbye-nodejs-buffer
+        {
+          name: 'Buffer',
+          message: 'Use Uint8Array instead.',
+        },
+      ],
 
       'import/first': 'error',
       'import/newline-after-import': 'error',

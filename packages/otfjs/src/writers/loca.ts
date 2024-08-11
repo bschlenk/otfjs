@@ -1,6 +1,9 @@
 import { Writer } from '../buffer/writer.js'
 
-export function writeLocaTable(offsets: number[], indexFormat: 0 | 1): Writer {
+export function writeLocaTable(
+  offsets: number[],
+  indexFormat: 0 | 1,
+): Uint8Array {
   const writer = new Writer()
 
   if (indexFormat === 0) {
@@ -13,7 +16,7 @@ export function writeLocaTable(offsets: number[], indexFormat: 0 | 1): Writer {
     }
   }
 
-  return writer
+  return writer.toBuffer()
 }
 
 export function determineIndexFormat(offsets: number[]): number {

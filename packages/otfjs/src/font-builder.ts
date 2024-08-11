@@ -8,12 +8,12 @@
 import { Writer } from './buffer/writer.js'
 import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
-import { padToMultiple } from './utils/utils.js'
+import { asDataView, padToMultiple } from './utils/utils.js'
 
 export function buildFont(props: {
   // Defaults to OPEN_TYPE
   sfntVersion?: SfntVersion
-  tables: Record<string, Writer | ArrayBuffer | Uint8Array>
+  tables: Record<string, Uint8Array>
 }) {
   let tableOffset = 12
   let tablesSize = 0
@@ -38,18 +38,18 @@ export function buildFont(props: {
 
   for (const tag of tags) {
     const table = props.tables[tag]
-    const data = asDataView(table)
     const offset = tableOffset
     const length = table.byteLength
 
     if (tag === 'head') {
       // the head table's checksumAdjustment field must be cleared before
       // we compute its checksum
+      const data = asDataView(table)
       data.setUint32(8, 0)
       headOffset = offset
     }
 
-    const checksum = computeChecksum(data)
+    const checksum = computeChecksum(table)
     tableOffset += padToMultiple(length, 4)
 
     writer.tag(tag)
@@ -67,12 +67,4 @@ export function buildFont(props: {
   writer.at(headOffset + 8, (w) => w.u32(0xb1b0afba - checksum))
 
   return writer.toBuffer()
-}
-
-function asDataView(data: Writer | ArrayBuffer | Uint8Array) {
-  const buffer =
-    data instanceof Writer ? data.data
-    : data instanceof Uint8Array ? data.buffer
-    : data
-  return new DataView(buffer)
 }

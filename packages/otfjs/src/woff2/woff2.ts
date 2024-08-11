@@ -1,7 +1,6 @@
 import decompress from 'brotli/decompress.js'
 
 import { Reader } from '../buffer/reader.js'
-import { type Writer } from '../buffer/writer.js'
 import { buildFont } from '../font-builder.js'
 import { assert, error } from '../utils/utils.js'
 import { writeGlyfTable } from '../writers/glyf.js'
@@ -17,7 +16,7 @@ interface TableDirectoryEntry {
   length: number
 }
 
-export function decodeWoff2(buffer: ArrayBuffer): Uint8Array {
+export function decodeWoff2(buffer: Uint8Array): Uint8Array {
   const view = new Reader(buffer)
 
   if (view.u32() !== WOFF2_SIGNATURE) error('Invalid WOFF2 signature')
@@ -64,7 +63,7 @@ export function decodeWoff2(buffer: ArrayBuffer): Uint8Array {
   const loca: number[] = []
   let locaEncountered = false
   let offset = 0
-  const tables: Record<string, Writer | Uint8Array> = {}
+  const tables: Record<string, Uint8Array> = {}
 
   for (const table of tableInfo) {
     const buff = new Uint8Array(data.buffer, offset, table.length)

@@ -9,7 +9,7 @@ export function App() {
   const [font, setFont] = useState<Font | null>(null)
 
   const onLoad = useCallback((buff: ArrayBuffer) => {
-    readFont(buff).then(setFont)
+    readFont(new Uint8Array(buff)).then(setFont)
   }, [])
 
   return (
@@ -21,7 +21,7 @@ export function App() {
   )
 }
 
-async function readFont(buff: ArrayBuffer) {
+async function readFont(buff: Uint8Array) {
   if (isWoff2(buff)) {
     const woff2 = await import('otfjs/woff2')
     buff = woff2.decodeWoff2(buff)

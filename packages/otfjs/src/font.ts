@@ -21,7 +21,7 @@ import { NameTable, readNameTable } from './tables/name.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
 import { PostTable, readPostTable } from './tables/post.js'
 import type { GlyphSimple } from './types.js'
-import { toObject } from './utils/utils.js'
+import { asUint8Array, toObject } from './utils/utils.js'
 import { validateHeader, validateTable } from './validation.js'
 
 export interface TableMap {
@@ -52,14 +52,14 @@ export interface GlyphEnriched extends GlyphSimple {
 }
 
 export class Font {
-  #data: ArrayBuffer
+  #data: Uint8Array
   #header: Header
   #tables: Record<string, TableRecord>
   #tableCache: Cache<TableType<any>>
 
-  constructor(data: ArrayBuffer | Uint8Array) {
+  constructor(data: Uint8Array) {
     this.#data = data
-    this.#header = readHeader(Reader.of(data))
+    this.#header = readHeader(new Reader(data))
     this.#tables = toObject(this.#header.tables, (table) => table.tag)
     this.#tableCache = createCache((tag: string) => this.readTable(tag))
   }
@@ -127,7 +127,9 @@ export class Font {
       hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
 
     const glyfTableRecord = this.#tables['glyf']
-    const view = Reader.of(this.#data, glyfTableRecord.offset + offset, length)
+    const view = new Reader(
+      asUint8Array(this.#data, glyfTableRecord.offset + offset, length),
+    )
 
     const glyph = readGlyf(view)
     if (glyph.type === 'simple') return { ...glyph, id, advanceWidth }
@@ -204,7 +206,9 @@ export class Font {
     const table = this.#tables[tag]
     if (!table) return null
 
-    const view = Reader.of(this.#data, table.offset, table.length)
+    const view = new Reader(
+      asUint8Array(this.#data, table.offset, table.length),
+    )
 
     switch (table.tag) {
       case 'cmap':

@@ -5,7 +5,7 @@ import { GlyphFlags, glyphFlags } from '../glyph-utils.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
 import { assert } from '../utils/utils.js'
 
-export function writeGlyfTable(glyphs: Glyph[], loca: number[]) {
+export function writeGlyfTable(glyphs: Glyph[], loca: number[]): Uint8Array {
   const writer = new Writer()
 
   for (let i = 0; i < glyphs.length; ++i) {
@@ -27,7 +27,7 @@ export function writeGlyfTable(glyphs: Glyph[], loca: number[]) {
 
   loca.push(writer.length)
 
-  return writer
+  return writer.toBuffer()
 }
 
 function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {

@@ -11,5 +11,5 @@ if (!args[0]) {
 const path = args[0]
 const data = await fs.readFile(path)
 
-const font = new Font(data.buffer)
+const font = new Font(new Uint8Array(data.buffer))
 console.log(font.tables)

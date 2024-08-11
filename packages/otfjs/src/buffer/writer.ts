@@ -1,7 +1,7 @@
 import { computeChecksum } from '../checksum.js'
 import { to2dot14 } from '../utils/bit.js'
 import { toLongDateTime } from '../utils/date.js'
-import { assert, getAlignPadding, padToMultiple } from '../utils/utils.js'
+import { assert, getAlignPadding } from '../utils/utils.js'
 
 export class Writer {
   public data: ArrayBuffer
@@ -145,7 +145,7 @@ export class Writer {
   }
 
   public checksum() {
-    return computeChecksum(new DataView(this.data, 0, this.length))
+    return computeChecksum(new Uint8Array(this.data))
   }
 
   private maybeResize(n: number) {
