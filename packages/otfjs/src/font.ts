@@ -176,11 +176,6 @@ export class Font {
       // const useMyMetrics = c.flags.useMyMetrics
     }
 
-    if (components[0].flags.weHaveInstructions) {
-      const numInstructions = view.u16()
-      fullGlyph.instructions = view.u8Array(numInstructions)
-    }
-
     return fullGlyph
   }
 
