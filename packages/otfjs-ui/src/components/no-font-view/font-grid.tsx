@@ -1,7 +1,7 @@
 import { memo } from 'react'
 
 import { GOOGLE_FONT_DOMAIN } from '../../constants'
-import { entriesFilterMap, getItemOrFirst } from '../../utils/object'
+import { entriesFilterMap } from '../../utils/object'
 
 export interface FontGridProps {
   fonts: typeof import('../../fonts.json')
