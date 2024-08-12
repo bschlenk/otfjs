@@ -23,11 +23,7 @@ export function NoFontView({ onLoad }: NoFontViewProps) {
   return (
     <div className="relative">
       <SearchBar onChange={setFilter} />
-      <FontGrid
-        fonts={fonts.items}
-        filter={deferredSearch}
-        onChange={onChange}
-      />
+      <FontGrid fonts={fonts} filter={deferredSearch} onChange={onChange} />
     </div>
   )
 }

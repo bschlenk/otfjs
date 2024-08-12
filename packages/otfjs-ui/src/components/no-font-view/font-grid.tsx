@@ -1,9 +1,10 @@
 import { memo } from 'react'
 
-import { filterMap, getItemOrFirst } from '../../utils/object'
+import { GOOGLE_FONT_DOMAIN } from '../../constants'
+import { entriesFilterMap, getItemOrFirst } from '../../utils/object'
 
 export interface FontGridProps {
-  fonts: (typeof import('../../fonts.json'))['items']
+  fonts: typeof import('../../fonts.json')
   filter?: string
   onChange: (fontUrl: string) => void
 }
@@ -23,15 +24,11 @@ export const FontGrid = memo(function FontGrid({
         onChange(url)
       }}
     >
-      {filterMap(
+      {entriesFilterMap(
         fonts,
-        (font) => !filter || font.family.toLowerCase().includes(filter),
-        (font) => (
-          <FontTile
-            key={font.family}
-            name={font.family}
-            url={urlForFont(font)}
-          />
+        (family) => !filter || searchCompare(family, filter),
+        (family, pathname) => (
+          <FontTile key={family} name={family} url={urlForFont(pathname)} />
         ),
       )}
     </div>
@@ -62,10 +59,10 @@ function FontTile({ name, url }: FontTileProps) {
   )
 }
 
-function urlForFont(font: FontGridProps['fonts'][number]) {
-  const url = new URL(
-    getItemOrFirst(font.files as Record<string, string>, 'regular')!,
-  )
-  url.protocol = 'https:'
-  return url.toString()
+function urlForFont(pathname: string) {
+  return new URL(pathname, GOOGLE_FONT_DOMAIN).toString()
+}
+
+function searchCompare(haystack: string, needle: string): boolean {
+  return haystack.toLowerCase().includes(needle.toLowerCase())
 }

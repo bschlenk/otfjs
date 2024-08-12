@@ -14,12 +14,12 @@ export function getFirstKey(obj: Record<string, any>) {
   return null
 }
 
-export function filterMap<T, U>(
+export function filterMap<T, R>(
   items: T[],
   predicate: (item: T) => boolean,
-  fn: (item: T) => U,
-): U[] {
-  const mapped: U[] = []
+  fn: (item: T) => R,
+): R[] {
+  const mapped: R[] = []
   const n = items.length
 
   for (let i = 0; i < n; ++i) {
@@ -27,6 +27,22 @@ export function filterMap<T, U>(
 
     if (predicate(item)) {
       mapped.push(fn(item))
+    }
+  }
+
+  return mapped
+}
+
+export function entriesFilterMap<K extends string | number, V, R>(
+  items: Record<K, V>,
+  predicate: (key: K, value: V) => boolean,
+  fn: (key: K, value: V) => R,
+): R[] {
+  const mapped: R[] = []
+
+  for (const entry of Object.entries(items) as [K, V][]) {
+    if (predicate(...entry)) {
+      mapped.push(fn(...entry))
     }
   }
 
