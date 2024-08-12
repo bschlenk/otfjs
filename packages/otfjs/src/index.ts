@@ -1,4 +1,5 @@
 export * from './canvas.js'
+export { computeChecksum } from './checksum.js'
 export * from './enums.js'
 export * from './font.js'
 export { disassemble } from './instruct/disassemble.js'
@@ -16,4 +17,4 @@ export {
 } from './tables/colr.js'
 export type { CpalTable } from './tables/cpal.js'
 export type * from './types.js'
-export { isWoff2 } from './woff2/utils.js'
+export * from './woff2/index.js'
