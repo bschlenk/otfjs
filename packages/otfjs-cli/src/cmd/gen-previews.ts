@@ -4,7 +4,8 @@ import path from 'path'
 // @ts-expect-error types are bad
 import { optimize } from 'svgo'
 
-import { eat } from './lib/cli.js'
+import { eat } from '../lib/cli.js'
+import { loadFont } from '../lib/utils.js'
 
 const args = process.argv.slice(2)
 if (args.length < 1) {
@@ -17,9 +18,8 @@ const outDir = eat(args, '-d', '.')
 processFonts(args, outDir)
 
 async function processFonts(fontFiles: string[], outDir: string) {
-  for await (const { file, name } of iterFiles(fontFiles)) {
+  for await (const { font, name } of iterFonts(fontFiles)) {
     console.log(name)
-    const font = new Font(file.buffer)
     const preview = generatePreview(font)
 
     if (!preview) {
@@ -111,9 +111,9 @@ function nodesToSvg(nodes: Node[]) {
   return out
 }
 
-async function* iterFiles(files: string[]) {
+async function* iterFonts(files: string[]) {
   for (const name of files) {
-    const file = await fs.readFile(name)
-    yield { file, name }
+    const font = await loadFont(name)
+    yield { font, name }
   }
 }

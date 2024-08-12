@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
-import { Font } from 'otfjs'
 import path from 'path'
+
+import { loadFont } from '../lib/utils.js'
 
 const args = process.argv.slice(2)
 if (args.length < 1) {
@@ -20,8 +21,7 @@ async function analyzeCmap() {
     if (fname.startsWith('.')) continue
 
     try {
-      const data = await fs.readFile(path.join(fontDir, fname))
-      const font = new Font(data.buffer)
+      const font = await loadFont(path.join(fontDir, fname))
 
       const cmap = font.getTable('cmap')
       for (const record of cmap.encodingRecords) {
