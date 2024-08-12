@@ -2,8 +2,6 @@ import { Reader } from '../buffer/reader.js'
 import { RGBA } from '../types.js'
 
 export class CpalTable {
-  #view: Reader
-
   version: number
   numPaletteEntries: number
   numPalettes: number
@@ -19,8 +17,6 @@ export class CpalTable {
   colorRecords: RGBA[]
 
   constructor(view: Reader) {
-    this.#view = view
-
     this.version = view.u16()
     this.numPaletteEntries = view.u16()
     this.numPalettes = view.u16()

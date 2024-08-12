@@ -1,6 +1,4 @@
-export type GraphicsState = typeof DEFAULTS
-
-const DEFAULTS = makeGraphicsState()
+export type GraphicsState = ReturnType<typeof makeGraphicsState>
 
 export const enum RoundState {
   HALF_GRID = 0,

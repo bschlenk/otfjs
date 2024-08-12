@@ -1539,10 +1539,14 @@ export class VirtualMachine {
           symmetricFloor((value - phase + threshold) / period) * period + phase
 
         // TODO: verify this is okay
-        if (value > 0 && rounded < 0) return phase
-        if (value < 0 && rounded > 0) phase === 0 ? phase : -period + phase
-
-        return rounded
+        return (
+          value > 0 && rounded < 0 ? phase
+          : value < 0 && rounded > 0 ?
+            phase === 0 ?
+              phase
+            : -period + phase
+          : rounded
+        )
       }
       default:
         error(`Invalid round state value ${this.gs.roundState}`)

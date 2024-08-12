@@ -14,7 +14,7 @@ interface PostTableBase<T extends number> {
   maxMemType1: number
 }
 
-interface PostTableV1 extends PostTableBase<0x00010000> {}
+type PostTableV1 = PostTableBase<0x00010000>
 
 type IPostTableV2Behaviors = typeof PostTableV2Behaviors
 
@@ -24,7 +24,7 @@ interface PostTableV2 extends PostTableBase<0x00020000>, IPostTableV2Behaviors {
   stringData: DataView
 }
 
-interface PostTableV3 extends PostTableBase<0x00030000> {}
+type PostTableV3 = PostTableBase<0x00030000>
 
 export type PostTable = PostTableV1 | PostTableV2 | PostTableV3
 
