@@ -1,4 +1,4 @@
-import { asDataView } from './utils/utils.js'
+import { asDataView } from './buffer/utils.js'
 
 export function computeChecksum(table: Uint8Array) {
   const view = asDataView(table)

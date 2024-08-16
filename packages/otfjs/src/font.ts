@@ -21,7 +21,8 @@ import { NameTable, readNameTable } from './tables/name.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
 import { PostTable, readPostTable } from './tables/post.js'
 import type { GlyphSimple } from './types.js'
-import { asUint8Array, toObject } from './utils/utils.js'
+import { toObject } from './utils/utils.js'
+import { asUint8Array } from './buffer/utils.js'
 import { validateHeader, validateTable } from './validation.js'
 
 export interface TableMap {

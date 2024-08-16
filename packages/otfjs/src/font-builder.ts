@@ -8,7 +8,8 @@
 import { Writer } from './buffer/writer.js'
 import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
-import { asDataView, padToMultiple } from './utils/utils.js'
+import { padToMultiple } from './utils/utils.js'
+import { asDataView } from './buffer/utils.js'
 
 export function buildFont(props: {
   // Defaults to OPEN_TYPE

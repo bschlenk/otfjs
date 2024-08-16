@@ -1,6 +1,7 @@
 import { from2dot14, from16dot16 } from '../utils/bit.js'
 import { fromLongDateTime } from '../utils/date.js'
-import { asDataView, asUint8Array, error } from '../utils/utils.js'
+import { error } from '../utils/utils.js'
+import { asDataView, asUint8Array } from './utils.js'
 
 export class Reader {
   private view: DataView

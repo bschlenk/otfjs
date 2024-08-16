@@ -1,7 +1,8 @@
 import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
 import type { Header, TableRecord } from './tables/header.js'
-import { asUint8Array, getAlignPadding, toHex } from './utils/utils.js'
+import { getAlignPadding, toHex } from './utils/utils.js'
+import { asUint8Array } from './buffer/utils.js'
 
 export function validateHeader(header: Header) {
   const errors: string[] = []
