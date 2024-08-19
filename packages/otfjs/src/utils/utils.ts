@@ -14,6 +14,19 @@ export function range<T>(n: number, fn: (i: number) => T): T[] {
   return Array.from({ length: n }, (_, i) => fn(i))
 }
 
+export function identity<T>(x: T): T {
+  return x
+}
+
+export function sum(arr: number[]): number
+export function sum<T>(arr: T[], fn: (item: T) => number): number
+export function sum<T>(
+  arr: T[],
+  fn: (item: T) => number = identity as any,
+): number {
+  return arr.reduce((acc, item) => acc + fn(item), 0)
+}
+
 /**
  * Create an object from the given array, where the keys
  * are the result of calling `getKey` on each item.

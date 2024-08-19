@@ -4,7 +4,7 @@ import { Reader } from '../buffer/reader.js'
 import { asUint8Array } from '../buffer/utils.js'
 import { asSfntVersion } from '../enum-utils.js'
 import { buildFont } from '../font-builder.js'
-import { assert, error } from '../utils/utils.js'
+import { assert, error, sum } from '../utils/utils.js'
 import { writeGlyfTable } from '../writers/glyf.js'
 import { writeLocaTable } from '../writers/loca.js'
 import { decodeGlyfTransform0 } from './glyf-transform.js'
@@ -60,7 +60,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
     asUint8Array(buffer, view.offset, totalCompressedSize) as any,
   )
   assert(
-    data.length === tableInfo.reduce((acc, t) => acc + t.length, 0),
+    data.length === sum(tableInfo, (t) => t.length),
     'Unexpected decompressed stream size',
   )
 
