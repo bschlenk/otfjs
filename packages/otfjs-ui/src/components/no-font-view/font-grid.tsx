@@ -42,9 +42,8 @@ interface FontTileProps {
 
 function FontTile({ name, url }: FontTileProps) {
   return (
-    <div
-      className="flex flex-col items-center gap-3 text-[#dfdfdf] [&_*]:pointer-events-none"
-      tabIndex={0}
+    <button
+      className="flex flex-col items-center gap-3 rounded-2xl border-0 bg-transparent p-0 text-[#dfdfdf] [&_*]:pointer-events-none"
       data-url={url}
     >
       <div className="grid aspect-square w-full place-content-center rounded-2xl border border-solid border-[#3c3c3c] bg-[#2e2e2e] p-1">
@@ -55,7 +54,7 @@ function FontTile({ name, url }: FontTileProps) {
         </svg>
       </div>
       <span className="text-center text-[#ddd]">{name}</span>
-    </div>
+    </button>
   )
 }
 
