@@ -8,6 +8,7 @@ import { GlyfView } from './glyf-view'
 import styles from './font-view.module.css'
 
 const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
+  'CFF ': jsonView('CFF '),
   cmap: CmapView,
   COLR: jsonView('COLR'),
   CPAL: CpalView,

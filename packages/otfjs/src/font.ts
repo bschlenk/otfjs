@@ -1,9 +1,11 @@
 import * as mat from '@bschlenk/mat'
 
 import { Reader } from './buffer/reader.js'
+import { asUint8Array } from './buffer/utils.js'
 import { Cache, createCache } from './cache.js'
 import { NameId, PlatformId } from './enums.js'
 import { compositeGlyphComponentMatrix } from './glyph-utils.js'
+import { CffTable, readCffTable } from './tables/cff.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { ColrTable, readColrTable } from './tables/colr.js'
 import { readTableAsI16Array, readTableAsU8Array } from './tables/common.js'
@@ -22,10 +24,10 @@ import { OS2Table, readOS2Table } from './tables/os-2.js'
 import { PostTable, readPostTable } from './tables/post.js'
 import type { GlyphSimple } from './types.js'
 import { toObject } from './utils/utils.js'
-import { asUint8Array } from './buffer/utils.js'
 import { validateHeader, validateTable } from './validation.js'
 
 export interface TableMap {
+  'CFF ': CffTable
   cmap: CmapTable
   COLR: ColrTable
   CPAL: CpalTable
@@ -207,6 +209,8 @@ export class Font {
     )
 
     switch (table.tag) {
+      case 'CFF ':
+        return readCffTable(view)
       case 'cmap':
         return readCmapTable(view)
       case 'COLR':

@@ -15,6 +15,10 @@ export class Reader {
     return this.view.byteLength
   }
 
+  public done(): boolean {
+    return this.offset >= this.length
+  }
+
   public u8(): number {
     const val = this.view.getUint8(this.offset)
     this.offset += 1
