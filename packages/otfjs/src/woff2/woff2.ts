@@ -1,6 +1,8 @@
 import decompress from 'brotli/decompress.js'
 
 import { Reader } from '../buffer/reader.js'
+import { asUint8Array } from '../buffer/utils.js'
+import { asSfntVersion } from '../enum-utils.js'
 import { buildFont } from '../font-builder.js'
 import { assert, error } from '../utils/utils.js'
 import { writeGlyfTable } from '../writers/glyf.js'
@@ -21,14 +23,14 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
 
   if (view.u32() !== WOFF2_SIGNATURE) error('Invalid WOFF2 signature')
 
-  const _flavor = view.u32()
+  const flavor = asSfntVersion(view.u32())
   const _length = view.u32()
   const numTables = view.u16()
 
   view.skip(2) // reserved
 
   const _totalSfntSize = view.u32()
-  const _totalCompressedSize = view.u32()
+  const totalCompressedSize = view.u32()
   const _majorVersion = view.u16()
   const _minorVersion = view.u16()
   const _metaOffset = view.u32()
@@ -54,7 +56,9 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
     return { tag, transform, isNullTransform, length }
   })
 
-  const data = decompress(new Uint8Array(view.data, view.offset) as any)
+  const data = decompress(
+    asUint8Array(buffer, view.offset, totalCompressedSize) as any,
+  )
   assert(
     data.length === tableInfo.reduce((acc, t) => acc + t.length, 0),
     'Unexpected decompressed stream size',
@@ -66,7 +70,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
   const tables: Record<string, Uint8Array> = {}
 
   for (const table of tableInfo) {
-    const buff = new Uint8Array(data.buffer, offset, table.length)
+    const buff = asUint8Array(data, offset, table.length)
     offset += table.length
 
     if (table.isNullTransform) {
@@ -119,5 +123,5 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
     error('Expected entry for loca table after glyf table')
   }
 
-  return buildFont({ tables })
+  return buildFont({ sfntVersion: flavor, tables })
 }
