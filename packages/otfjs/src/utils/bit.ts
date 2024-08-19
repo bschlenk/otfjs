@@ -1,7 +1,5 @@
 export function to26dot6(val: number) {
-  const mantissa = Math.floor(val)
-  const fraction = (val - mantissa) * 64
-  return ((mantissa << 6) | fraction) >>> 0
+  return (val * 64) | 0
 }
 
 export function from26dot6(val: number) {
