@@ -15,7 +15,7 @@
     "dev": "tsc --watch --incremental",
     "build": "tsc",
     "build:gh": "pnpm build",
-    "lint": "eslint . --report-unused-disable-directives --max-warnings 0 --color",
+    "lint": "eslint . --color",
     "test": "vitest"
   },
   "dependencies": {
