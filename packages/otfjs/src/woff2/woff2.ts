@@ -57,7 +57,10 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
   })
 
   const data = decompress(
-    asUint8Array(buffer, view.offset, totalCompressedSize) as any,
+    // Can't change the type of the library, which expects a Buffer. Uint8Array
+    // shares the same interface as Buffer, so we can safely cast it.
+    // eslint-disable-next-line no-restricted-globals
+    asUint8Array(buffer, view.offset, totalCompressedSize) as Buffer,
   )
   assert(
     data.length === sum(tableInfo, (t) => t.length),
@@ -90,7 +93,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
 
         const { glyphs, indexFormat } = decodeGlyfTransform0(buff)
         tables[table.tag] = writeGlyfTable(glyphs, loca)
-        tables['loca'] = writeLocaTable(loca, indexFormat)
+        tables.loca = writeLocaTable(loca, indexFormat)
 
         break
       }

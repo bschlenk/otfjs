@@ -1,8 +1,8 @@
 import bschlenk, { globals } from '@bschlenk/eslint-config'
 
 export default [
-  { ignores: ['**/dist/'] },
-  { files: ['**/*.js', '**/*.ts'] },
+  { ignores: ['**/dist/', 'eslint.config.js'] },
+  { files: ['**/*.ts'] },
 
   {
     languageOptions: {

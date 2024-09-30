@@ -8,9 +8,7 @@ import { assert } from '../utils/utils.js'
 export function writeGlyfTable(glyphs: Glyph[], loca: number[]): Uint8Array {
   const writer = new Writer()
 
-  for (let i = 0; i < glyphs.length; ++i) {
-    const glyph = glyphs[i]
-
+  for (const glyph of glyphs) {
     loca.push(writer.length)
 
     switch (glyph.type) {

@@ -25,7 +25,7 @@ async function countTables() {
   for (const fname of fnames) {
     const font = await loadFont(path.join(fontDir, fname))
     for (const table of font.tables) {
-      const count = tables.get(table) || 0
+      const count = tables.get(table) ?? 0
       tables.set(table, count + 1)
     }
   }

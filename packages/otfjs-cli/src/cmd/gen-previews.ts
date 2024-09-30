@@ -1,7 +1,6 @@
 import fs from 'fs/promises'
 import { Font, GlyphEnriched, glyphToColorSvg, type Node } from 'otfjs'
 import path from 'path'
-// @ts-expect-error types are bad
 import { optimize } from 'svgo'
 
 import { eat } from '../lib/cli.js'
@@ -15,7 +14,10 @@ if (args.length < 1) {
 
 const outDir = eat(args, '-d', '.')
 
-processFonts(args, outDir)
+processFonts(args, outDir).catch((err) => {
+  console.error(err)
+  process.exit(1)
+})
 
 async function processFonts(fontFiles: string[], outDir: string) {
   for await (const { font, name } of iterFonts(fontFiles)) {
@@ -32,7 +34,7 @@ async function processFonts(fontFiles: string[], outDir: string) {
 
     const optimized = optimize(preview, { path: outPath, multipass: true })
 
-    fs.writeFile(outPath, optimized.data)
+    void fs.writeFile(outPath, optimized.data)
   }
 }
 

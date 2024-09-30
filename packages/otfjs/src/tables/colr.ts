@@ -326,7 +326,7 @@ export class ColrTable {
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#format-11-paintcolrglyph
       case 11: {
         const glyphId = view.u16()
-        return this.colorGlyph(glyphId) || []
+        return this.colorGlyph(glyphId) ?? []
       }
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-12-and-13-painttransform-paintvartransform

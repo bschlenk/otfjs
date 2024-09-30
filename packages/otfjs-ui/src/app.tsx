@@ -9,7 +9,7 @@ export function App() {
   const [font, setFont] = useState<Font | null>(null)
 
   const onLoad = useCallback((buff: ArrayBuffer) => {
-    readFont(new Uint8Array(buff)).then(setFont)
+    void readFont(new Uint8Array(buff)).then(setFont)
   }, [])
 
   return (

@@ -26,7 +26,7 @@ export const getinfoFlags = createFlagReader({
 })
 
 export function opcodeLength(inst: Uint8Array, pc: number) {
-  const opcode = inst[pc]
+  const opcode: Opcode = inst[pc]
 
   switch (opcode) {
     case Opcode.NPUSHB:

@@ -1,4 +1,5 @@
 import fs from 'fs/promises'
+import { PlatformId } from 'otfjs'
 import path from 'path'
 
 import { loadFont } from '../lib/utils.js'
@@ -26,10 +27,10 @@ async function analyzeCmap() {
       const cmap = font.getTable('cmap')
       for (const record of cmap.encodingRecords) {
         const key = `${record.platformId}-${record.encodingId}`
-        const count = platformEncodings.get(key) || 0
+        const count = platformEncodings.get(key) ?? 0
         platformEncodings.set(key, count + 1)
 
-        if (record.platformId === 1) {
+        if (record.platformId === PlatformId.Macintosh) {
           console.log(fname, record.platformId, record.encodingId)
         }
       }

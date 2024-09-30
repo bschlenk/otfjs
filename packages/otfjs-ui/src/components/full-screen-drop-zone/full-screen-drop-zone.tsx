@@ -3,7 +3,7 @@ import { useRef, useState } from 'react'
 import { preventDefault } from '../../utils/event'
 
 export interface FullScreenDropZoneProps {
-  onLoad(buffer: ArrayBuffer): void
+  onLoad: (buffer: ArrayBuffer) => void
   children: React.ReactNode
 }
 
@@ -30,7 +30,7 @@ export function FullScreenDropZone({
         setDragover(false)
 
         e.preventDefault()
-        e.dataTransfer.files[0].arrayBuffer().then(onLoad)
+        void e.dataTransfer.files[0].arrayBuffer().then(onLoad)
       }}
     >
       {children}

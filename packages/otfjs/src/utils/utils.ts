@@ -22,7 +22,7 @@ export function sum(arr: number[]): number
 export function sum<T>(arr: T[], fn: (item: T) => number): number
 export function sum<T>(
   arr: T[],
-  fn: (item: T) => number = identity as any,
+  fn: (item: T) => number = identity as (item: T) => number,
 ): number {
   return arr.reduce((acc, item) => acc + fn(item), 0)
 }

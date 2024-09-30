@@ -14,4 +14,4 @@ const data = await fs.readFile(name)
 const woff2 = decodeWoff2(new Uint8Array(data.buffer))
 
 const outPath = changeExt(name, '.ttf')
-fs.writeFile(outPath, woff2)
+await fs.writeFile(outPath, woff2)

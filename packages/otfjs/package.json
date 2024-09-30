@@ -16,6 +16,7 @@
     "build": "tsc",
     "build:gh": "pnpm build",
     "lint": "eslint . --color",
+    "lint:fix": "pnpm lint --fix",
     "test": "vitest"
   },
   "dependencies": {

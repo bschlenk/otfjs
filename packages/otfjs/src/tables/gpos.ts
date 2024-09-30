@@ -137,6 +137,7 @@ function readLookupTable(view: Reader) {
   }
 
   const subTables = subTableOffsets.map((offset) =>
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     readLookupSubtable(view.subtable(offset), lookupType),
   )
 
@@ -174,6 +175,7 @@ function readLookupSubtable(view: Reader, lookupType: GposLookupType) {
       // return readChainedContextSubtable(view)
       return null
     case GposLookupType.Extension:
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return readExtensionSubtable(view)
   }
 }

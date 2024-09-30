@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { asDataView } from '../utils.js'
 import { Reader } from '../reader.js'
+import { asDataView } from '../utils.js'
 
 describe('reader.ts', () => {
   describe('Reader', () => {

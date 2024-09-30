@@ -22,7 +22,7 @@ export function readCffTable(view: Reader) {
 
     while (!data.done()) {
       const b0 = data.u8()
-      let r: number = 0
+      let r = 0
 
       assert(!INVALID_DICT_VALUES.has(b0), 'Reserved dict value')
 

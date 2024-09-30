@@ -6,10 +6,10 @@ import { assert, getAlignPadding } from '../utils/utils.js'
 export class Writer {
   public data: ArrayBuffer
   public view: DataView
-  public offset: number = 0
-  private maxOffset: number = 0
+  public offset = 0
+  private maxOffset = 0
 
-  constructor(size: number = 1024) {
+  constructor(size = 1024) {
     this.data = new ArrayBuffer(size)
     this.view = new DataView(this.data)
   }

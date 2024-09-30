@@ -15,13 +15,14 @@
     "build": "tsc",
     "build:gh": "pnpm build",
     "lint": "eslint . --color",
+    "lint:fix": "pnpm lint --fix",
     "test": "vitest"
   },
   "dependencies": {
     "@bschlenk/mat": "^0.0.7",
     "@bschlenk/vec": "^0.0.4",
     "otfjs": "workspace:*",
-    "svgo": "4.0.0-rc.0"
+    "svgo": "4.0.0-rc.1"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",

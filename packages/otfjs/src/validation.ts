@@ -1,13 +1,14 @@
+import { asUint8Array } from './buffer/utils.js'
 import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
 import type { Header, TableRecord } from './tables/header.js'
 import { getAlignPadding, toHex } from './utils/utils.js'
-import { asUint8Array } from './buffer/utils.js'
 
 export function validateHeader(header: Header) {
   const errors: string[] = []
   const warnings: string[] = []
 
+  /* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
   if (
     header.sfntVersion !== SfntVersion.TRUE_TYPE &&
     header.sfntVersion !== SfntVersion.OPEN_TYPE &&
@@ -16,6 +17,7 @@ export function validateHeader(header: Header) {
   ) {
     errors.push(`invalid sfntVersion: ${toHex(header.sfntVersion)}`)
   }
+  /* eslint-enable @typescript-eslint/no-unsafe-enum-comparison */
 
   const expectedSearchRange = 2 ** Math.floor(Math.log2(header.numTables)) * 16
   if (header.searchRange !== expectedSearchRange) {

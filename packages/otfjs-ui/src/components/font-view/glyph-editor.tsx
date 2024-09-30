@@ -27,7 +27,10 @@ export function GlyphEditor({ glyph, upem }: GlyphEditorProps) {
     () => centeredGlyph(glyph, size, upem),
     [glyph, size, upem],
   )
-  const { origin, scale: s } = useOriginScale(ref as any, center)
+  const { origin, scale: s } = useOriginScale(
+    ref as unknown as React.RefObject<HTMLElement>,
+    center,
+  )
   const gScale = 16 / upem
 
   const x = origin.x

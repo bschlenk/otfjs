@@ -4,7 +4,7 @@ import fonts from '../../fonts.json'
 import { FontGrid } from './font-grid'
 
 export interface NoFontViewProps {
-  onLoad(buff: ArrayBuffer): void
+  onLoad: (buff: ArrayBuffer) => void
 }
 
 export function NoFontView({ onLoad }: NoFontViewProps) {
@@ -13,7 +13,7 @@ export function NoFontView({ onLoad }: NoFontViewProps) {
 
   const onChange = useCallback(
     (fontUrl: string) => {
-      fetch(fontUrl)
+      void fetch(fontUrl)
         .then((res) => res.arrayBuffer())
         .then(onLoad)
     },
@@ -29,7 +29,7 @@ export function NoFontView({ onLoad }: NoFontViewProps) {
 }
 
 interface SearchBarProps {
-  onChange(value: string): void
+  onChange: (value: string) => void
 }
 
 function SearchBar({ onChange }: SearchBarProps) {

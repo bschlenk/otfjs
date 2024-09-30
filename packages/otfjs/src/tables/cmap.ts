@@ -13,7 +13,7 @@ export class CmapTable {
   // TODO: maybe this doesn't need the params and can take a codepoint directly
   // and then determine which encoding to use based on the codepoint
   public getGlyphIndex(codePoint: number) {
-    const platformId = 3
+    const platformId = PlatformId.Windows
     let encodingId = 1
 
     if (codePoint > 0xffff) {

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
+
 import { SfntVersion } from './enums.js'
 
 export function asSfntVersion(val: number): SfntVersion {

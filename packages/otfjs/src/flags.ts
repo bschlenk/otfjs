@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
+
 type Handler<U> = (flag: number) => U
 type FlagConfig<T extends string> = Record<T, number | Handler<any>>
 

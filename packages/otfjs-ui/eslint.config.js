@@ -2,8 +2,8 @@ import bschlenk, { globals } from '@bschlenk/eslint-config'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['**/dist/'] },
-  { files: ['**/*.js', '**/*.ts', '**/*.tsx'] },
+  { ignores: ['**/dist/', '*.config.js', '*.config.ts'] },
+  { files: ['**/*.ts', '**/*.tsx'] },
 
   {
     languageOptions: {
@@ -22,6 +22,13 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+    },
+  },
+
+  {
+    rules: {
+      // TODO: remove this rule once @bschlenk/eslint-config is updated
+      'react/display-name': 'off',
     },
   },
 ]

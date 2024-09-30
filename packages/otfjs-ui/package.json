@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "build:gh": "pnpm build --base /otfjs/",
     "lint": "eslint . --color",
+    "lint:fix": "pnpm lint --fix",
     "preview": "vite preview"
   },
   "dependencies": {

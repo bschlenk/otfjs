@@ -1,4 +1,4 @@
-import { Fragment, JSXElementConstructor, useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { disassemble, Font, NameId } from 'otfjs'
 
@@ -7,7 +7,7 @@ import { GlyfView } from './glyf-view'
 
 import styles from './font-view.module.css'
 
-const TABLE_MAP: Record<string, JSXElementConstructor<{ font: Font }>> = {
+const TABLE_MAP: Record<string, React.JSXElementConstructor<{ font: Font }>> = {
   'CFF ': jsonView('CFF '),
   cmap: CmapView,
   COLR: jsonView('COLR'),
@@ -96,7 +96,7 @@ function JsonView({
   const replacer = useMemo(() => {
     if (!replacements) return undefined
 
-    return (key: string, value: any) => {
+    return (key: string, value: any): any => {
       const r = replacements[key]
       if (r) return r(value)
       return value
@@ -108,7 +108,7 @@ function JsonView({
 
 function jsonView(
   tag: string,
-  replacements?: Record<string, (value: unknown) => any>,
+  replacements?: Record<string, (value: any) => any>,
 ) {
   return ({ font }: { font: Font }) => {
     const table = font.getTable(tag)
@@ -134,7 +134,7 @@ function ArrayView({
 
 function arrayView(tag: string, bytesPerItem?: number) {
   return ({ font }: { font: Font }) => {
-    const table: any = font.getTable(tag)
+    const table = font.getTable(tag) as Iterable<number>
     return <ArrayView data={table} bytesPerItem={bytesPerItem} />
   }
 }
@@ -180,7 +180,7 @@ function InstructionView({ data }: { data: Uint8Array }) {
 
 function instructionView(tag: string) {
   return ({ font }: { font: Font }) => {
-    const table: any = font.getTable(tag)
+    const table = font.getTable(tag) as Uint8Array
     return <InstructionView data={table} />
   }
 }
@@ -239,7 +239,7 @@ function CpalView({ font }: { font: Font }) {
   )
 }
 
-function toHex(n: any, pad = 8) {
+function toHex<T extends number>(n: T, pad = 8) {
   if (typeof n !== 'number') return n
   return `0x${n.toString(16).padStart(pad, '0')}`
 }

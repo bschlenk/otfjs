@@ -96,6 +96,7 @@ export class Font {
   }
 
   public getTableOrNull<T extends string>(tag: T): TableType<T> | null {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return this.#tableCache.get(tag)
   }
 
@@ -105,6 +106,7 @@ export class Font {
     const name = this.getTable('name')
     // TODO: can this be binary searched?
     const record = name.nameRecords.find(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
       (record) => record.platformId === platformId && record.nameId === nameId,
     )
     if (!record) return null
@@ -129,7 +131,7 @@ export class Font {
       hmtx.longHorMetrics[id] ??
       hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
 
-    const glyfTableRecord = this.#tables['glyf']
+    const glyfTableRecord = this.#tables.glyf
     const view = new Reader(
       asUint8Array(this.#data, glyfTableRecord.offset + offset, length),
     )

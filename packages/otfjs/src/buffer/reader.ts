@@ -5,7 +5,7 @@ import { asDataView, asUint8Array } from './utils.js'
 
 export class Reader {
   private view: DataView
-  public offset: number = 0
+  public offset = 0
 
   constructor(public readonly data: Uint8Array) {
     this.view = asDataView(data)

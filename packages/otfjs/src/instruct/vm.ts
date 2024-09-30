@@ -183,7 +183,7 @@ export class VirtualMachine {
   }
 
   step(inst: Uint8Array) {
-    const opcode = inst[this.pc++]
+    const opcode: Opcode = inst[this.pc++]
 
     switch (opcode) {
       case Opcode.NPUSHB: {
@@ -1490,7 +1490,7 @@ export class VirtualMachine {
     )
   }
 
-  private seekOne(inst: Uint8Array) {
+  private seekOne(inst: Uint8Array): Opcode {
     const next = inst[this.pc]
     this.pc += opcodeLength(inst, this.pc)
     return next
@@ -1549,7 +1549,7 @@ export class VirtualMachine {
         )
       }
       default:
-        error(`Invalid round state value ${this.gs.roundState}`)
+        error(`Invalid round state value ${this.gs.roundState as any}`)
     }
   }
 

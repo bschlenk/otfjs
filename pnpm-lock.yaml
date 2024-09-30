@@ -64,8 +64,8 @@ importers:
         specifier: workspace:*
         version: link:../otfjs
       svgo:
-        specifier: 4.0.0-rc.0
-        version: 4.0.0-rc.0
+        specifier: 4.0.0-rc.1
+        version: 4.0.0-rc.1
     devDependencies:
       '@types/node':
         specifier: ^22.7.4
@@ -1932,8 +1932,8 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
-  svgo@4.0.0-rc.0:
-    resolution: {integrity: sha512-V6DFAkoKXl9GFPZPKNDcJpeXQtMhJT3mgt0VIJTuTe89Ih4ZMtlVR/Djxm0WZX1+9TC7srNhQG6Ffs7EcB4T7Q==}
+  svgo@4.0.0-rc.1:
+    resolution: {integrity: sha512-b/oQfBJliTfeLAR14FRgIsdUIcsReSbYyp4euhCb/ZuQEjPbQ1h0qhm/wlHeklvh0wP//fTdyKTl3bvVA9nrug==}
     engines: {node: '>=16.0.0'}
     hasBin: true
 
@@ -4068,7 +4068,7 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  svgo@4.0.0-rc.0:
+  svgo@4.0.0-rc.1:
     dependencies:
       commander: 11.1.0
       css-select: 5.1.0

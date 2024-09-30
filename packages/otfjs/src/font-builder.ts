@@ -5,11 +5,11 @@
 // for the most part we can start with character == glyph (for this
 // font at least)
 
+import { asDataView } from './buffer/utils.js'
 import { Writer } from './buffer/writer.js'
 import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
 import { padToMultiple } from './utils/utils.js'
-import { asDataView } from './buffer/utils.js'
 
 export function buildFont(props: {
   // Defaults to OPEN_TYPE

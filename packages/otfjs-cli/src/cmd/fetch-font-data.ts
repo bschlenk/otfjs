@@ -1,20 +1,28 @@
+import { fetchJson } from '../lib/utils.js'
+
+interface FontInfo {
+  items: {
+    family: string
+    files: Record<string, string>
+  }[]
+}
+
 run().catch((err) => {
   console.error(err)
   process.exit(1)
 })
 
 async function run() {
-  const res = await fetch(
+  const data = await fetchJson<FontInfo>(
     `https://www.googleapis.com/webfonts/v1/webfonts?key=${process.env.GOOGLE_API_KEY}`,
   )
 
-  const data = await res.json()
   const info = processData(data)
 
   console.log(JSON.stringify(info, null, 2))
 }
 
-function processData(data: any) {
+function processData(data: FontInfo) {
   const familyUrlMap: Record<string, string> = {}
 
   for (const { family, files } of data.items) {

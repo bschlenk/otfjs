@@ -36,10 +36,10 @@ export function readPostTable(view: Reader): PostTable {
   switch (version) {
     case 0x00010000:
     case 0x00030000:
-      table = Object.create(null)
+      table = Object.create(null) as PostTableV1
       break
     case 0x00020000:
-      table = Object.create(PostTableV2Behaviors)
+      table = Object.create(PostTableV2Behaviors) as PostTableV2 | PostTableV3
       break
     default:
       throw new Error(`Unexpected post table version: ${toHex(version)}`)

@@ -1,4 +1,4 @@
-import { createElement, Fragment, useState } from 'react'
+import { createElement, useState } from 'react'
 import * as mat from '@bschlenk/mat'
 import * as vec from '@bschlenk/vec'
 import {
@@ -121,6 +121,12 @@ function GlyfContainer({
   )
 }
 
+interface ElementDesc {
+  type: string
+  props: Record<string, any>
+  children: any[]
+}
+
 function SvgGlyph({
   glyph,
   font,
@@ -139,8 +145,8 @@ function SvgGlyph({
     width = glyph.xMax - glyph.xMin
   }
 
-  const defs: any = []
-  let path: any = []
+  const defs: any[] = []
+  let path: any[] = []
 
   const tree = colr?.colorGlyph(glyph.id)
 
@@ -152,7 +158,7 @@ function SvgGlyph({
     // when done, they need to pop and convert to jsx
 
     const palette = font.getTable('CPAL').getPalette(paletteIdx)
-    const stack: any[] = [{ type: Fragment, props: {}, children: [] }]
+    const stack: ElementDesc[] = [{ type: 'root', props: {}, children: [] }]
     let latest = stack[0]
     let matrix: mat.Matrix | null = null
     let key = 0
@@ -162,15 +168,19 @@ function SvgGlyph({
       return rgbaToCss(palette[paletteIndex], alpha)
     }
 
-    const push = (): any => {
-      const el = { type: 'path', props: { key: key++ }, children: [] }
+    const push = () => {
+      const el: ElementDesc = {
+        type: 'path',
+        props: { key: key++ },
+        children: [],
+      }
       stack.push(el)
       latest = el
       return el
     }
 
     const popOnly = () => {
-      const el = stack.pop()
+      const el = stack.pop()!
       latest = stack[stack.length - 1]
 
       if (el.type === 'path' && !el.props.d) {
