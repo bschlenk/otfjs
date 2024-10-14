@@ -46,14 +46,16 @@ function FontTile({ name, url }: FontTileProps) {
       className="flex flex-col items-center gap-3 rounded-2xl border-0 bg-transparent p-0 text-[#dfdfdf] [&_*]:pointer-events-none"
       data-url={url}
     >
-      <div className="grid aspect-square w-full place-content-center rounded-2xl border border-solid border-[#3c3c3c] bg-[#2e2e2e] p-1">
+      <div className="grid aspect-square w-full place-content-center rounded-2xl border border-solid border-[#3c3c3c] bg-[var(--color-tile)] p-1">
         <svg width={100} height={100} fill="var(--color-text)">
           <use
             href={`preview.svg#${name.toLowerCase().replaceAll(' ', '-')}`}
           />
         </svg>
       </div>
-      <span className="text-center text-[#ddd]">{name}</span>
+      <span className="text-center text-[var(--color-text-secondary)]">
+        {name}
+      </span>
     </button>
   )
 }
