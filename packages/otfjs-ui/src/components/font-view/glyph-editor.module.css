@@ -8,6 +8,7 @@
 
 .editor {
   composes: _full;
+  touch-action: none;
 }
 
 .canvas {

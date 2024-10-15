@@ -1,9 +1,54 @@
-import { RefObject, useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 import * as vec from '@bschlenk/vec'
 
-import { relativeMouse } from '../utils/event'
-import { usePrevious } from './use-previous'
+import { gestureToMatrix, getOrigin, useZoomer } from './zoomer'
 
+const DEFAULT = { origin: vec.ZERO, scale: 1 }
+
+export function useOriginScale(
+  ref: React.RefObject<HTMLElement>,
+  defaultOriginScale = DEFAULT,
+) {
+  const origin = useRef(vec.ZERO)
+  const matrix = useRef<DOMMatrix>(new DOMMatrix())
+
+  const [originScale, setOriginScale] = useState(defaultOriginScale)
+
+  useZoomer(ref, {
+    startGesture(gesture) {
+      origin.current = getOrigin(gesture.target, gesture)
+      const m = gestureToMatrix(gesture, origin.current).multiply(
+        matrix.current,
+      )
+
+      setOriginScale({
+        origin: vec.vec(m.e, m.f),
+        scale: m.a,
+      })
+    },
+
+    doGesture(gesture) {
+      const m = gestureToMatrix(gesture, origin.current).multiply(
+        matrix.current,
+      )
+
+      setOriginScale({
+        origin: vec.vec(m.e, m.f),
+        scale: m.a,
+      })
+    },
+
+    endGesture(gesture) {
+      matrix.current = gestureToMatrix(gesture, origin.current).multiply(
+        matrix.current,
+      )
+    },
+  })
+
+  return originScale
+}
+
+/*
 const DEFAULT = { origin: { x: 0, y: 0 }, scale: 1 }
 
 export function useOriginScale(
@@ -62,3 +107,4 @@ export function useOriginScale(
 
   return originScale
 }
+*/
