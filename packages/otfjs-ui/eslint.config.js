@@ -24,11 +24,4 @@ export default [
       ],
     },
   },
-
-  {
-    rules: {
-      // TODO: remove this rule once @bschlenk/eslint-config is updated
-      'react/display-name': 'off',
-    },
-  },
 ]
