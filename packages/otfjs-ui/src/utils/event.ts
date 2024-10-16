@@ -45,3 +45,23 @@ export function stopPropagation(e: HasStopPropagation) {
 export function relativeMouse(e: HasClientXY, target: HTMLElement): vec.Vector {
   return vec.subtract(vec.fromClientXY(e), vec.fromElementTopLeft(target))
 }
+
+export function addListener<K extends keyof HTMLElementEventMap>(
+  el: HTMLElement,
+  type: K,
+  cb: (this: HTMLElement, e: HTMLElementEventMap[K]) => void,
+  opts?: boolean | AddEventListenerOptions,
+) {
+  el.addEventListener(type, cb, opts)
+  return () => el.removeEventListener(type, cb, opts)
+}
+
+export function combineListeners(
+  ...listeners: ((() => void) | null | undefined | false)[]
+) {
+  return () => {
+    for (const fn of listeners) {
+      if (fn) fn()
+    }
+  }
+}

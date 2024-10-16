@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as vec from '@bschlenk/vec'
 
-import { relativeMouse } from '../utils/event'
+import { addListener, combineListeners, relativeMouse } from '../utils/event'
 
 const HAS_GESTURE_EVENTS = typeof GestureEvent !== 'undefined'
 const HAS_TOUCH_EVENTS = typeof TouchEvent !== 'undefined'
@@ -22,9 +22,9 @@ interface GestureInfo {
 }
 
 interface ZoomerContext {
-  startGesture?: (gesture: GestureInfo) => void
-  doGesture?: (gesture: GestureInfo) => void
-  endGesture?: (gesture: GestureInfo) => void
+  onGestureStart?: (gesture: GestureInfo) => void
+  onGesture?: (gesture: GestureInfo) => void
+  onGestureEnd?: (gesture: GestureInfo) => void
 }
 
 export function useZoomer(
@@ -37,33 +37,42 @@ export function useZoomer(
     Object.assign(ctxRef.current, ctx)
   }, [ctx])
 
-  useEffect(() => {
-    okzoomer(ref.current!, ctxRef.current)
-  }, [])
+  useEffect(() => okzoomer(ref.current!, ctxRef.current), [])
 }
 
 // https://danburzo.ro/dom-gestures/
 function okzoomer(container: HTMLElement, opts: ZoomerContext = {}) {
+  return combineListeners(
+    addWheelListener(container, opts),
+    HAS_TOUCH_EVENTS && addTouchListener(container, opts),
+    HAS_GESTURE_EVENTS &&
+      !HAS_TOUCH_EVENTS &&
+      addGestureListener(container, opts),
+  )
+}
+
+function addWheelListener(target: HTMLElement, opts: ZoomerContext) {
   let wheelGesture: GestureInfo | null = null
   let timer: number | undefined
 
-  container.addEventListener(
+  return addListener(
+    target,
     'wheel',
     (e) => {
       e.preventDefault()
 
       const delta = normalizeWheel(e)
-      const origin = relativeMouse(e, container)
+      const origin = relativeMouse(e, target)
 
       if (!wheelGesture) {
         wheelGesture = {
-          target: container,
+          target,
           origin,
           scale: 1,
           rotation: 0,
           translation: vec.ZERO,
         }
-        opts.startGesture?.(wheelGesture)
+        opts.onGestureStart?.(wheelGesture)
       }
 
       if (e.ctrlKey) {
@@ -90,126 +99,147 @@ function okzoomer(container: HTMLElement, opts: ZoomerContext = {}) {
         }
       }
 
-      opts.doGesture?.(wheelGesture)
+      opts.onGesture?.(wheelGesture)
 
       if (timer) window.clearTimeout(timer)
       timer = window.setTimeout(() => {
         if (wheelGesture) {
-          opts.endGesture?.(wheelGesture)
+          opts.onGestureEnd?.(wheelGesture)
           wheelGesture = null
         }
       }, WHEEL_BATCH_TIMEOUT)
     },
     { passive: false },
   )
+}
 
+function addTouchListener(target: HTMLElement, opts: ZoomerContext) {
   let initialTouches: TouchList | undefined
   let touchGesture: GestureInfo | null = null
 
   function touchMove(e: TouchEvent) {
-    if (e.touches.length === 2) {
-      e.preventDefault()
+    if (e.touches.length !== 2) return
 
-      const mpInit = midpoint(initialTouches!)
-      const mpCurr = midpoint(e.touches)
+    e.preventDefault()
 
-      touchGesture = {
-        target: container,
-        origin: mpInit,
-        scale: e.scale ?? distance(e.touches) / distance(initialTouches!),
-        rotation: e.rotation ?? angle(e.touches) - angle(initialTouches!),
-        translation: vec.subtract(mpCurr, mpInit),
-      }
+    const tl = vec.fromElementTopLeft(target)
 
-      opts.doGesture?.(touchGesture)
+    const mpInit = vec.subtract(midpoint(initialTouches!), tl)
+    const mpCurr = vec.subtract(midpoint(e.touches), tl)
+
+    touchGesture = {
+      target,
+      origin: mpInit,
+      scale: e.scale ?? distance(e.touches) / distance(initialTouches!),
+      rotation: e.rotation ?? angle(e.touches) - angle(initialTouches!),
+      translation: vec.subtract(mpCurr, mpInit),
     }
+
+    opts.onGesture?.(touchGesture)
   }
 
-  container.addEventListener(
+  return addListener(
+    target,
     'touchstart',
     function watchTouches(e: TouchEvent) {
       if (e.touches.length === 2) {
         initialTouches = e.touches
         touchGesture = {
-          target: container,
+          target,
           scale: 1,
           rotation: 0,
           translation: vec.ZERO,
-          origin: midpoint(initialTouches),
+          origin: vec.subtract(
+            midpoint(initialTouches),
+            vec.fromElementTopLeft(target),
+          ),
         }
+
         if (e.type === 'touchstart') e.preventDefault()
 
-        opts.startGesture?.(touchGesture)
-        container.addEventListener('touchmove', touchMove, { passive: false })
-        container.addEventListener('touchend', watchTouches)
-        container.addEventListener('touchcancel', watchTouches)
+        opts.onGestureStart?.(touchGesture)
+        opts.onGesture?.(touchGesture)
+
+        target.addEventListener('touchmove', touchMove, { passive: false })
+        target.addEventListener('touchend', watchTouches)
+        target.addEventListener('touchcancel', watchTouches)
       } else if (touchGesture) {
-        opts.endGesture?.(touchGesture)
+        opts.onGestureEnd?.(touchGesture)
         touchGesture = null
-        container.removeEventListener('touchmove', touchMove)
-        container.removeEventListener('touchend', watchTouches)
-        container.removeEventListener('touchcancel', watchTouches)
+        target.removeEventListener('touchmove', touchMove)
+        target.removeEventListener('touchend', watchTouches)
+        target.removeEventListener('touchcancel', watchTouches)
       }
     },
     { passive: false },
   )
+}
 
-  if (HAS_GESTURE_EVENTS && !HAS_TOUCH_EVENTS) {
-    let inGesture = false
+function addGestureListener(target: HTMLElement, opts: ZoomerContext) {
+  let inGesture = false
+  let origin = vec.ZERO
 
-    container.addEventListener(
+  return combineListeners(
+    addListener(
+      target,
       'gesturestart',
       (e) => {
         e.preventDefault()
 
-        if (!inGesture) {
-          opts.startGesture?.({
-            target: container,
-            translation: vec.ZERO,
-            scale: e.scale,
-            rotation: e.rotation,
-            origin: vec.fromClientXY(e),
-          })
-          inGesture = true
+        if (inGesture) return
+        inGesture = true
+
+        origin = relativeMouse(e, target)
+
+        const event = {
+          target,
+          translation: vec.ZERO,
+          scale: e.scale,
+          rotation: e.rotation,
+          origin,
         }
+
+        opts.onGestureStart?.(event)
+        opts.onGesture?.(event)
       },
       { passive: false },
-    )
+    ),
 
-    container.addEventListener(
+    addListener(
+      target,
       'gesturechange',
       (e) => {
         e.preventDefault()
 
         if (inGesture) {
-          opts.doGesture?.({
-            target: container,
+          opts.onGesture?.({
+            target,
             translation: vec.ZERO,
             scale: e.scale,
             rotation: e.rotation,
-            origin: vec.fromClientXY(e),
+            origin,
           })
         }
       },
       { passive: false },
-    )
+    ),
 
-    container.addEventListener('gestureend', (e) => {
-      if (inGesture) {
-        opts.endGesture?.({
-          target: container,
-          translation: vec.ZERO,
-          scale: e.scale,
-          rotation: e.rotation,
-          origin: vec.fromClientXY(e),
-        })
-        inGesture = false
-      }
-    })
-  }
+    addListener(target, 'gestureend', (e) => {
+      if (!inGesture) return
+      inGesture = false
+
+      opts.onGestureEnd?.({
+        target,
+        translation: vec.ZERO,
+        scale: e.scale,
+        rotation: e.rotation,
+        origin,
+      })
+    }),
+  )
 }
 
-function gestureToMatrix(gesture: GestureInfo, origin: vec.Vector) {
+export function gestureToMatrix(gesture: GestureInfo, origin: vec.Vector) {
   return (
     new DOMMatrix()
       .translate(origin.x, origin.y)
@@ -219,26 +249,6 @@ function gestureToMatrix(gesture: GestureInfo, origin: vec.Vector) {
       .translate(-origin.x, -origin.y)
   )
 }
-
-function getOrigin(el: HTMLElement, gesture: GestureInfo) {
-  return vec.subtract(gesture.origin, vec.fromElementTopLeft(el))
-}
-
-function applyMatrix(el: Element, matrix: DOMMatrix) {
-  if (el instanceof HTMLElement) {
-    el.style.transform = matrix as unknown as string
-    return
-  }
-
-  if (el instanceof SVGElement) {
-    el.setAttribute('transform', matrix as unknown as string)
-    return
-  }
-
-  throw new Error('Expected HTML or SVG element')
-}
-
-export { applyMatrix, gestureToMatrix, getOrigin, okzoomer }
 
 function limit(delta: number, maxDelta: number) {
   return Math.sign(delta) * Math.min(maxDelta, Math.abs(delta))
