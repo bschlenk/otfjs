@@ -125,11 +125,6 @@ function useSize(ref: RefObject<Element>) {
   const [size, setSize] = useState({ x: 0, y: 0 })
 
   useLayoutEffect(() => {
-    const { clientWidth, clientHeight } = ref.current!
-    setSize({ x: clientWidth, y: clientHeight })
-  }, [ref])
-
-  useEffect(() => {
     const observer = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect
       setSize({ x: width, y: height })
@@ -166,7 +161,7 @@ function centeredGlyph(glyph: GlyphSimple, size: vec.Vector, upem: number) {
 
   if (sy > sx) {
     x = MARGIN
-    y = (size.y - height * s) / 2 - top * s
+    y = (upem - glyph.yMax) * s + (size.y - height * s) / 2
   } else {
     x = (size.x - width * s) / 2 - left * s
     y = MARGIN + (upem - glyph.yMax) * s

@@ -30,11 +30,11 @@ importers:
   packages/otfjs:
     dependencies:
       '@bschlenk/mat':
-        specifier: ^0.0.8
-        version: 0.0.8
+        specifier: ^0.0.9
+        version: 0.0.9
       '@bschlenk/vec':
-        specifier: ^0.0.5
-        version: 0.0.5
+        specifier: ^0.0.6
+        version: 0.0.6
       brotli:
         specifier: ^1.3.3
         version: 1.3.3
@@ -55,11 +55,11 @@ importers:
   packages/otfjs-cli:
     dependencies:
       '@bschlenk/mat':
-        specifier: ^0.0.8
-        version: 0.0.8
+        specifier: ^0.0.9
+        version: 0.0.9
       '@bschlenk/vec':
-        specifier: ^0.0.5
-        version: 0.0.5
+        specifier: ^0.0.6
+        version: 0.0.6
       otfjs:
         specifier: workspace:*
         version: link:../otfjs
@@ -80,11 +80,11 @@ importers:
   packages/otfjs-ui:
     dependencies:
       '@bschlenk/mat':
-        specifier: ^0.0.8
-        version: 0.0.8
+        specifier: ^0.0.9
+        version: 0.0.9
       '@bschlenk/vec':
-        specifier: ^0.0.5
-        version: 0.0.5
+        specifier: ^0.0.6
+        version: 0.0.6
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -226,14 +226,14 @@ packages:
     peerDependencies:
       eslint: '>= 9'
 
-  '@bschlenk/mat@0.0.8':
-    resolution: {integrity: sha512-wKDADYD8A4Oqvdlxw49yftVqdYw1ACKyt7m9CdwgxWv9FkUv7ANzpqtTX4jtRmrCHRa1j6By/5QfPLcL5BKSYw==}
+  '@bschlenk/mat@0.0.9':
+    resolution: {integrity: sha512-xuieGqguGSJT+fGpnsj+0/yzJ2tKjNeHNc/fUOi8vdXybBLszRcA1FzjPXjz0hHcOMZVoCyOm3L5bzvCdDW1fA==}
 
   '@bschlenk/util@0.0.2':
     resolution: {integrity: sha512-/HGXuwaYEke3aQOamgh3DsaGKMNin0qPGW1WI9h8qsAG3cFRQsYsF2Qz1+jt76a8QyfD+7JKI5AUwXD1G4mNKw==}
 
-  '@bschlenk/vec@0.0.5':
-    resolution: {integrity: sha512-bQ19h91AiYh9KoyyTiQNj7ytqfCqrstlrnMk+tY0I6WduFxmnPHYoHJS8FhXNX3OdJCucTiV9yiYNkXWeW/BbA==}
+  '@bschlenk/vec@0.0.6':
+    resolution: {integrity: sha512-sSd7zrM8KH9h175R3Q1iiMnXPpO+qQOS+Zi1+GZgQhX7beNE2PoWsaqmQCPd9cm9rs8MTrNjjT604KaAKtMmSA==}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -2301,14 +2301,14 @@ snapshots:
       - supports-color
       - typescript
 
-  '@bschlenk/mat@0.0.8':
+  '@bschlenk/mat@0.0.9':
     dependencies:
       '@bschlenk/util': 0.0.2
-      '@bschlenk/vec': 0.0.5
+      '@bschlenk/vec': 0.0.6
 
   '@bschlenk/util@0.0.2': {}
 
-  '@bschlenk/vec@0.0.5':
+  '@bschlenk/vec@0.0.6':
     dependencies:
       '@bschlenk/util': 0.0.2
 

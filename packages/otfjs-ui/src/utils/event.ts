@@ -43,8 +43,5 @@ export function stopPropagation(e: HasStopPropagation) {
  * @returns A Vector object.
  */
 export function relativeMouse(e: HasClientXY, target: HTMLElement): vec.Vector {
-  const rect = target.getBoundingClientRect()
-  const x = e.clientX - rect.left
-  const y = e.clientY - rect.top
-  return vec.vec(x, y)
+  return vec.subtract(vec.fromClientXY(e), vec.fromElementTopLeft(target))
 }

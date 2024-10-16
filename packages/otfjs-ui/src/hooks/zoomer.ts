@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import * as vec from '@bschlenk/vec'
 
+import { relativeMouse } from '../utils/event'
+
 const HAS_GESTURE_EVENTS = typeof GestureEvent !== 'undefined'
 const HAS_TOUCH_EVENTS = typeof TouchEvent !== 'undefined'
 
@@ -12,7 +14,7 @@ const DELTA_PAGE_MULTIPLIER = 24
 const MAX_WHEEL_DELTA = 24
 
 interface GestureInfo {
-  target: HTMLElement | SVGElement
+  target: HTMLElement
   origin: vec.Vector
   scale: number
   rotation: number
@@ -51,7 +53,7 @@ function okzoomer(container: HTMLElement, opts: ZoomerContext = {}) {
       e.preventDefault()
 
       const delta = normalizeWheel(e)
-      const origin = vec.fromClient(e)
+      const origin = relativeMouse(e, container)
 
       if (!wheelGesture) {
         wheelGesture = {
@@ -166,7 +168,7 @@ function okzoomer(container: HTMLElement, opts: ZoomerContext = {}) {
             translation: vec.ZERO,
             scale: e.scale,
             rotation: e.rotation,
-            origin: vec.fromClient(e),
+            origin: vec.fromClientXY(e),
           })
           inGesture = true
         }
@@ -185,7 +187,7 @@ function okzoomer(container: HTMLElement, opts: ZoomerContext = {}) {
             translation: vec.ZERO,
             scale: e.scale,
             rotation: e.rotation,
-            origin: vec.fromClient(e),
+            origin: vec.fromClientXY(e),
           })
         }
       },
@@ -199,7 +201,7 @@ function okzoomer(container: HTMLElement, opts: ZoomerContext = {}) {
           translation: vec.ZERO,
           scale: e.scale,
           rotation: e.rotation,
-          origin: vec.fromClient(e),
+          origin: vec.fromClientXY(e),
         })
         inGesture = false
       }
@@ -218,22 +220,8 @@ function gestureToMatrix(gesture: GestureInfo, origin: vec.Vector) {
   )
 }
 
-function getOrigin(el: Element, gesture: GestureInfo) {
-  if (el instanceof HTMLElement) {
-    const rect = el.getBoundingClientRect()
-    return {
-      x: gesture.origin.x - rect.x,
-      y: gesture.origin.y - rect.y,
-    }
-  }
-
-  if (el instanceof SVGSVGElement) {
-    const matrix = el.getScreenCTM()!.inverse()
-    const pt = new DOMPoint(gesture.origin.x, gesture.origin.y)
-    return pt.matrixTransform(matrix)
-  }
-
-  throw new Error('Expected HTML or SVG element')
+function getOrigin(el: HTMLElement, gesture: GestureInfo) {
+  return vec.subtract(gesture.origin, vec.fromElementTopLeft(el))
 }
 
 function applyMatrix(el: Element, matrix: DOMMatrix) {
@@ -277,15 +265,15 @@ function normalizeWheel(e: WheelEvent) {
 
 function midpoint(touches: TouchList) {
   const [t1, t2] = touches
-  return vec.midpoint(vec.fromClient(t1), vec.fromClient(t2))
+  return vec.midpoint(vec.fromClientXY(t1), vec.fromClientXY(t2))
 }
 
 function distance(touches: TouchList) {
   const [t1, t2] = touches
-  return vec.distance(vec.fromClient(t1), vec.fromClient(t2))
+  return vec.distance(vec.fromClientXY(t1), vec.fromClientXY(t2))
 }
 
 function angle(touches: TouchList) {
   const [t1, t2] = touches
-  return vec.angle(vec.subtract(vec.fromClient(t2), vec.fromClient(t1)))
+  return vec.angle(vec.subtract(vec.fromClientXY(t2), vec.fromClientXY(t1)))
 }
