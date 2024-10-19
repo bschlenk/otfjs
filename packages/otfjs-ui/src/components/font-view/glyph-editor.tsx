@@ -1,7 +1,6 @@
 import {
   RefObject,
   useCallback,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
