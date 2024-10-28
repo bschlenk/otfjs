@@ -5,9 +5,9 @@ import { type ReadableStream as WebReadableStream } from 'stream/web'
 
 import { readJsonSync } from '../lib/utils.js'
 
-interface FontInfo {
-  items: { family: string; menu: string }[]
-}
+export const GOOGLE_FONT_DOMAIN = 'https://fonts.gstatic.com'
+
+type FontInfo = Record<string, string>
 
 const args = process.argv.slice(2)
 if (args.length !== 2) {
@@ -20,13 +20,17 @@ const outDir = args[1]
 
 fs.mkdirSync(outDir, { recursive: true })
 
-for (const font of fonts.items) {
-  const url = font.menu
+for (const [font, urlPath] of Object.entries(fonts)) {
+  const url = urlForFont(urlPath)
   const ext = path.extname(url)
-  const fname = path.join(outDir, `${font.family}${ext}`)
+  const fname = path.join(outDir, `${font}${ext}`)
 
   const res = await fetch(url)
   const stream = fs.createWriteStream(fname)
 
   Readable.fromWeb(res.body as WebReadableStream).pipe(stream)
+}
+
+function urlForFont(pathname: string) {
+  return new URL(pathname, GOOGLE_FONT_DOMAIN).toString()
 }
