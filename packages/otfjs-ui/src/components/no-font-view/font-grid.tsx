@@ -36,6 +36,7 @@ export const FontGrid = memo(function FontGrid({
     <div
       ref={ref}
       role="grid"
+      aria-label="Fonts"
       className={styles.root}
       onClick={(e) => {
         const url = (e.target as CellEl).getAttribute('data-url')
