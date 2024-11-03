@@ -110,11 +110,9 @@ export const FontGrid = memo(function FontGrid({
                 ++rowsToMove
                 el = c[i - cols * rowsToMove] as CellEl
                 const box = el.getBoundingClientRect()
-                // TODO: can't use innerHeight here for real, need to
+                // TODO: can't use 0 here for real, need to
                 // get the top of the container
-                if (box.top > window.innerHeight) {
-                  break
-                }
+                if (box.top < 0) break
               }
 
               focus(el)
@@ -136,9 +134,7 @@ export const FontGrid = memo(function FontGrid({
                 const box = el.getBoundingClientRect()
                 // TODO: can't use innerHeight here for real, need to
                 // get the bottom of the container
-                if (box.bottom > window.innerHeight) {
-                  break
-                }
+                if (box.bottom > window.innerHeight) break
               }
 
               focus(el)
