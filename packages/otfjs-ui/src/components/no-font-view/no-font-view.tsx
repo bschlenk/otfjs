@@ -27,18 +27,3 @@ export function NoFontView({ onLoad }: NoFontViewProps) {
     </div>
   )
 }
-
-interface SearchBarProps {
-  onChange: (value: string) => void
-}
-
-function SearchBar({ onChange }: SearchBarProps) {
-  return (
-    <div className="sticky top-0 flex justify-end">
-      <input
-        className="min-w-64 rounded-full border border-white px-3 py-1"
-        onChange={(e) => onChange(e.currentTarget.value)}
-      />
-    </div>
-  )
-}
