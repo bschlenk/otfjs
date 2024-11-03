@@ -9,7 +9,9 @@ function handleShortcut(e: KeyboardEvent | React.KeyboardEvent) {
   switch (key.value) {
     case '⌘K':
       key.accept(() => {
-        getRootSearch().focus()
+        const rs = getRootSearch()
+        rs.focus()
+        rs.select()
       })
   }
 }
