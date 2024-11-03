@@ -1,7 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 
-import { App } from './app.tsx'
+import { App } from './app'
+import { registerShortcuts } from './shortcuts/shortcuts'
 
 import './styles/colors.css'
 import './main.css'
@@ -12,3 +13,5 @@ root.render(
     <App />
   </React.StrictMode>,
 )
+
+registerShortcuts()

@@ -2,20 +2,31 @@
   color-scheme: light dark;
 
   --color-bg: #fff;
+
   --color-text: #213547;
-  --color-icon: black;
-  --color-border: black;
-  --color-tile: #fff;
   --color-text-secondary: #333;
+
+  --color-icon: black;
+
+  --color-border: black;
+
+  --color-tile: #fff;
+  --color-tile-selected: #2f435a;
+  --color-border-onselected: rgb(255 255 255 / 0.1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --color-bg: #242424;
+
     --color-text: rgba(255, 255, 255, 0.87);
-    --color-icon: white;
-    --color-border: white;
-    --color-tile: #2e2e2e;
     --color-text-secondary: #ddd;
+
+    --color-icon: white;
+
+    --color-border: #434343;
+
+    --color-tile: #2e2e2e;
+    --color-tile-selected: #2f435a;
   }
 }

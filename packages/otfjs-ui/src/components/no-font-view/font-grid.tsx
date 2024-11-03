@@ -3,6 +3,8 @@ import { memo } from 'react'
 import { GOOGLE_FONT_DOMAIN } from '../../constants'
 import { entriesFilterMap } from '../../utils/object'
 
+import styles from './font-grid.module.css'
+
 export interface FontGridProps {
   fonts: typeof import('../../fonts.json')
   filter?: string
@@ -16,7 +18,7 @@ export const FontGrid = memo(function FontGrid({
 }: FontGridProps) {
   return (
     <div
-      className="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-10 p-7"
+      className={styles.root}
       onClick={(e) => {
         const url = (e.target as HTMLElement).getAttribute('data-url')
         if (!url) return
@@ -42,11 +44,8 @@ interface FontTileProps {
 
 function FontTile({ name, url }: FontTileProps) {
   return (
-    <button
-      className="flex flex-col items-center gap-3 rounded-2xl border-0 bg-transparent p-0 text-[#dfdfdf] [&_*]:pointer-events-none"
-      data-url={url}
-    >
-      <div className="grid aspect-square w-full place-content-center rounded-2xl border border-solid border-[#3c3c3c] bg-[var(--color-tile)] p-1">
+    <button className={styles.button} data-url={url}>
+      <div className={styles.tile}>
         <svg width={100} height={100} fill="var(--color-text)">
           <use
             href={`preview.svg#${name.toLowerCase().replaceAll(' ', '-')}`}

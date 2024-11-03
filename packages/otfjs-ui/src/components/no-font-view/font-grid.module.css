@@ -1,0 +1,47 @@
+.root {
+  grid-area: grid;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 40px;
+  padding: 28px;
+}
+
+.button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  border-radius: 16px;
+  color: #dfdfdf;
+  background: none;
+  padding: 0;
+  border: none;
+  outline: none;
+
+  &:focus {
+    outline: none;
+  }
+
+  & * {
+    pointer-events: none;
+  }
+}
+
+.tile {
+  display: grid;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  place-content: center;
+  border-radius: 16px;
+  border: 2px solid #3c3c3c;
+  background: var(--color-tile);
+  padding: 4px;
+
+  .button:focus & {
+    border-color: var(--color-border-onselected);
+    background: var(--color-tile-selected);
+  }
+}
+
+.label {
+}
