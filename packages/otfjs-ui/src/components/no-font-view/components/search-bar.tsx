@@ -1,4 +1,6 @@
-import { tw } from '../../../utils/tw'
+import { IconSearch } from '../../icons/icon-search'
+
+import styles from './search-bar.module.css'
 
 export interface SearchBarProps {
   onChange: (value: string) => void
@@ -6,13 +8,21 @@ export interface SearchBarProps {
 
 export function SearchBar({ onChange }: SearchBarProps) {
   return (
-    <Contents>
+    <div className={styles.container}>
       <input
-        className="min-w-64 rounded-full border border-white px-3 py-1"
+        id="root.search"
+        className={styles.input}
+        placeholder="Search"
         onChange={(e) => onChange(e.currentTarget.value)}
       />
-    </Contents>
+      <div aria-hidden="true" className={styles.overlay}>
+        <IconSearch className={styles.icon} />
+        <Shortcut value="⌘K" />
+      </div>
+    </div>
   )
 }
 
-const Contents = tw`sticky top-0 flex`
+function Shortcut({ value }: { value: string }) {
+  return <kbd className={styles.shortcut}>{value}</kbd>
+}
