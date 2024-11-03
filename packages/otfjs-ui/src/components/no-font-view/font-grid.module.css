@@ -38,7 +38,7 @@
   padding: 4px;
 
   .button:focus & {
-    border-color: var(--color-border-onselected);
+    border-color: var(--color-border-selected);
     background: var(--color-tile-selected);
   }
 }
