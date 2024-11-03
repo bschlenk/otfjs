@@ -46,11 +46,32 @@ export function relativeMouse(e: HasClientXY, target: HTMLElement): vec.Vector {
   return vec.subtract(vec.fromClientXY(e), vec.fromElementTopLeft(target))
 }
 
+type CleanupFn = () => void
+type EventListenerOptions = boolean | AddEventListenerOptions
+
+export function addListener<K extends keyof WindowEventMap>(
+  el: Window,
+  type: K,
+  listener: (this: Window, ev: WindowEventMap[K]) => any,
+  options?: EventListenerOptions,
+): CleanupFn
+export function addListener<K extends keyof DocumentEventMap>(
+  el: Document,
+  type: K,
+  cb: (this: Document, ev: DocumentEventMap[K]) => any,
+  options?: EventListenerOptions,
+): CleanupFn
 export function addListener<K extends keyof HTMLElementEventMap>(
   el: HTMLElement,
   type: K,
-  cb: (this: HTMLElement, e: HTMLElementEventMap[K]) => void,
-  opts?: boolean | AddEventListenerOptions,
+  cb: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any,
+  options?: EventListenerOptions,
+): CleanupFn
+export function addListener<K extends keyof HTMLElementEventMap>(
+  el: Window | Document | HTMLElement,
+  type: K,
+  cb: (e: any) => void,
+  opts?: EventListenerOptions,
 ) {
   el.addEventListener(type, cb, opts)
   return () => el.removeEventListener(type, cb, opts)

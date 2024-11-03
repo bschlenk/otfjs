@@ -20,7 +20,7 @@ function getById<T extends HTMLElement = HTMLElement>(id: string) {
   return () => document.getElementById(id) as T
 }
 
-function handle(e: KeyboardEvent | React.KeyboardEvent) {
+export function handle(e: KeyboardEvent | React.KeyboardEvent) {
   const value = normalizeShortcut(e)
   const accept = (
     callback: (ctx: {
@@ -53,7 +53,7 @@ function normalizeShortcut(e: KeyboardEvent | React.KeyboardEvent) {
   if (e.shiftKey) value += '⇧'
 
   let key = e.key
-  if (/[a-z]/.test(e.key)) {
+  if (/^[a-z]$/.test(e.key)) {
     key = key.toUpperCase()
   }
 
