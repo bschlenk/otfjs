@@ -13,6 +13,7 @@ if (args.length < 1) {
 }
 
 const outDir = eat(args, '-d', '.')
+await fs.mkdir(outDir, { recursive: true })
 
 processFonts(args, outDir).catch((err) => {
   console.error(err)
@@ -20,20 +21,32 @@ processFonts(args, outDir).catch((err) => {
 })
 
 async function processFonts(fontFiles: string[], outDir: string) {
-  for await (const { font, name } of iterFonts(fontFiles)) {
-    console.log(name)
-    const preview = generatePreview(font)
+  for await (const { font, file } of iterFonts(fontFiles)) {
+    console.log(file)
 
+    const preview = generatePreview(font)
     if (!preview) {
-      console.warn(`failed to generate preview for ${name}`)
+      console.warn(`failed to generate preview for ${file}`)
       continue
     }
 
-    const nakedName = path.basename(name, path.extname(name))
-    const outPath = path.join(outDir, `${nakedName}.svg`)
+    const name = path.basename(file, path.extname(file))
+    const outPath = path.join(outDir, `${name}.svg`)
 
-    const optimized = optimize(preview, { path: outPath, multipass: true })
-
+    const optimized = optimize(preview, {
+      path: outPath,
+      multipass: true,
+      plugins: [
+        'preset-default',
+        {
+          name: 'prefixIds',
+          params: {
+            prefix: name.toLowerCase().replaceAll(' ', '-'),
+            delim: '-',
+          },
+        },
+      ],
+    })
     void fs.writeFile(outPath, optimized.data)
   }
 }
@@ -114,8 +127,8 @@ function nodesToSvg(nodes: Node[]) {
 }
 
 async function* iterFonts(files: string[]) {
-  for (const name of files) {
-    const font = await loadFont(name)
-    yield { font, name }
+  for (const file of files) {
+    const font = await loadFont(file)
+    yield { font, file }
   }
 }
