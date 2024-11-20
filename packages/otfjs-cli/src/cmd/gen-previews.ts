@@ -6,6 +6,10 @@ import { optimize } from 'svgo'
 import { eat } from '../lib/cli.js'
 import { loadFont } from '../lib/utils.js'
 
+// TODO: take this as a cli arg, but for now this is how much padding we
+// want to add around the viewBox
+const PADDING = 16
+
 const args = process.argv.slice(2)
 if (args.length < 1) {
   console.error('usage: gen-previews -d <out-dir> font-file.ttf+')
@@ -80,8 +84,11 @@ function generatePreview(font: Font): string | null {
 
   const defs = [...g1s.defs, ...g2s.defs]
 
+  const padding = (PADDING / 100) * upem
+  const viewBox = `${min - padding} ${-padding} ${max - min + padding * 2} ${upem + padding * 2}`
+
   return `\
-<svg viewBox="${min} 0 ${max - min} ${upem}" height="100" fill="black" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="${viewBox}" height="100" fill="black" xmlns="http://www.w3.org/2000/svg">
 ${
   defs.length > 0 ?
     `\
