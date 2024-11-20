@@ -2,6 +2,6 @@
   "folders": [{ "path": "." }],
   "settings": {
     "typescript.tsdk": "node_modules/typescript/lib",
-    "cSpell.words": ["glyf", "loca"],
+    "cSpell.words": ["cmap", "glyf", "loca", "otfjs", "sfnt", "upem"],
   },
 }

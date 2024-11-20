@@ -1,4 +1,5 @@
 import { Reader } from '../buffer/reader.js'
+import { asSfntVersion } from '../enum-utils.js'
 
 export interface Header {
   sfntVersion: number
@@ -21,7 +22,7 @@ export interface TableRecord {
 }
 
 export function readHeader(view: Reader): Header {
-  const sfntVersion = view.u32()
+  const sfntVersion = asSfntVersion(view.u32())
   const numTables = view.u16()
   const searchRange = view.u16()
   const entrySelector = view.u16()
