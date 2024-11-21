@@ -2,9 +2,11 @@
   color-scheme: light dark;
 
   --color-bg: #fff;
+  --color-bg-selected: #383838;
 
   --color-text: #213547;
   --color-text-secondary: #333;
+  --color-text-tertiary: #111;
 
   --color-icon: black;
 
@@ -21,6 +23,7 @@
 
     --color-text: rgba(255, 255, 255, 0.87);
     --color-text-secondary: #ddd;
+    --color-text-tertiary: #888;
 
     --color-icon: white;
 

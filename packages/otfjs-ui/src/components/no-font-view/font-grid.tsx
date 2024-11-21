@@ -4,6 +4,7 @@ import { GOOGLE_FONT_DOMAIN } from '../../constants'
 import { handle } from '../../shortcuts/shortcuts'
 import { addListener } from '../../utils/event'
 import { entriesFilterMap } from '../../utils/object'
+import { FontIcon } from '../font-icon/font-icon'
 
 import styles from './font-grid.module.css'
 
@@ -210,11 +211,7 @@ function FontTile({ name, url }: FontTileProps) {
       data-url={url}
     >
       <div className={styles.tile}>
-        <svg width={100} height={100} fill="var(--color-text)">
-          <use
-            href={`preview.svg#${name.toLowerCase().replaceAll(' ', '-')}`}
-          />
-        </svg>
+        <FontIcon name={name} size={100} />
       </div>
       <span className="text-center text-[var(--color-text-secondary)]">
         {name}

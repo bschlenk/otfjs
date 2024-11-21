@@ -1,7 +1,19 @@
-.tablesList {
-  width: 100px;
+.root {
+  display: grid;
+  height: 100%;
+  grid-template-columns: max-content 1fr;
+  gap: 8px;
+  overflow: hidden;
 
-  border-right: 1px solid #333;
+  & > * {
+    min-width: 0;
+  }
+}
+
+.sidebar {
+  width: 240px;
+
+  border-right: 1px solid var(--color-border);
   overflow: scroll;
 
   & ul {
@@ -11,19 +23,41 @@
 
   & li {
     display: block;
+    padding: 4px;
+    position: relative;
   }
 
   & button {
     display: block;
     width: 100%;
     text-align: left;
-    border-radius: 0;
-    padding: calc(4rem / 16) calc(8rem / 16);
+    border-radius: 5px;
+    padding: 3px 8px;
+    line-height: 1;
+    background: unset;
 
-    &:not(.active) {
-      background: unset;
+    &:after {
+      content: '';
+      display: block;
+      position: absolute;
+      inset: 0;
+    }
+
+    &.active,
+    &:hover {
+      background: var(--color-border-selected);
+      font-weight: bold;
     }
   }
+}
+
+.head {
+  display: flex;
+  padding: 8px;
+  gap: 8px;
+  height: 100px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .tableView {

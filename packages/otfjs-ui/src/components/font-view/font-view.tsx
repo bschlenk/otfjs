@@ -2,8 +2,11 @@ import { Fragment, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { disassemble, Font, NameId } from 'otfjs'
 
+import { HasFont } from '../../types/has-font'
 import { makeColor } from '../../utils/color'
 import { useClearFont } from '../font-context'
+import { FontIcon } from '../font-icon/font-icon'
+import { Text } from '../text'
 import { GlyfView } from './glyf-view'
 
 import styles from './font-view.module.css'
@@ -45,12 +48,10 @@ export function FontView({ font }: FontViewProps) {
   const TableComponent = TABLE_MAP[tag] ?? null
 
   return (
-    <div className="grid h-full grid-cols-[max-content_1fr] gap-8 overflow-hidden [&>*]:min-w-0">
-      <div className={styles.tablesList}>
-        <div className={styles.head}>
-          <FontName font={font} />
-          <button onClick={onBack}>⬅ Back</button>
-        </div>
+    <div className={styles.root}>
+      <div className={styles.sidebar}>
+        <Head font={font} />
+        <button onClick={clearFont}>⬅ Back</button>
         <ul>
           {font.tables.map((table) => (
             <li key={table}>
@@ -72,9 +73,45 @@ export function FontView({ font }: FontViewProps) {
   )
 }
 
-function FontName({ font }: { font: Font }) {
-  const name = font.getName(NameId.FullFontName)
-  return <h1 className="pl-2 text-lg">{name}</h1>
+function Head({ font }: { font: Font }) {
+  const name = font.getName(NameId.FontFamilyName)!
+
+  return (
+    <div className={styles.head}>
+      <FontIcon name={name} size={84} />
+      <div className="flex flex-col justify-center">
+        <FontName font={font} />
+        <FileSize font={font} />
+        <GlyphCount font={font} />
+      </div>
+    </div>
+  )
+}
+
+function FontName({ font }: HasFont) {
+  const name = font.getName(NameId.FontFamilyName)
+  return <h1 className="text-lg">{name}</h1>
+}
+
+function GlyphCount({ font }: HasFont) {
+  return <Text.Tertiary>{font.numGlyphs} Glyphs</Text.Tertiary>
+}
+
+const SIZE_UNITS = ['B', 'KB', 'MB', 'GB']
+
+function FileSize({ font }: HasFont) {
+  let size = font.size
+  let unit = 0
+  while (size >= 1024 && unit < SIZE_UNITS.length - 1) {
+    size /= 1024
+    ++unit
+  }
+
+  return (
+    <Text.Tertiary title={`${font.size} Bytes`}>
+      {size.toFixed(1)} {SIZE_UNITS[unit]}
+    </Text.Tertiary>
+  )
 }
 
 function DocLink({ tag }: { tag: string }) {

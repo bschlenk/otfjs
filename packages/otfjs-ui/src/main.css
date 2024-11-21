@@ -57,12 +57,8 @@ button {
   font-family: inherit;
   background-color: #1a1a1a;
 }
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 1px auto var(--color-border-selected);
 }
 
 @media (prefers-color-scheme: light) {
