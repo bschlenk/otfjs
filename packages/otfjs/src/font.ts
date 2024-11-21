@@ -67,6 +67,11 @@ export class Font {
     this.#tableCache = createCache((tag: string) => this.readTable(tag))
   }
 
+  /** The size of the font file in bytes. */
+  public get size(): number {
+    return this.#data.length
+  }
+
   public get sfntVersion(): number {
     return this.#header.sfntVersion
   }
