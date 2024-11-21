@@ -1,31 +1,16 @@
-import { useCallback, useState } from 'react'
-import { Font, isWoff2 } from 'otfjs'
-
+import { useFontOrNull } from './components/font-context'
 import { FontView } from './components/font-view/font-view'
 import { FullScreenDropZone } from './components/full-screen-drop-zone/full-screen-drop-zone'
 import { NoFontView } from './components/no-font-view/no-font-view'
 
 export function App() {
-  const [font, setFont] = useState<Font | null>(null)
-
-  const onLoad = useCallback((buff: ArrayBuffer) => {
-    void readFont(new Uint8Array(buff)).then(setFont)
-  }, [])
+  const font = useFontOrNull()
 
   return (
-    <FullScreenDropZone onLoad={onLoad}>
-      {!font ?
-        <NoFontView onLoad={onLoad} />
-      : <FontView font={font} onBack={() => setFont(null)} />}
+    <FullScreenDropZone>
+      {font ?
+        <FontView font={font} />
+      : <NoFontView />}
     </FullScreenDropZone>
   )
-}
-
-async function readFont(buff: Uint8Array) {
-  if (isWoff2(buff)) {
-    const woff2 = await import('otfjs/woff2')
-    buff = woff2.decodeWoff2(buff)
-  }
-
-  return new Font(buff)
 }

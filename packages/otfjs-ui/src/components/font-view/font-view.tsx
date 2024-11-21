@@ -3,11 +3,12 @@ import clsx from 'clsx'
 import { disassemble, Font, NameId } from 'otfjs'
 
 import { makeColor } from '../../utils/color'
+import { useClearFont } from '../font-context'
 import { GlyfView } from './glyf-view'
 
 import styles from './font-view.module.css'
 
-const TABLE_MAP: Record<string, React.JSXElementConstructor<{ font: Font }>> = {
+const TABLE_MAP: Record<string, React.ComponentType<{ font: Font }>> = {
   'CFF ': jsonView('CFF '),
   cmap: CmapView,
   COLR: jsonView('COLR'),
@@ -30,10 +31,11 @@ const TABLE_MAP: Record<string, React.JSXElementConstructor<{ font: Font }>> = {
 
 interface FontViewProps {
   font: Font
-  onBack: () => void
 }
 
-export function FontView({ font, onBack }: FontViewProps) {
+export function FontView({ font }: FontViewProps) {
+  const clearFont = useClearFont()
+
   const [tag, setTag] = useState(() =>
     font.hasTable('glyf') ? 'glyf'
     : font.hasTable('head') ? 'head'

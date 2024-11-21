@@ -1,16 +1,11 @@
 import { useRef, useState } from 'react'
 
+import { HasChildren } from '../../types/has-children'
 import { preventDefault } from '../../utils/event'
+import { useLoadFont } from '../font-context'
 
-export interface FullScreenDropZoneProps {
-  onLoad: (buffer: ArrayBuffer) => void
-  children: React.ReactNode
-}
-
-export function FullScreenDropZone({
-  onLoad,
-  children,
-}: FullScreenDropZoneProps) {
+export function FullScreenDropZone({ children }: HasChildren) {
+  const loadFont = useLoadFont()
   const [dragover, setDragover] = useState(false)
   const enterCount = useRef(0)
 
@@ -30,7 +25,7 @@ export function FullScreenDropZone({
         setDragover(false)
 
         e.preventDefault()
-        void e.dataTransfer.files[0].arrayBuffer().then(onLoad)
+        void e.dataTransfer.files[0].arrayBuffer().then(loadFont)
       }}
     >
       {children}
