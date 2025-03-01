@@ -2,19 +2,5 @@
   "folders": [{ "path": "." }],
   "settings": {
     "typescript.tsdk": "node_modules/typescript/lib",
-    "cSpell.words": [
-      "cmap",
-      "colr",
-      "fpgm",
-      "glyf",
-      "gpos",
-      "hhea",
-      "hmtx",
-      "loca",
-      "maxp",
-      "otfjs",
-      "sfnt",
-      "upem",
-    ],
   },
 }

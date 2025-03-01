@@ -1,0 +1,24 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "cmap",
+    "colr",
+    "endf",
+    "fdef",
+    "fpgm",
+    "glyf",
+    "gpos",
+    "hhea",
+    "hmtx",
+    "idefs",
+    "loca",
+    "maxp",
+    "NPUSHB",
+    "NPUSHW",
+    "otfjs",
+    "sfnt",
+    "upem"
+  ],
+  "ignoreRegExpList": ["Opcode\\.[A-Z0-9]+"]
+}
