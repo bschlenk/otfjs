@@ -306,7 +306,7 @@ export class VirtualMachine {
 
         let x = p2.x - p1.x
         let y = p2.y - p1.y
-        const m = Math.sqrt(x ** 2 + y ** 2)
+        const m = Math.hypot(x, y)
 
         x /= m
         y /= m
@@ -329,7 +329,7 @@ export class VirtualMachine {
 
         let x = p2.x - p1.x
         let y = p2.y - p1.y
-        const m = Math.sqrt(x ** 2 + y ** 2)
+        const m = Math.hypot(x, y)
 
         x /= m
         y /= m
