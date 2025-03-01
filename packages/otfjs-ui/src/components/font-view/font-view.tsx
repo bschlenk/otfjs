@@ -1,89 +1,102 @@
-import { Fragment, useMemo, useState } from 'react'
+import { useState } from 'react'
 import clsx from 'clsx'
-import { disassemble, Font, NameId } from 'otfjs'
+import { Font, NameId } from 'otfjs'
 
 import { HasFont } from '../../types/has-font'
-import { makeColor } from '../../utils/color'
-import { useClearFont } from '../font-context'
+import { sizeToSTring } from '../../utils/bytes'
+import { useClearFont, useFont } from '../font-context'
 import { FontIcon } from '../font-icon/font-icon'
+import { IconButton } from '../icon-button/icon-button'
+import { IconBack } from '../icons/icon-back'
+import { IconLink } from '../icons/icon-link'
 import { Text } from '../text'
-import { GlyfView } from './glyf-view'
+import { TABLE_MAP } from './font-view.utils'
 
 import styles from './font-view.module.css'
-
-const TABLE_MAP: Record<string, React.ComponentType<{ font: Font }>> = {
-  'CFF ': jsonView('CFF '),
-  cmap: CmapView,
-  COLR: jsonView('COLR'),
-  CPAL: CpalView,
-  'cvt ': arrayView('cvt '),
-  fpgm: instructionView('fpgm'),
-  glyf: GlyfView,
-  GPOS: jsonView('GPOS', { version: toHex }),
-  head: jsonView('head'),
-  hhea: jsonView('hhea'),
-  hmtx: jsonView('hmtx'),
-  MATH: jsonView('MATH'),
-  maxp: jsonView('maxp', { version: toHex }),
-  loca: jsonView('loca'),
-  name: jsonView('name'),
-  'OS/2': jsonView('OS/2'),
-  post: jsonView('post', { version: toHex }),
-  prep: instructionView('prep'),
-}
 
 interface FontViewProps {
   font: Font
 }
 
 export function FontView({ font }: FontViewProps) {
-  const clearFont = useClearFont()
-
   const [tag, setTag] = useState(() =>
     font.hasTable('glyf') ? 'glyf'
     : font.hasTable('head') ? 'head'
     : font.tables[0],
   )
 
-  const TableComponent = TABLE_MAP[tag] ?? null
-
   return (
     <div className={styles.root}>
-      <div className={styles.sidebar}>
-        <Head font={font} />
-        <button onClick={clearFont}>⬅ Back</button>
-        <ul>
-          {font.tables.map((table) => (
-            <li key={table}>
-              <button
-                className={clsx({ [styles.active]: tag === table })}
-                onClick={() => setTag(table)}
-              >
-                {TABLE_MAP[table] ? table : '🚧 ' + table}
-              </button>
-            </li>
-          ))}
-        </ul>
+      <Head tag={tag} />
+      <Sidebar tag={tag} setTag={setTag} />
+      <TableView tag={tag} />
+    </div>
+  )
+}
+
+function Head({ tag }: { tag: string }) {
+  const font = useFont()
+  const clearFont = useClearFont()
+  const name = font.getName(NameId.FontFamilyName)!
+
+  return (
+    <div className={styles.head}>
+      <div className="flex items-center">
+        <IconButton onClick={clearFont}>
+          <IconBack />
+        </IconButton>
+        <FontIcon name={name} size={64} />
       </div>
-      <div className={styles.tableView}>
-        <DocLink tag={tag} />
-        {TableComponent && <TableComponent font={font} />}
+      <div className="flex flex-col justify-center">
+        <FontName font={font} />
+        <div className="flex space-x-2">
+          <FileSize font={font} />
+          <GlyphCount font={font} />
+        </div>
+      </div>
+      <div className="ml-auto">
+        <DocLink tag={tag}>
+          {tag} <IconLink className="inline" />
+        </DocLink>
       </div>
     </div>
   )
 }
 
-function Head({ font }: { font: Font }) {
-  const name = font.getName(NameId.FontFamilyName)!
+function Sidebar({
+  tag,
+  setTag,
+}: {
+  tag: string
+  setTag: React.Dispatch<React.SetStateAction<string>>
+}) {
+  const font = useFont()
 
   return (
-    <div className={styles.head}>
-      <FontIcon name={name} size={84} />
-      <div className="flex flex-col justify-center">
-        <FontName font={font} />
-        <FileSize font={font} />
-        <GlyphCount font={font} />
-      </div>
+    <div className={styles.sidebar}>
+      <ul>
+        {font.tables.map((table) => (
+          <li key={table}>
+            <button
+              className={clsx({ [styles.active]: tag === table })}
+              onClick={() => setTag(table)}
+            >
+              {TABLE_MAP[table] ? table : '🚧 ' + table}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function TableView({ tag }: { tag: string }) {
+  const font = useFont()
+  const TableComponent = TABLE_MAP[tag]
+
+  return (
+    <div className={styles.tableView}>
+      {TableComponent && <TableComponent font={font} />}
     </div>
   )
 }
@@ -97,188 +110,30 @@ function GlyphCount({ font }: HasFont) {
   return <Text.Tertiary>{font.numGlyphs} Glyphs</Text.Tertiary>
 }
 
-const SIZE_UNITS = ['B', 'KB', 'MB', 'GB']
-
 function FileSize({ font }: HasFont) {
-  let size = font.size
-  let unit = 0
-  while (size >= 1024 && unit < SIZE_UNITS.length - 1) {
-    size /= 1024
-    ++unit
-  }
-
   return (
     <Text.Tertiary title={`${font.size} Bytes`}>
-      {size.toFixed(1)} {SIZE_UNITS[unit]}
+      {sizeToSTring(font.size)}
     </Text.Tertiary>
   )
 }
 
-function DocLink({ tag }: { tag: string }) {
+function DocLink({
+  tag,
+  children,
+}: {
+  tag: string
+  children: React.ReactNode
+}) {
   const url = `https://learn.microsoft.com/en-us/typography/opentype/spec/${tag}`
   return (
-    <div className="px-2 py-4">
-      <a href={url} target="_blank" rel="noreferrer">
-        {url}
-      </a>
-    </div>
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="text-md inline-block px-2 py-4 text-[var(--color-text)]"
+    >
+      {children}
+    </a>
   )
-}
-
-function JsonView({
-  data,
-  replacements,
-}: {
-  data: unknown
-  replacements?: Record<string, (value: unknown) => any>
-}) {
-  const replacer = useMemo(() => {
-    if (!replacements) return undefined
-
-    return (key: string, value: any): any => {
-      const r = replacements[key]
-      if (r) return r(value)
-      return value
-    }
-  }, [replacements])
-
-  return <pre>{JSON.stringify(data, replacer, 2)}</pre>
-}
-
-function jsonView(
-  tag: string,
-  replacements?: Record<string, (value: any) => any>,
-) {
-  return ({ font }: { font: Font }) => {
-    const table = font.getTable(tag)
-    return <JsonView data={table} replacements={replacements} />
-  }
-}
-
-function ArrayView({
-  data,
-  bytesPerItem,
-}: {
-  data: Iterable<number>
-  bytesPerItem?: number
-}) {
-  return (
-    <ol>
-      {Array.from(data).map((byte, i) => (
-        <li key={i}>{bytesPerItem ? toHex(byte, bytesPerItem * 2) : byte}</li>
-      ))}
-    </ol>
-  )
-}
-
-function arrayView(tag: string, bytesPerItem?: number) {
-  return ({ font }: { font: Font }) => {
-    const table = font.getTable(tag) as Iterable<number>
-    return <ArrayView data={table} bytesPerItem={bytesPerItem} />
-  }
-}
-
-function InstructionView({ data }: { data: Uint8Array }) {
-  const instructions = disassemble(data)
-  let max = instructions[instructions.length - 1].pc
-  // for each 10 magnitude over 1000, increase padding by 10px
-  let padMultiplier = 0
-  while (max >= 1000) {
-    max /= 10
-    padMultiplier += 1
-  }
-
-  let nextColor = 0
-  return (
-    <ol style={{ margin: padMultiplier ? padMultiplier * 10 : undefined }}>
-      {instructions.map((inst, i) => (
-        <Fragment key={i}>
-          <li
-            value={inst.pc}
-            style={{
-              color:
-                inst.name === 'FDEF' ? makeColor(nextColor)
-                : inst.name === 'ENDF' ? makeColor(nextColor++)
-                : undefined,
-            }}
-          >
-            {inst.name}
-          </li>
-          {inst.args && (
-            <ol>
-              {inst.args.map((arg, j) => (
-                <li key={j}>{arg}</li>
-              ))}
-            </ol>
-          )}
-        </Fragment>
-      ))}
-    </ol>
-  )
-}
-
-function instructionView(tag: string) {
-  return ({ font }: { font: Font }) => {
-    const table = font.getTable(tag) as Uint8Array
-    return <InstructionView data={table} />
-  }
-}
-
-function CmapView({ font }: { font: Font }) {
-  const [chars, setChars] = useState('')
-
-  const table = font.getTable('cmap')
-  const glyphIndices: [string, number][] = []
-
-  for (const char of chars) {
-    const codePoint = char.codePointAt(0)!
-    const glyphIndex = table.getGlyphIndex(codePoint)
-    glyphIndices.push([char, glyphIndex])
-  }
-
-  return (
-    <div className={styles.cmapTable}>
-      <JsonView
-        data={{
-          version: table.version,
-          encodingRecords: table.encodingRecords,
-        }}
-      />
-      <input value={chars} onChange={(e) => setChars(e.target.value)} />
-      {glyphIndices.map(([char, glyphIndex], i) => (
-        <span key={i}>
-          {char}: {glyphIndex}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-function CpalView({ font }: { font: Font }) {
-  const table = font.getTable('CPAL')
-
-  return (
-    <>
-      <JsonView data={table} replacements={{ colorRecords: () => undefined }} />
-      {Array.from(table.iterPalettes(), (palette, i) => (
-        <div key={i} className="mt-2">
-          <h2>Palette {i}</h2>
-          <div className="flex flex-wrap gap-1">
-            {palette.map((c, j) => (
-              <div
-                key={j}
-                className="h-11 w-11 border-2 border-white"
-                style={{ background: `rgb(${c.r} ${c.g} ${c.b} / ${c.a})` }}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-    </>
-  )
-}
-
-function toHex<T extends number>(n: T, pad = 8) {
-  if (typeof n !== 'number') return n
-  return `0x${n.toString(16).padStart(pad, '0')}`
 }

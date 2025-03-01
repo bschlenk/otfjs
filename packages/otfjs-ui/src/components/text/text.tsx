@@ -6,6 +6,6 @@ export function Secondary(props: React.HTMLProps<HTMLSpanElement>) {
 
 export function Tertiary(props: React.HTMLProps<HTMLSpanElement>) {
   return (
-    <span {...props} className="text-sm text-[var(--color-text-tertiary)]" />
+    <span {...props} className="text-xs text-[var(--color-text-tertiary)]" />
   )
 }

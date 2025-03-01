@@ -1,0 +1,19 @@
+.root {
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: none;
+  padding: 0;
+  margin-left: 8px;
+
+  &:hover {
+    background: var(--color-bg-selected);
+  }
+
+  & > * {
+    flex-shrink: 0;
+  }
+}
