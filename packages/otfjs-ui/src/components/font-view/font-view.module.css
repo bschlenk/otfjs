@@ -1,8 +1,10 @@
 .root {
   display: grid;
+  grid:
+    'head head' 64px
+    'sidebar table' 1fr
+    / fit-content(100px) 1fr;
   height: 100%;
-  grid-template-columns: max-content 1fr;
-  gap: 8px;
   overflow: hidden;
 
   & > * {
@@ -10,10 +12,19 @@
   }
 }
 
-.sidebar {
-  width: 240px;
+.head {
+  grid-area: head;
+  display: flex;
+  gap: 16px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--color-border);
+  align-items: center;
+}
 
+.sidebar {
+  grid-area: sidebar;
   border-right: 1px solid var(--color-border);
+  padding-top: 8px;
   overflow: scroll;
 
   & ul {
@@ -51,16 +62,8 @@
   }
 }
 
-.head {
-  display: flex;
-  padding: 8px;
-  gap: 8px;
-  height: 100px;
-  box-sizing: border-box;
-  border-bottom: 1px solid var(--color-border);
-}
-
 .tableView {
+  grid-area: table;
   position: relative;
   overflow: scroll;
 }

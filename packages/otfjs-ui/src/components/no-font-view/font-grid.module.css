@@ -1,9 +1,9 @@
 .root {
   grid-area: grid;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
-  gap: 40px;
-  padding: 28px;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 20px;
+  padding: 20px;
 }
 
 .button {
