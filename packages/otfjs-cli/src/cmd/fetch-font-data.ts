@@ -7,12 +7,7 @@ interface FontInfo {
   }[]
 }
 
-run().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
-
-async function run() {
+export async function run() {
   const data = await fetchJson<FontInfo>(
     `https://www.googleapis.com/webfonts/v1/webfonts?key=${process.env.GOOGLE_API_KEY}`,
   )

@@ -1,0 +1,6 @@
+#!/usr/bin/env node
+
+import { run } from '../dist/bin/otf.js'
+
+const code = await run()
+process.exit(code)

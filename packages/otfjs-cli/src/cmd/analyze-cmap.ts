@@ -4,18 +4,18 @@ import path from 'path'
 
 import { loadFont } from '../lib/utils.js'
 
-const args = process.argv.slice(2)
-if (args.length < 1) {
-  console.error('usage: analyze-cmap <font-dir>')
-  process.exit(1)
+export async function run(args: string[]) {
+  if (args.length < 1) {
+    console.error('usage: analyze-cmap <font-dir>')
+    return 1
+  }
+
+  await analyzeCmap(args[0])
 }
 
-const fontDir = args[0]
-const fnames = await fs.readdir(fontDir)
+async function analyzeCmap(fontDir: string) {
+  const fnames = await fs.readdir(fontDir)
 
-await analyzeCmap()
-
-async function analyzeCmap() {
   const platformEncodings = new Map<string, number>()
 
   for (const fname of fnames) {

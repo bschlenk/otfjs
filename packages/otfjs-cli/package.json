@@ -1,5 +1,5 @@
 {
-  "name": "otfjs-cli",
+  "name": "@otfjs/cli",
   "version": "1.0.0",
   "author": "Brian Schlenker <bschlenk@umich.edu>",
   "description": "",
@@ -9,6 +9,9 @@
   "exports": {
     ".": "./dist/index.js",
     "./package.json": "./package.json"
+  },
+  "directories": {
+    "bin": "./bin"
   },
   "scripts": {
     "dev": "tsc --watch --incremental",

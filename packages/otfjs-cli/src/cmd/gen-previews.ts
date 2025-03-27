@@ -10,19 +10,17 @@ import { loadFont } from '../lib/utils.js'
 // want to add around the viewBox
 const PADDING = 16
 
-const args = process.argv.slice(2)
-if (args.length < 1) {
-  console.error('usage: gen-previews -d <out-dir> font-file.ttf+')
-  process.exit(1)
+export async function run(args: string[]) {
+  if (args.length < 1) {
+    console.error('usage: gen-previews -d <out-dir> font-file.ttf+')
+    return 1
+  }
+
+  const outDir = eat(args, '-d', '.')
+  await fs.mkdir(outDir, { recursive: true })
+
+  return processFonts(args, outDir)
 }
-
-const outDir = eat(args, '-d', '.')
-await fs.mkdir(outDir, { recursive: true })
-
-processFonts(args, outDir).catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
 
 async function processFonts(fontFiles: string[], outDir: string) {
   for await (const { font, file } of iterFonts(fontFiles)) {
