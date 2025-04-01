@@ -142,8 +142,7 @@ export class Reader {
   }
 
   public u8Array(length: number): Uint8Array {
-    const offset = this.view.byteOffset + this.offset
-    const arr = new Uint8Array(this.data, offset, length)
+    const arr = asUint8Array(this.data, this.offset, length)
     this.offset += length
     return arr
   }
