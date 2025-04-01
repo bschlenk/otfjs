@@ -15,3 +15,10 @@ export async function fetchJson<T>(url: string | URL): Promise<T> {
   const res = await fetch(url)
   return res.json() as T
 }
+
+export async function* iterFonts(files: string[]) {
+  for (const file of files) {
+    const font = await loadFont(file)
+    yield { font, file }
+  }
+}

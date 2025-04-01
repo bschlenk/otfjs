@@ -4,7 +4,7 @@ import path from 'path'
 import { optimize } from 'svgo'
 
 import { eat } from '../lib/cli.js'
-import { loadFont } from '../lib/utils.js'
+import { iterFonts } from '../lib/utils.js'
 
 // TODO: take this as a cli arg, but for now this is how much padding we
 // want to add around the viewBox
@@ -129,11 +129,4 @@ function nodesToSvg(nodes: Node[]) {
   nodes.forEach(walk)
 
   return out
-}
-
-async function* iterFonts(files: string[]) {
-  for (const file of files) {
-    const font = await loadFont(file)
-    yield { font, file }
-  }
 }
