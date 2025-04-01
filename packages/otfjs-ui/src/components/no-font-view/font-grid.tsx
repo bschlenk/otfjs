@@ -57,6 +57,7 @@ export const FontGrid = memo(function FontGrid({
         const ct = e.currentTarget as GridEl
 
         switch (key.value) {
+          case 'H':
           case '⌃P':
           case 'ArrowLeft': {
             key.accept(() => {
@@ -66,6 +67,7 @@ export const FontGrid = memo(function FontGrid({
             break
           }
 
+          case 'L':
           case '⌃N':
           case 'ArrowRight': {
             key.accept(() => {
@@ -75,6 +77,7 @@ export const FontGrid = memo(function FontGrid({
             break
           }
 
+          case 'K':
           case '⌃U':
           case 'ArrowUp': {
             key.accept(() => {
@@ -87,6 +90,7 @@ export const FontGrid = memo(function FontGrid({
             break
           }
 
+          case 'J':
           case '⌃D':
           case 'ArrowDown': {
             key.accept(() => {
