@@ -18,4 +18,4 @@ set +o allexport
 npx otf fetch-font-data > "$FONTS_JSON"
 npx otf fetch-fonts "$FONTS_JSON" "$GOOGLE_FONTS"
 npx otf gen-previews -d "$PREVIEW_DIR" "$GOOGLE_FONTS"/*
-npx svg-sprite-generator -d "$PREVIEW_DIR" -o "$PREVIEW_SVG"
+npx otf sprite "$PREVIEW_DIR" > "$PREVIEW_SVG"

@@ -49,7 +49,7 @@ async function processFonts(fontFiles: string[], outDir: string) {
         },
       ],
     })
-    void fs.writeFile(outPath, optimized.data)
+    await fs.writeFile(outPath, optimized.data)
   }
 }
 

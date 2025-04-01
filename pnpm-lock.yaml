@@ -63,6 +63,9 @@ importers:
       '@bschlenk/vec':
         specifier: ^0.0.7
         version: 0.0.7
+      himalaya:
+        specifier: ^1.1.0
+        version: 1.1.0
       otfjs:
         specifier: workspace:*
         version: link:../otfjs
@@ -1307,6 +1310,9 @@ packages:
   hasown@2.0.2:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
+
+  himalaya@1.1.0:
+    resolution: {integrity: sha512-LLase1dHCRMel68/HZTFft0N0wti0epHr3nNY7ynpLbyZpmrKMQ8YIpiOV77TM97cNpC8Wb2n6f66IRggwdWPw==}
 
   htmlparser2@3.8.3:
     resolution: {integrity: sha512-hBxEg3CYXe+rPIua8ETe7tmG3XDn9B0edOE/e9wH2nLczxzgdu0m0aNHY+5wFZiviLWLdANPJTssa92dMcXQ5Q==}
@@ -3528,6 +3534,8 @@ snapshots:
   hasown@2.0.2:
     dependencies:
       function-bind: 1.1.2
+
+  himalaya@1.1.0: {}
 
   htmlparser2@3.8.3:
     dependencies:
