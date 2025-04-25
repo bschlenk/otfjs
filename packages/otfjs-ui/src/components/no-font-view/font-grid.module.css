@@ -48,7 +48,8 @@
     background: var(--color-tile-selected);
   }
 
-  & svg {
+  /* there should only ever be one child */
+  & > :first-child {
     width: 100%;
     height: 100%;
   }
