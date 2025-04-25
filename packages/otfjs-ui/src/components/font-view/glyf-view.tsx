@@ -1,4 +1,4 @@
-import { createElement, useState } from 'react'
+import { createElement, type JSX, useState } from 'react'
 import * as mat from '@bschlenk/mat'
 import * as vec from '@bschlenk/vec'
 import {

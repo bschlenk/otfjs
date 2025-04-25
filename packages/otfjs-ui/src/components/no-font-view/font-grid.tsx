@@ -232,7 +232,7 @@ function searchCompare(haystack: string, needle: string): boolean {
   return haystack.toLowerCase().includes(needle.toLowerCase())
 }
 
-function useColumns(ref: React.RefObject<HTMLDivElement>) {
+function useColumns(ref: React.RefObject<HTMLDivElement | null>) {
   const columns = useRef<number | null>(null)
 
   useEffect(() => {
