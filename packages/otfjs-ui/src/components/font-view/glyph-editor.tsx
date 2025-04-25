@@ -120,7 +120,7 @@ export function GlyphEditor({ glyph, upem }: GlyphEditorProps) {
   )
 }
 
-function useSize(ref: RefObject<Element>) {
+function useSize(ref: RefObject<Element | null>) {
   const [size, setSize] = useState({ x: 0, y: 0 })
 
   useLayoutEffect(() => {
