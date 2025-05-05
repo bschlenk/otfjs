@@ -24,32 +24,36 @@ export async function run(args: string[]) {
 
 async function processFonts(fontFiles: string[], outDir: string) {
   for await (const { font, file } of iterFonts(fontFiles)) {
-    console.log(file)
+    try {
+      console.log(file)
 
-    const preview = generatePreview(font)
-    if (!preview) {
-      console.warn(`failed to generate preview for ${file}`)
-      continue
-    }
+      const preview = generatePreview(font)
+      if (!preview) {
+        console.warn(`failed to generate preview for ${file}`)
+        continue
+      }
 
-    const name = path.basename(file, path.extname(file))
-    const outPath = path.join(outDir, `${name}.svg`)
+      const name = path.basename(file, path.extname(file))
+      const outPath = path.join(outDir, `${name}.svg`)
 
-    const optimized = optimize(preview, {
-      path: outPath,
-      multipass: true,
-      plugins: [
-        'preset-default',
-        {
-          name: 'prefixIds',
-          params: {
-            prefix: name.toLowerCase().replaceAll(' ', '-'),
-            delim: '-',
+      const optimized = optimize(preview, {
+        path: outPath,
+        multipass: true,
+        plugins: [
+          'preset-default',
+          {
+            name: 'prefixIds',
+            params: {
+              prefix: name.toLowerCase().replaceAll(' ', '-'),
+              delim: '-',
+            },
           },
-        },
-      ],
-    })
-    await fs.writeFile(outPath, optimized.data)
+        ],
+      })
+      await fs.writeFile(outPath, optimized.data)
+    } catch (err) {
+      console.error(`failed to generate preview for ${file}:`, err)
+    }
   }
 }
 

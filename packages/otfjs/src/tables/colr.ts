@@ -59,6 +59,7 @@ export enum ColorRecordType {
   RADIAL_GRADIENT = 6,
   GLYPH = 10,
   TRANSFORM = 12,
+  SKEW = 30,
   COMPOSITE = 32,
 }
 
@@ -101,6 +102,8 @@ export interface ColorRecordPropsMap {
   }
   [ColorRecordType.GLYPH]: { glyphId: number }
   [ColorRecordType.TRANSFORM]: { matrix: mat.Matrix }
+  // TODO: wrong type
+  [ColorRecordType.SKEW]: { matrix: mat.Matrix }
   [ColorRecordType.COMPOSITE]: {
     mode: CompositeMode
     src: ColorLayer[]
@@ -371,6 +374,27 @@ export class ColrTable {
         const centerX = view.i16()
         const centerY = view.i16()
         const matrix = mat.scaleAt(scaleX, scaleY, centerX, centerY)
+
+        const children = this.visitLayer(view.subtable(paintOffset))
+
+        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
+      }
+
+      // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-28-to-31-paintskew-paintvarskew-paintskewaroundcenter-paintvarskewaroundcenter
+      case 30: {
+        const paintOffset = view.u24()
+        const xSkewAngle = view.f2dot14()
+        const ySkewAngle = view.f2dot14()
+        const centerX = view.i16()
+        const centerY = view.i16()
+
+        // TODO: add helper to matrix lib
+        const matrix = mat.mult(
+          mat.translate(-centerX, -centerY),
+          mat.mat(1, Math.tan(Math.PI * ySkewAngle), 0, 1, 0, 0),
+          mat.mat(1, 0, Math.tan(Math.PI * xSkewAngle), 1, 0, 0),
+          mat.translate(centerX, centerY),
+        )
 
         const children = this.visitLayer(view.subtable(paintOffset))
 

@@ -24,5 +24,8 @@ declare module 'himalaya' {
   export type Node = Element | Comment | Text
 
   export function parse(str: string, options?: any): Node[]
-  export function stringify(elements: Node[]): string
+  export function stringify(
+    elements: Node[],
+    options?: { preferDoubleQuoteAttributes?: boolean },
+  ): string
 }
