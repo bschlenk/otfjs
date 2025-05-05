@@ -160,7 +160,7 @@ function SvgGlyph({
     const palette = font.getTable('CPAL').getPalette(paletteIdx)
     const stack: ElementDesc[] = [{ type: 'root', props: {}, children: [] }]
     let latest = stack[0]
-    let matrix: mat.Matrix | null = null
+    let matrixStack: mat.Matrix[] = []
     let key = 0
 
     const getColor = (paletteIndex: number, alpha: number) => {
@@ -168,9 +168,9 @@ function SvgGlyph({
       return rgbaToCss(palette[paletteIndex], alpha)
     }
 
-    const push = () => {
+    const push = (type = 'path') => {
       const el: ElementDesc = {
-        type: 'path',
+        type,
         props: { key: key++ },
         children: [],
       }
@@ -189,6 +189,9 @@ function SvgGlyph({
         Object.assign(el.props, { x: 0, y: 0, width, height })
       }
 
+      // TODO: unwrap single child groups with no props here
+
+      // TODO: use jsx runtime
       return createElement(el.type, el.props, el.children)
     }
 
@@ -227,6 +230,8 @@ function SvgGlyph({
             ),
           )
 
+          const matrix = matrixStack.pop()
+
           defs.push(
             <linearGradient
               key={defs.length}
@@ -243,7 +248,6 @@ function SvgGlyph({
             </linearGradient>,
           )
 
-          matrix = null
           latest.props.fill = `url('#${id}')`
           break
         }
@@ -261,6 +265,7 @@ function SvgGlyph({
           ))
 
           const id = `${glyph.id}-radial-gradient-${defs.length}`
+          const matrix = matrixStack.pop()
 
           defs.push(
             <radialGradient
@@ -280,7 +285,6 @@ function SvgGlyph({
             </radialGradient>,
           )
 
-          matrix = null
           latest.props.fill = `url('#${id}')`
           break
         }
@@ -290,14 +294,11 @@ function SvgGlyph({
           const g = font.getGlyph(glyphId)
           const d = glyphToSvgPath(g)
 
-          let hasMatrix = false
+          const matrix = matrixStack.pop()
           if (matrix) {
             const el = push()
             el.type = 'g'
             el.props.transform = mat.toSvg(matrix)
-
-            hasMatrix = true
-            matrix = null
           }
 
           const el = push()
@@ -308,14 +309,23 @@ function SvgGlyph({
 
           pop()
 
-          if (hasMatrix) pop()
+          if (matrix) pop()
 
           break
         }
 
         case ColorRecordType.TRANSFORM: {
-          matrix = layer.props.matrix
+          const matrix = matrixStack.pop()
+          if (matrix) {
+            const el = push()
+            el.type = 'g'
+            el.props.transform = mat.toSvg(matrix)
+          }
+
+          matrixStack.push(layer.props.matrix)
           walkAll(layer.children)
+
+          if (matrix) pop()
 
           break
         }
@@ -325,7 +335,7 @@ function SvgGlyph({
 
           switch (mode) {
             case CompositeMode.SRC_IN: {
-              push()
+              push('g')
               walkAll(dest)
               const destId = `${glyph.id}-${defs.length}`
               latest.props.id = destId
@@ -343,7 +353,32 @@ function SvgGlyph({
 
               const el = push()
               el.type = 'g'
-              el.props.style = { filter: `url(#${id})` }
+              el.props.filter = `url(#${id})`
+              walkAll(src)
+              pop()
+              break
+            }
+
+            case CompositeMode.SCREEN: {
+              push('g')
+              walkAll(dest)
+              const destId = `${glyph.id}-${defs.length}`
+              latest.props.id = destId
+              latest.props.key = defs.length
+              const destEl = popOnly()
+
+              defs.push(destEl)
+              const id = `${glyph.id}-${defs.length}`
+              defs.push(
+                <filter key={defs.length} id={id}>
+                  <feImage href={`#${destId}`} x="0" y="0" />
+                  <feBlend mode="screen" in="SourceGraphic" />
+                </filter>,
+              )
+
+              const el = push()
+              el.type = 'g'
+              el.props.filter = `url(#${id})`
               walkAll(src)
               pop()
               break

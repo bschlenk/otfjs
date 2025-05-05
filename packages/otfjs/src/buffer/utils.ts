@@ -18,10 +18,6 @@ export function asUint8Array(
   length?: number,
 ): Uint8Array {
   return ArrayBuffer.isView(data) ?
-      new Uint8Array(
-        data.buffer,
-        data.byteOffset + offset,
-        length ?? data.byteLength,
-      )
+      new Uint8Array(data.buffer, data.byteOffset + offset, length)
     : new Uint8Array(data, offset, length)
 }

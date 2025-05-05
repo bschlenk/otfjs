@@ -2,23 +2,23 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import { Font, NameId } from 'otfjs'
 
-import { HasFont } from '../../types/has-font'
-import { sizeToSTring } from '../../utils/bytes'
-import { useClearFont, useFont } from '../font-context'
-import { FontIcon } from '../font-icon/font-icon'
-import { IconButton } from '../icon-button/icon-button'
-import { IconBack } from '../icons/icon-back'
-import { IconLink } from '../icons/icon-link'
-import { Text } from '../text'
+import { useFont } from '../font-context'
 import { TABLE_MAP } from './font-view.utils'
 
 import styles from './font-view.module.css'
+import {
+  FontViewMode,
+  FontViewProvider,
+  useFontViewState,
+} from './font-view-context'
+import { Head } from './components/head'
 
 interface FontViewProps {
   font: Font
 }
 
 export function FontView({ font }: FontViewProps) {
+  const state = useFontViewState()
   const [tag, setTag] = useState(() =>
     font.hasTable('glyf') ? 'glyf'
     : font.hasTable('head') ? 'head'
@@ -26,40 +26,50 @@ export function FontView({ font }: FontViewProps) {
   )
 
   return (
-    <div className={styles.root}>
-      <Head tag={tag} />
-      <Sidebar tag={tag} setTag={setTag} />
-      <TableView tag={tag} />
-    </div>
+    <FontViewProvider value={state}>
+      <div className={styles.root}>
+        <Head tag={tag} />
+        {state.mode === FontViewMode.Inspect ?
+          <InspectMode tag={tag} setTag={setTag} />
+        : state.mode === FontViewMode.Type ?
+          <TypeMode />
+        : null}
+      </div>
+    </FontViewProvider>
   )
 }
 
-function Head({ tag }: { tag: string }) {
+function InspectMode({
+  tag,
+  setTag,
+}: {
+  tag: string
+  setTag: React.Dispatch<React.SetStateAction<string>>
+}) {
+  return (
+    <>
+      <Sidebar tag={tag} setTag={setTag} />
+      <TableView tag={tag} />
+    </>
+  )
+}
+
+function TypeMode() {
   const font = useFont()
-  const clearFont = useClearFont()
-  const name = font.getName(NameId.FontFamilyName)!
+  const fontFamily = font.getName(NameId.FontFamilyName)
 
   return (
-    <div className={styles.head}>
-      <div className="flex items-center">
-        <IconButton onClick={clearFont}>
-          <IconBack />
-        </IconButton>
-        <FontIcon name={name} size={64} />
+    <>
+      <Sidebar tag="type" setTag={() => {}} />
+      <div className={styles.tableView}>
+        <textarea
+          autoFocus
+          defaultValue={fontFamily!}
+          style={{ fontFamily }}
+          className="block h-full w-full resize-none text-2xl"
+        />
       </div>
-      <div className="flex flex-col justify-center">
-        <FontName font={font} />
-        <div className="flex space-x-2">
-          <FileSize font={font} />
-          <GlyphCount font={font} />
-        </div>
-      </div>
-      <div className="ml-auto">
-        <DocLink tag={tag}>
-          {tag} <IconLink className="inline" />
-        </DocLink>
-      </div>
-    </div>
+    </>
   )
 }
 
@@ -98,42 +108,5 @@ function TableView({ tag }: { tag: string }) {
     <div className={styles.tableView}>
       {TableComponent && <TableComponent font={font} />}
     </div>
-  )
-}
-
-function FontName({ font }: HasFont) {
-  const name = font.getName(NameId.FontFamilyName)
-  return <h1 className="text-lg">{name}</h1>
-}
-
-function GlyphCount({ font }: HasFont) {
-  return <Text.Tertiary>{font.numGlyphs} Glyphs</Text.Tertiary>
-}
-
-function FileSize({ font }: HasFont) {
-  return (
-    <Text.Tertiary title={`${font.size} Bytes`}>
-      {sizeToSTring(font.size)}
-    </Text.Tertiary>
-  )
-}
-
-function DocLink({
-  tag,
-  children,
-}: {
-  tag: string
-  children: React.ReactNode
-}) {
-  const url = `https://learn.microsoft.com/en-us/typography/opentype/spec/${tag}`
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="text-md inline-block px-2 py-4 text-[var(--color-text)]"
-    >
-      {children}
-    </a>
   )
 }

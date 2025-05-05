@@ -21,6 +21,12 @@
   align-items: center;
 }
 
+.headSection {
+  display: flex;
+  align-items: center;
+  flex: 1 0 0;
+}
+
 .sidebar {
   grid-area: sidebar;
   border-right: 1px solid var(--color-border);

@@ -5,7 +5,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { Font, isWoff2 } from 'otfjs'
+import { Font, isWoff2, NameId } from 'otfjs'
 
 import { HasChildren } from '../types/has-children'
 import { noop } from '../utils/noop'
@@ -54,9 +54,19 @@ export function useClearFont() {
 export function useLoadFont() {
   const setFont = useSetFont()
 
-  return useCallback((buff: ArrayBuffer) => {
+  return useCallback(async (buff: ArrayBuffer) => {
     // TODO: some kind of toast on failure?
-    void readFont(new Uint8Array(buff)).then(setFont)
+    try {
+      const font = await readFont(new Uint8Array(buff))
+      setFont(font)
+
+      const fontName = font.getName(NameId.FontFamilyName)!
+      const newFont = new FontFace(fontName, buff)
+      await newFont.load()
+      document.fonts.add(newFont)
+    } catch (e) {
+      console.error('Failed to load font', e)
+    }
   }, [])
 }
 
