@@ -67,6 +67,11 @@ export class Font {
     this.#tableCache = createCache((tag: string) => this.readTable(tag))
   }
 
+  /** The underlying Uint8Array used to construct this font. */
+  public get data() {
+    return this.#data
+  }
+
   /** The size of the font file in bytes. */
   public get size(): number {
     return this.#data.length

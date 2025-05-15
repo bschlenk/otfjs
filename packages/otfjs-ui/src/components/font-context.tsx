@@ -5,10 +5,11 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { Font, isWoff2 } from 'otfjs'
+import { Font } from 'otfjs'
 
 import { HasChildren } from '../types/has-children'
 import { noop } from '../utils/noop'
+import { fetchFont } from '../utils/fetch-font'
 
 interface FontContextValue {
   font: Font | null
@@ -31,7 +32,8 @@ export function useFont() {
 
   if (!font) {
     throw new Error(
-      'No font set. Either call useFontOrNull instead or ensure this part of the subtree is only rendered when a font is set.',
+      'No font set. Either call useFontOrNull instead or ensure this ' +
+        'part of the subtree is only rendered when a font is set.',
     )
   }
 
@@ -51,20 +53,16 @@ export function useClearFont() {
   return useCallback(() => setFont(null), [])
 }
 
-export function useLoadFont() {
+export function useFetchFont() {
   const setFont = useSetFont()
 
-  return useCallback((buff: ArrayBuffer) => {
-    // TODO: some kind of toast on failure?
-    void readFont(new Uint8Array(buff)).then(setFont)
+  return useCallback(async (url: string) => {
+    try {
+      const font = await fetchFont(url)
+      setFont(font)
+    } catch (e) {
+      // TODO: some kind of toast on failure?
+      console.error('Failed to load font', e)
+    }
   }, [])
-}
-
-async function readFont(buff: Uint8Array) {
-  if (isWoff2(buff)) {
-    const woff2 = await import('otfjs/woff2')
-    buff = woff2.decodeWoff2(buff)
-  }
-
-  return new Font(buff)
 }

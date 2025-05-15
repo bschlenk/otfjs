@@ -15,12 +15,14 @@ export interface FontGridProps {
   fonts: typeof import('../../fonts.json')
   filter?: string
   onChange: (fontUrl: string) => void
+  onBeforeChange: (fontUrl: string) => void
 }
 
 export const FontGrid = memo(function FontGrid({
   fonts,
   filter,
   onChange,
+  onBeforeChange,
 }: FontGridProps) {
   const ref = useRef<HTMLDivElement>(null)
   const getColumns = useColumns(ref)
@@ -39,8 +41,13 @@ export const FontGrid = memo(function FontGrid({
       role="grid"
       aria-label="Fonts"
       className={styles.root}
+      onPointerDown={(e) => {
+        const url = fontUrlFromEvent(e)
+        if (!url) return
+        onBeforeChange(url)
+      }}
       onClick={(e) => {
-        const url = (e.target as CellEl).getAttribute('data-url')
+        const url = fontUrlFromEvent(e)
         if (!url) return
         onChange(url)
       }}
@@ -260,4 +267,8 @@ function useColumns(ref: React.RefObject<HTMLDivElement | null>) {
 
     return count
   }
+}
+
+function fontUrlFromEvent(e: React.SyntheticEvent) {
+  return (e.target as CellEl).getAttribute('data-url')
 }
