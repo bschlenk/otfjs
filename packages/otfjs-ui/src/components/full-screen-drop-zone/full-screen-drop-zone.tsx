@@ -2,10 +2,10 @@ import { useRef, useState } from 'react'
 
 import { HasChildren } from '../../types/has-children'
 import { preventDefault } from '../../utils/event'
-import { useFetchFont } from '../font-context'
+import { useLoadFont } from '../font-context'
 
 export function FullScreenDropZone({ children }: HasChildren) {
-  const loadFont = useFetchFont()
+  const loadFont = useLoadFont()
   const [dragover, setDragover] = useState(false)
   const enterCount = useRef(0)
 
@@ -20,12 +20,15 @@ export function FullScreenDropZone({ children }: HasChildren) {
       onDragLeave={() => {
         if (--enterCount.current === 0) setDragover(false)
       }}
-      onDrop={(e) => {
+      onDrop={async (e) => {
+        e.preventDefault()
+
         enterCount.current = 0
         setDragover(false)
 
-        e.preventDefault()
-        void e.dataTransfer.files[0].arrayBuffer().then(loadFont)
+        const buffer = await e.dataTransfer.files[0].arrayBuffer()
+        const data = new Uint8Array(buffer)
+        await loadFont(data)
       }}
     >
       {children}
