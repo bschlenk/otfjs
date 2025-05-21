@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import clsx from 'clsx'
 import { Font, NameId } from 'otfjs'
 
 import { FontContext, useFont } from '../font-context'
 import { Head } from './components/head'
+import { TableViewContext } from './font-view.hooks'
 import { TABLE_MAP } from './font-view.utils'
 
 import styles from './font-view.module.css'
@@ -92,10 +93,13 @@ function Overview() {
 function TableView({ tag }: { tag: string }) {
   const font = useFont()
   const TableComponent = TABLE_MAP[tag]
+  const ref = useRef<HTMLDivElement>(null)
 
   return (
-    <div className={styles.tableView}>
-      {TableComponent && <TableComponent font={font} />}
+    <div ref={ref} className={styles.tableView}>
+      <TableViewContext value={ref}>
+        {TableComponent && <TableComponent font={font} />}
+      </TableViewContext>
     </div>
   )
 }
