@@ -1,0 +1,8 @@
+.head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  height: 97px;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+}

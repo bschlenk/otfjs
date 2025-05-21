@@ -1,15 +1,9 @@
 import { useState } from 'react'
-import { Link, useRouter } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { Font, NameId } from 'otfjs'
 
-import { HasFont } from '../../types/has-font'
-import { sizeToSTring } from '../../utils/bytes'
 import { FontContext, useFont } from '../font-context'
-import { FontIcon } from '../font-icon/font-icon'
-import { IconBack } from '../icons/icon-back'
-import { IconLink } from '../icons/icon-link'
-import { Text } from '../text'
+import { Head } from './components/head'
 import { TABLE_MAP } from './font-view.utils'
 
 import styles from './font-view.module.css'
@@ -19,80 +13,78 @@ interface FontViewProps {
 }
 
 export function FontView({ font }: FontViewProps) {
-  const [tag, setTag] = useState(() =>
-    font.hasTable('glyf') ? 'glyf'
-    : font.hasTable('head') ? 'head'
-    : font.tables[0],
-  )
+  const [tab, setTab] = useState('overview')
 
   return (
     <FontContext value={font}>
       <div className={styles.root}>
-        <Head tag={tag} />
-        <Sidebar tag={tag} setTag={setTag} />
-        <TableView tag={tag} />
+        <Sidebar tab={tab} setTab={setTab} />
+        <View tab={tab} />
       </div>
     </FontContext>
   )
 }
 
-function Head({ tag }: { tag: string }) {
-  const font = useFont()
-  const router = useRouter()
-  const name = font.getName(NameId.FontFamilyName)!
-
-  const handleBack = (e: React.MouseEvent) => {
-    e.preventDefault()
-    router.history.back()
-  }
-
+function Sidebar({
+  tab,
+  setTab,
+}: {
+  tab: string
+  setTab: React.Dispatch<React.SetStateAction<string>>
+}) {
   return (
-    <div className={styles.head}>
-      <div className="flex items-center">
-        <Link to="/" onClick={handleBack}>
-          <IconBack />
-        </Link>
-        <FontIcon name={name} size={64} />
-      </div>
-      <div className="flex flex-col justify-center">
-        <FontName font={font} />
-        <div className="flex space-x-2">
-          <FileSize font={font} />
-          <GlyphCount font={font} />
-        </div>
-      </div>
-      <div className="ml-auto">
-        <DocLink tag={tag}>
-          {tag} <IconLink className="inline" />
-        </DocLink>
-      </div>
+    <div className={styles.sidebar}>
+      <Head className="mb-2" />
+      <Tabs tab={tab} setTab={setTab} />
     </div>
   )
 }
 
-function Sidebar({
-  tag,
-  setTag,
-}: {
-  tag: string
-  setTag: React.Dispatch<React.SetStateAction<string>>
-}) {
+function Tabs({ tab, setTab }: { tab: string; setTab: (tab: string) => void }) {
   const font = useFont()
 
   return (
-    <div className={styles.sidebar}>
+    <div className={styles.tabs}>
       <ul>
+        <li>
+          <button
+            className={clsx({ [styles.active]: tab === 'overview' })}
+            onClick={() => setTab('overview')}
+          >
+            Overview
+          </button>
+        </li>
         {font.tables.map((table) => (
           <li key={table}>
             <button
-              className={clsx({ [styles.active]: tag === table })}
-              onClick={() => setTag(table)}
+              className={clsx({ [styles.active]: tab === table })}
+              onClick={() => setTab(table)}
             >
               {TABLE_MAP[table] ? table : '🚧 ' + table}
             </button>
           </li>
         ))}
       </ul>
+    </div>
+  )
+}
+
+function View({ tab }: { tab: string }) {
+  return tab === 'overview' ? <Overview /> : <TableView tag={tab} />
+}
+
+function Overview() {
+  const font = useFont()
+  const fontFamily = font.getName(NameId.FontFamilyName)
+
+  return (
+    <div className={styles.tableView}>
+      <textarea
+        autoFocus
+        defaultValue={fontFamily!}
+        style={{ fontFamily }}
+        className="block h-full w-full resize-none bg-[var(--color-bg)] p-2 text-2xl"
+      />
     </div>
   )
 }
@@ -105,42 +97,5 @@ function TableView({ tag }: { tag: string }) {
     <div className={styles.tableView}>
       {TableComponent && <TableComponent font={font} />}
     </div>
-  )
-}
-
-function FontName({ font }: HasFont) {
-  const name = font.getName(NameId.FontFamilyName)
-  return <h1 className="text-lg">{name}</h1>
-}
-
-function GlyphCount({ font }: HasFont) {
-  return <Text.Tertiary>{font.numGlyphs} Glyphs</Text.Tertiary>
-}
-
-function FileSize({ font }: HasFont) {
-  return (
-    <Text.Tertiary title={`${font.size} Bytes`}>
-      {sizeToSTring(font.size)}
-    </Text.Tertiary>
-  )
-}
-
-function DocLink({
-  tag,
-  children,
-}: {
-  tag: string
-  children: React.ReactNode
-}) {
-  const url = `https://learn.microsoft.com/en-us/typography/opentype/spec/${tag}`
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="text-md inline-block px-2 py-4 text-(--color-text)"
-    >
-      {children}
-    </a>
   )
 }
