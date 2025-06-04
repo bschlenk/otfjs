@@ -3,4 +3,6 @@
 import { run } from '../dist/bin/otf.js'
 
 const code = await run()
-process.exit(code)
+if (code) {
+  process.exit(code)
+}

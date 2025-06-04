@@ -24,7 +24,9 @@
   "dependencies": {
     "@bschlenk/mat": "^0.0.11",
     "@bschlenk/vec": "^0.0.7",
-    "himalaya": "^1.1.1",
+    "dom-serializer": "^2.0.0",
+    "domhandler": "^5.0.3",
+    "htmlparser2": "^10.0.0",
     "otfjs": "workspace:*",
     "svgo": "4.0.0-rc.1"
   },

@@ -1,9 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { Element, parse, stringify } from 'himalaya'
-
 import { stripExt } from '../lib/cli.js'
+import { parseSvg, stringifySvg, type Element } from '../lib/svg.js'
 
 export function run(args: string[]) {
   const [dir, outDir, complexPath] = args
@@ -11,12 +10,15 @@ export function run(args: string[]) {
   const files = fs.readdirSync(dir)
   const complexIds: string[] = []
 
+  fs.mkdirSync(outDir, { recursive: true })
+  fs.mkdirSync(path.dirname(complexPath), { recursive: true })
+
   const stream = fs.createWriteStream(previewFile)
   stream.write('<svg xmlns="http://www.w3.org/2000/svg">\n')
 
   for (const file of files) {
     const data = fs.readFileSync(path.join(dir, file), 'utf-8')
-    const svg = parse(data)[0] as Element
+    const svg = parseSvg(data)[0] as Element | null
 
     if (!svg) {
       console.error('Invalid SVG:', file)
@@ -29,7 +31,7 @@ export function run(args: string[]) {
     // because symbols can't reference internal ids.
     {
       const defs = svg.children.find(
-        (child) => child.type === 'element' && child.tagName === 'defs',
+        (child) => child.type === 'tag' && child.name === 'defs',
       )
 
       if (defs) {
@@ -39,13 +41,12 @@ export function run(args: string[]) {
       }
     }
 
-    const viewBox = svg.attributes.find((attr) => attr.key === 'viewBox')!
-    const id = { key: 'id', value: fileId }
+    const viewBox = svg.attribs['viewBox']!
 
-    svg.attributes = [id, viewBox]
-    svg.tagName = 'symbol'
+    svg.attribs = { id: fileId, viewBox }
+    svg.name = 'symbol'
 
-    stream.write(stringify([svg]))
+    stream.write(stringifySvg([svg]))
     stream.write('\n')
   }
 
