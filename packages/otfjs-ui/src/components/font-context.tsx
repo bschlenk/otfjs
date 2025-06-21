@@ -9,7 +9,7 @@ import { Font } from 'otfjs'
 
 import { HasChildren } from '../types/has-children'
 import { noop } from '../utils/noop'
-import { fetchFont } from '../utils/fetch-font'
+import { fetchFont, loadFont } from '../utils/fetch-font'
 
 interface FontContextValue {
   font: Font | null
@@ -59,6 +59,20 @@ export function useFetchFont() {
   return useCallback(async (url: string) => {
     try {
       const font = await fetchFont(url)
+      setFont(font)
+    } catch (e) {
+      // TODO: some kind of toast on failure?
+      console.error('Failed to load font', e)
+    }
+  }, [])
+}
+
+export function useLoadFont() {
+  const setFont = useSetFont()
+
+  return useCallback(async (data: Uint8Array) => {
+    try {
+      const font = await loadFont(data)
       setFont(font)
     } catch (e) {
       // TODO: some kind of toast on failure?

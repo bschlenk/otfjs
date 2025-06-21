@@ -11,19 +11,22 @@ export async function fetchFont(fontUrl: string) {
   let fontPromise = CACHE.get(fontUrl)
 
   if (!fontPromise) {
-    fontPromise = loadFont(fontUrl)
+    fontPromise = fetchFontInternal(fontUrl)
     CACHE.set(fontUrl, fontPromise)
   }
 
   return fontPromise
 }
 
-async function loadFont(fontUrl: string) {
+async function fetchFontInternal(fontUrl: string) {
   const req = await fetch(fontUrl)
-  const data = new Uint8Array(await req.arrayBuffer())
+  const data = await req.bytes()
+  return loadFont(data)
+}
+
+export async function loadFont(data: Uint8Array) {
   const font = await readFont(data)
   await loadFontForUse(font)
-
   return font
 }
 
