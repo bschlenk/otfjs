@@ -20,7 +20,7 @@ export async function fetchFont(fontUrl: string) {
 
 async function fetchFontInternal(fontUrl: string) {
   const req = await fetch(fontUrl)
-  const data = new Uint8Array(await req.arrayBuffer())
+  const data = await req.bytes()
   return loadFont(data)
 }
 

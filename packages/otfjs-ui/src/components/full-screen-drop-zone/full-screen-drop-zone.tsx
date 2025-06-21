@@ -26,8 +26,7 @@ export function FullScreenDropZone({ children }: HasChildren) {
         enterCount.current = 0
         setDragover(false)
 
-        const buffer = await e.dataTransfer.files[0].arrayBuffer()
-        const data = new Uint8Array(buffer)
+        const data = await e.dataTransfer.files[0].bytes()
         await loadFont(data)
       }}
     >
