@@ -14,6 +14,8 @@
   "dependencies": {
     "@bschlenk/mat": "^0.0.11",
     "@bschlenk/vec": "^0.0.7",
+    "@tanstack/react-router": "^1.123.0",
+    "@tanstack/react-router-devtools": "^1.123.0",
     "clsx": "^2.1.1",
     "otfjs": "workspace:^",
     "react": "^19.1.0",
