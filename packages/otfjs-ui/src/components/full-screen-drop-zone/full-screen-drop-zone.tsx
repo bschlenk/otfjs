@@ -2,12 +2,14 @@ import { useRef, useState } from 'react'
 
 import { HasChildren } from '../../types/has-children'
 import { preventDefault } from '../../utils/event'
-// import { useFetchFont } from '../font-context'
+import { useNavigate } from '@tanstack/react-router'
+import { readFont } from '../../utils/fetch-font'
 
 export function FullScreenDropZone({ children }: HasChildren) {
   // const loadFont = useFetchFont()
   const [dragover, setDragover] = useState(false)
   const enterCount = useRef(0)
+  const navigate = useNavigate()
 
   return (
     <div
@@ -27,8 +29,13 @@ export function FullScreenDropZone({ children }: HasChildren) {
         setDragover(false)
 
         e.preventDefault()
-        // const data = await e.dataTransfer.files[0].bytes()
-        // await loadFont(data)
+
+        e.dataTransfer.files[0]
+          .bytes()
+          .then(readFont)
+          .then((font) => {
+            navigate({ to: '/', state: { font } })
+          })
       }}
     >
       {children}

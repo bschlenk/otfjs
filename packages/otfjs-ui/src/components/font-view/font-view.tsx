@@ -6,13 +6,13 @@ import { HasFont } from '../../types/has-font'
 import { sizeToSTring } from '../../utils/bytes'
 import { FontContext, useFont } from '../font-context'
 import { FontIcon } from '../font-icon/font-icon'
-import { IconButton } from '../icon-button/icon-button'
 import { IconBack } from '../icons/icon-back'
 import { IconLink } from '../icons/icon-link'
 import { Text } from '../text'
 import { TABLE_MAP } from './font-view.utils'
 
 import styles from './font-view.module.css'
+import { Link } from '@tanstack/react-router'
 
 interface FontViewProps {
   font: Font
@@ -43,9 +43,9 @@ function Head({ tag }: { tag: string }) {
   return (
     <div className={styles.head}>
       <div className="flex items-center">
-        <IconButton onClick={clearFont}>
+        <Link to="/">
           <IconBack />
-        </IconButton>
+        </Link>
         <FontIcon name={name} size={64} />
       </div>
       <div className="flex flex-col justify-center">

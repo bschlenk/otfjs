@@ -26,21 +26,22 @@ export async function fetchFontByName(fontName: string) {
   return fetchFont(url)
 }
 
-async function loadFont(fontUrl: string) {
-  const req = await fetch(fontUrl)
-  const data = new Uint8Array(await req.arrayBuffer())
-  const font = await readFont(data)
-  await loadFontForUse(font)
-  return font
-}
-
-async function readFont(data: Uint8Array) {
+export async function readFont(data: Uint8Array) {
   if (isWoff2(data)) {
     const woff2 = await import('otfjs/woff2')
     data = woff2.decodeWoff2(data)
   }
 
-  return new Font(data)
+  const font = new Font(data)
+  await loadFontForUse(font)
+
+  return font
+}
+
+async function loadFont(fontUrl: string) {
+  const req = await fetch(fontUrl)
+  const data = new Uint8Array(await req.arrayBuffer())
+  return readFont(data)
 }
 
 async function loadFontForUse(font: Font) {

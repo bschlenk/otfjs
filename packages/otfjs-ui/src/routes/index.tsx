@@ -1,10 +1,14 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouterState } from '@tanstack/react-router'
 import { NoFontView } from '../components/no-font-view/no-font-view'
+import { FontView } from '../components/font-view/font-view'
 
 export const Route = createFileRoute('/')({
   component: Index,
 })
 
 function Index() {
-  return <NoFontView />
+  const routerState = useRouterState()
+  const font = routerState.location.state.font
+
+  return font ? <FontView font={font} /> : <NoFontView />
 }
