@@ -1,4 +1,6 @@
 import { Font, isWoff2, NameId } from 'otfjs'
+import fonts from '../fonts.json'
+import { GOOGLE_FONT_DOMAIN } from '../constants'
 
 const CACHE = new Map<string, Promise<Font>>()
 
@@ -11,20 +13,22 @@ export async function fetchFont(fontUrl: string) {
   let fontPromise = CACHE.get(fontUrl)
 
   if (!fontPromise) {
-    fontPromise = fetchFontInternal(fontUrl)
+    fontPromise = loadFont(fontUrl)
     CACHE.set(fontUrl, fontPromise)
   }
 
   return fontPromise
 }
 
-async function fetchFontInternal(fontUrl: string) {
-  const req = await fetch(fontUrl)
-  const data = await req.bytes()
-  return loadFont(data)
+export async function fetchFontByName(fontName: string) {
+  const pathname = (fonts as Record<string, string>)[fontName]
+  const url = new URL(pathname, GOOGLE_FONT_DOMAIN).toString()
+  return fetchFont(url)
 }
 
-export async function loadFont(data: Uint8Array) {
+async function loadFont(fontUrl: string) {
+  const req = await fetch(fontUrl)
+  const data = new Uint8Array(await req.arrayBuffer())
   const font = await readFont(data)
   await loadFontForUse(font)
   return font

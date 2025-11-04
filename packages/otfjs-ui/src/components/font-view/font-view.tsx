@@ -4,7 +4,7 @@ import { Font, NameId } from 'otfjs'
 
 import { HasFont } from '../../types/has-font'
 import { sizeToSTring } from '../../utils/bytes'
-import { useClearFont, useFont } from '../font-context'
+import { FontContext, useFont } from '../font-context'
 import { FontIcon } from '../font-icon/font-icon'
 import { IconButton } from '../icon-button/icon-button'
 import { IconBack } from '../icons/icon-back'
@@ -26,17 +26,18 @@ export function FontView({ font }: FontViewProps) {
   )
 
   return (
-    <div className={styles.root}>
-      <Head tag={tag} />
-      <Sidebar tag={tag} setTag={setTag} />
-      <TableView tag={tag} />
-    </div>
+    <FontContext value={font}>
+      <div className={styles.root}>
+        <Head tag={tag} />
+        <Sidebar tag={tag} setTag={setTag} />
+        <TableView tag={tag} />
+      </div>
+    </FontContext>
   )
 }
 
 function Head({ tag }: { tag: string }) {
   const font = useFont()
-  const clearFont = useClearFont()
   const name = font.getName(NameId.FontFamilyName)!
 
   return (

@@ -1,12 +1,12 @@
 import { memo, useEffect, useRef } from 'react'
 
-import { GOOGLE_FONT_DOMAIN } from '../../constants'
 import { handle } from '../../shortcuts/shortcuts'
 import { addListener } from '../../utils/event'
 import { entriesFilterMap } from '../../utils/object'
 import { FontIcon } from '../font-icon/font-icon'
 
 import styles from './font-grid.module.css'
+import { Link } from '@tanstack/react-router'
 
 type GridEl = HTMLDivElement
 type CellEl = HTMLButtonElement
@@ -14,15 +14,12 @@ type CellEl = HTMLButtonElement
 export interface FontGridProps {
   fonts: typeof import('../../fonts.json')
   filter?: string
-  onChange: (fontUrl: string) => void
   onBeforeChange: (fontUrl: string) => void
 }
 
 export const FontGrid = memo(function FontGrid({
   fonts,
   filter,
-  onChange,
-  onBeforeChange,
 }: FontGridProps) {
   const ref = useRef<HTMLDivElement>(null)
   const getColumns = useColumns(ref)
@@ -41,16 +38,6 @@ export const FontGrid = memo(function FontGrid({
       role="grid"
       aria-label="Fonts"
       className={styles.root}
-      onPointerDown={(e) => {
-        const url = fontUrlFromEvent(e)
-        if (!url) return
-        onBeforeChange(url)
-      }}
-      onClick={(e) => {
-        const url = fontUrlFromEvent(e)
-        if (!url) return
-        onChange(url)
-      }}
       onKeyDown={(e) => {
         const key = handle(e)
 
@@ -200,8 +187,8 @@ export const FontGrid = memo(function FontGrid({
       {entriesFilterMap(
         fonts,
         (family) => !filter || searchCompare(family, filter),
-        (family, pathname) => (
-          <FontTile key={family} name={family} url={urlForFont(pathname)} />
+        (family, _) => (
+          <FontTile key={family} name={family} />
         ),
       )}
     </div>
@@ -210,29 +197,26 @@ export const FontGrid = memo(function FontGrid({
 
 interface FontTileProps {
   name: string
-  url: string
 }
 
-function FontTile({ name, url }: FontTileProps) {
+function FontTile({ name }: FontTileProps) {
   return (
-    <button
-      role="gridcell"
-      tabIndex={-1}
-      className={styles.button}
-      data-url={url}
-    >
-      <div className={styles.tile}>
-        <FontIcon name={name} size={100} />
-      </div>
-      <span className="text-center text-[var(--color-text-secondary)]">
-        {name}
-      </span>
-    </button>
+    <div role="gridcell" tabIndex={-1}>
+      <Link
+        to="/fonts/$name"
+        params={{ name }}
+        preload="intent"
+        className={styles.button}
+      >
+        <div className={styles.tile}>
+          <FontIcon name={name} size={100} />
+        </div>
+        <span className="text-center text-[var(--color-text-secondary)]">
+          {name}
+        </span>
+      </Link>
+    </div>
   )
-}
-
-function urlForFont(pathname: string) {
-  return new URL(pathname, GOOGLE_FONT_DOMAIN).toString()
 }
 
 function searchCompare(haystack: string, needle: string): boolean {
@@ -267,8 +251,4 @@ function useColumns(ref: React.RefObject<HTMLDivElement | null>) {
 
     return count
   }
-}
-
-function fontUrlFromEvent(e: React.SyntheticEvent) {
-  return (e.target as CellEl).getAttribute('data-url')
 }
