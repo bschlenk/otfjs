@@ -22,7 +22,7 @@ This runs `tsc --watch` in the `otfjs` package and `vite dev` in the `otfjs-ui` 
 
 - [Microsoft OpenType font spec][otf-spec]
 
-  This spec is very well written and easy to undersatnd. It's made working on this project a delight.
+  This spec is very well written and easy to understand. It's made working on this project a delight.
 
 - [Apple TrueType reference manual][tt-manual]
 
