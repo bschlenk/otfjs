@@ -2,7 +2,10 @@ import { Font, isWoff2, NameId } from 'otfjs'
 import fonts from '../fonts.json'
 import { GOOGLE_FONT_DOMAIN } from '../constants'
 
-const CACHE = new Map<string, Promise<Font>>()
+let nextFontId = 0
+
+const FONT_BY_URL_CACHE = new Map<string, Promise<Font>>()
+const FONT_BY_ID_CACHE = new Map<number, Font>()
 
 /**
  * Fetches and loads a font from the given URL. If the font has already been
@@ -10,11 +13,11 @@ const CACHE = new Map<string, Promise<Font>>()
  * promise is returned.
  */
 export async function fetchFont(fontUrl: string) {
-  let fontPromise = CACHE.get(fontUrl)
+  let fontPromise = FONT_BY_URL_CACHE.get(fontUrl)
 
   if (!fontPromise) {
     fontPromise = loadFont(fontUrl)
-    CACHE.set(fontUrl, fontPromise)
+    FONT_BY_URL_CACHE.set(fontUrl, fontPromise)
   }
 
   return fontPromise
@@ -36,6 +39,17 @@ export async function readFont(data: Uint8Array) {
   await loadFontForUse(font)
 
   return font
+}
+
+export async function readAndCacheFont(data: Uint8Array) {
+  const font = await readFont(data)
+  const id = nextFontId++
+  FONT_BY_ID_CACHE.set(id, font)
+  return id
+}
+
+export function getFontById(fontId: number) {
+  return FONT_BY_ID_CACHE.get(fontId) ?? null
 }
 
 async function loadFont(fontUrl: string) {

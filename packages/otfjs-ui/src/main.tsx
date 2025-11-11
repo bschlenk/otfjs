@@ -10,7 +10,6 @@ import './main.css'
 
 import { routeTree } from './route-tree.gen'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
-import { type Font } from 'otfjs'
 
 const router = createRouter({ routeTree })
 
@@ -20,7 +19,7 @@ declare module '@tanstack/react-router' {
   }
 
   interface HistoryState {
-    font: Font | null
+    fontId: number | null
   }
 }
 

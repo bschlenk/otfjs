@@ -3,7 +3,7 @@ import { useRef, useState } from 'react'
 import { HasChildren } from '../../types/has-children'
 import { preventDefault } from '../../utils/event'
 import { useNavigate } from '@tanstack/react-router'
-import { readFont } from '../../utils/fetch-font'
+import { readAndCacheFont } from '../../utils/fetch-font'
 
 export function FullScreenDropZone({ children }: HasChildren) {
   // const loadFont = useFetchFont()
@@ -32,9 +32,9 @@ export function FullScreenDropZone({ children }: HasChildren) {
 
         e.dataTransfer.files[0]
           .bytes()
-          .then(readFont)
-          .then((font) => {
-            navigate({ to: '/', state: { font } })
+          .then(readAndCacheFont)
+          .then((fontId) => {
+            navigate({ to: '/', state: { fontId } })
           })
       }}
     >
