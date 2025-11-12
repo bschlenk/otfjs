@@ -6,7 +6,6 @@ import { useNavigate } from '@tanstack/react-router'
 import { readAndCacheFont } from '../../utils/fetch-font'
 
 export function FullScreenDropZone({ children }: HasChildren) {
-  // const loadFont = useFetchFont()
   const [dragover, setDragover] = useState(false)
   const enterCount = useRef(0)
   const navigate = useNavigate()

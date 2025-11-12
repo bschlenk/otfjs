@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 
 import { handle } from '../../shortcuts/shortcuts'
 import { addListener } from '../../utils/event'
@@ -6,13 +6,16 @@ import { entriesFilterMap } from '../../utils/object'
 import { FontIcon } from '../font-icon/font-icon'
 
 import styles from './font-grid.module.css'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
+import { Fonts } from '../../types/fonts'
+import { createElementWalkerFactory } from '../../utils/dom'
+import { useTimeoutAfterSet } from '../../hooks/use-timeout-after-set'
 
 type GridEl = HTMLDivElement
 type CellEl = HTMLButtonElement
 
 export interface FontGridProps {
-  fonts: typeof import('../../fonts.json')
+  fonts: Fonts
   filter?: string
   onBeforeChange: (fontUrl: string) => void
 }
@@ -23,14 +26,25 @@ export const FontGrid = memo(function FontGrid({
 }: FontGridProps) {
   const ref = useRef<HTMLDivElement>(null)
   const getColumns = useColumns(ref)
+  const router = useRouter()
 
-  useEffect(() => {
-    // set the first element to have tabIndex = 0
-    const el = ref.current!
-    if (el.firstElementChild) {
-      ;(el.firstElementChild as CellEl).tabIndex = 0
-    }
-  })
+  const preloadLink = (el: HTMLAnchorElement) => {
+    router.preloadRoute({
+      to: '/fonts/$name',
+      params: { name: el.getAttribute('data-name')! },
+    })
+  }
+
+  const setFocusedAnchor = useTimeoutAfterSet(400, preloadLink)
+
+  const createWalker = useMemo(
+    () =>
+      createElementWalkerFactory(
+        ref,
+        (node): node is HTMLAnchorElement => node.tagName === 'A',
+      ),
+    [],
+  )
 
   return (
     <div
@@ -40,69 +54,60 @@ export const FontGrid = memo(function FontGrid({
       className={styles.root}
       onKeyDown={(e) => {
         const key = handle(e)
-
-        const focus = (el: CellEl | null) => {
-          if (!el) return
-          el.tabIndex = 0
-          el.focus()
-        }
-
-        const t = e.target as CellEl
-        const ct = e.currentTarget as GridEl
+        const t = e.target as HTMLAnchorElement
 
         switch (key.value) {
           case 'H':
           case '⌃P':
           case 'ArrowLeft': {
-            key.accept(() => {
-              const el = t.previousElementSibling as CellEl | null
-              focus(el)
+            return key.accept(() => {
+              const walker = createWalker(t)
+              walker.previousNode()?.focus()
             })
-            break
           }
 
           case 'L':
           case '⌃N':
           case 'ArrowRight': {
-            key.accept(() => {
-              const el = t.nextElementSibling! as CellEl | null
-              focus(el)
+            return key.accept(() => {
+              const walker = createWalker(t)
+              walker.nextNode()?.focus()
             })
-            break
           }
 
           case 'K':
           case '⌃U':
           case 'ArrowUp': {
-            key.accept(() => {
-              let el: CellEl | null = t
-              for (let i = 0; el && i < getColumns(); ++i) {
-                el = el.previousElementSibling! as CellEl | null
+            return key.accept(() => {
+              const walker = createWalker(t)
+              let el: HTMLAnchorElement | null = t
+              for (let i = 0; i < getColumns(); ++i) {
+                el = walker.previousNode()
               }
-              focus(el)
+              el?.focus()
             })
-            break
           }
 
           case 'J':
           case '⌃D':
           case 'ArrowDown': {
-            key.accept(() => {
-              let el: CellEl | null = t
-              for (let i = 0; el && i < getColumns(); ++i) {
-                el = el.nextElementSibling! as CellEl | null
+            return key.accept(() => {
+              const walker = createWalker(t)
+              let el: HTMLAnchorElement | null = t
+              for (let i = 0; i < getColumns(); ++i) {
+                el = walker.nextNode()
               }
-              focus(el)
+              el?.focus()
             })
-            break
           }
 
           case 'PageUp': {
-            key.accept(() => {
+            return key.accept(() => {
               let rowsToMove = 0
-              const c = Array.from(ct.children)
+              const c = Array.from(ref.current!.children)
+              const cell = t.parentElement!
               const cols = getColumns()
-              let i = c.findIndex((el) => el === t)
+              let i = c.findIndex((el) => el === cell)
               i = i - (i % cols)
               let el = c[i] as CellEl
               while (0 <= i - cols * (rowsToMove + 1)) {
@@ -114,17 +119,17 @@ export const FontGrid = memo(function FontGrid({
                 if (box.top < 0) break
               }
 
-              focus(el)
+              el.querySelector('a')!.focus()
             })
-            break
           }
 
           case 'PageDown': {
-            key.accept(() => {
+            return key.accept(() => {
               let rowsToMove = 0
-              const c = Array.from(ct.children)
+              const c = Array.from(ref.current!.children)
+              const cell = t.parentElement!
               const cols = getColumns()
-              let i = c.findIndex((el) => el === t)
+              let i = c.findIndex((el) => el === cell)
               i = i - (i % cols)
               let el = c[i] as CellEl
               while (c.length > i + cols * (rowsToMove + 1)) {
@@ -136,51 +141,59 @@ export const FontGrid = memo(function FontGrid({
                 if (box.bottom > window.innerHeight) break
               }
 
-              focus(el)
+              el.querySelector('a')!.focus()
             })
-            break
           }
 
           case 'Home': {
             // Moves focus to the first cell in the row that contains focus.
-            key.accept(() => {
-              const c = Array.from(ct.children)
-              const i = c.findIndex((el) => el === t)
+            return key.accept(() => {
+              const c = Array.from(ref.current!.children)
+              const cell = t.parentElement!
+              const i = c.findIndex((el) => el === cell)
               const cols = getColumns()
-              focus(c[i - (i % cols)] as CellEl)
+              ;(c[i - (i % cols)] as CellEl).querySelector('a')!.focus()
             })
-            break
           }
 
           case 'End': {
             // Moves focus to the last cell in the row that contains focus.
-            key.accept(() => {
-              const c = Array.from(ct.children)
-              const i = c.findIndex((el) => el === t)
+            return key.accept(() => {
+              const c = Array.from(ref.current!.children)
+              const cell = t.parentElement!
+              const i = c.findIndex((el) => el === cell)
               const cols = getColumns()
-              focus(c[i - (i % cols) + cols - 1] as CellEl)
+              ;(c[i - (i % cols) + cols - 1] as CellEl)
+                .querySelector('a')!
+                .focus()
             })
-            break
           }
 
           case '⌃Home': {
-            key.accept(() => {
-              focus(ct.firstElementChild as CellEl)
+            return key.accept(() => {
+              ;(ref.current!.firstElementChild as CellEl)
+                .querySelector('a')!
+                .focus()
             })
-            break
           }
 
           case '⌃End': {
-            key.accept(() => {
-              focus(ct.lastElementChild as CellEl)
+            return key.accept(() => {
+              ;(ref.current!.lastElementChild as CellEl)
+                .querySelector('a')!
+                .focus()
             })
-            break
           }
         }
       }}
+      onPointerDown={(e) => {
+        if (e.target instanceof HTMLAnchorElement) {
+          preloadLink(e.target)
+        }
+      }}
       onFocus={(e) => {
-        if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) {
-          ;(e.relatedTarget as HTMLElement).tabIndex = -1
+        if (e.target instanceof HTMLAnchorElement) {
+          setFocusedAnchor(e.target)
         }
       }}
     >
@@ -201,11 +214,11 @@ interface FontTileProps {
 
 function FontTile({ name }: FontTileProps) {
   return (
-    <div role="gridcell" tabIndex={-1}>
+    <div role="gridcell">
       <Link
         to="/fonts/$name"
+        data-name={name}
         params={{ name }}
-        preload="intent"
         className={styles.button}
       >
         <div className={styles.tile}>
@@ -226,11 +239,13 @@ function searchCompare(haystack: string, needle: string): boolean {
 function useColumns(ref: React.RefObject<HTMLDivElement | null>) {
   const columns = useRef<number | null>(null)
 
-  useEffect(() => {
-    return addListener(window, 'resize', () => {
-      columns.current = null
-    })
-  }, [])
+  useEffect(
+    () =>
+      addListener(window, 'resize', () => {
+        columns.current = null
+      }),
+    [],
+  )
 
   return () => {
     if (columns.current !== null) return columns.current
