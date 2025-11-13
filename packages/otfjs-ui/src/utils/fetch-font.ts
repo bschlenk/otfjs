@@ -1,6 +1,11 @@
 import { Font, isWoff2, NameId } from 'otfjs'
+import fonts from '../fonts.json'
+import { GOOGLE_FONT_DOMAIN } from '../constants'
 
-const CACHE = new Map<string, Promise<Font>>()
+let nextFontId = 0
+
+const FONT_BY_URL_CACHE = new Map<string, Promise<Font>>()
+const FONT_BY_ID_CACHE = new Map<number, Font>()
 
 /**
  * Fetches and loads a font from the given URL. If the font has already been
@@ -8,35 +13,49 @@ const CACHE = new Map<string, Promise<Font>>()
  * promise is returned.
  */
 export async function fetchFont(fontUrl: string) {
-  let fontPromise = CACHE.get(fontUrl)
+  let fontPromise = FONT_BY_URL_CACHE.get(fontUrl)
 
   if (!fontPromise) {
-    fontPromise = fetchFontInternal(fontUrl)
-    CACHE.set(fontUrl, fontPromise)
+    fontPromise = loadFont(fontUrl)
+    FONT_BY_URL_CACHE.set(fontUrl, fontPromise)
   }
 
   return fontPromise
 }
 
-async function fetchFontInternal(fontUrl: string) {
-  const req = await fetch(fontUrl)
-  const data = await req.bytes()
-  return loadFont(data)
+export async function fetchFontByName(fontName: string) {
+  const pathname = (fonts as Record<string, string>)[fontName]
+  const url = new URL(pathname, GOOGLE_FONT_DOMAIN).toString()
+  return fetchFont(url)
 }
 
-export async function loadFont(data: Uint8Array) {
-  const font = await readFont(data)
-  await loadFontForUse(font)
-  return font
-}
-
-async function readFont(data: Uint8Array) {
+export async function readFont(data: Uint8Array) {
   if (isWoff2(data)) {
     const woff2 = await import('otfjs/woff2')
     data = woff2.decodeWoff2(data)
   }
 
-  return new Font(data)
+  const font = new Font(data)
+  await loadFontForUse(font)
+
+  return font
+}
+
+export async function readAndCacheFont(data: Uint8Array) {
+  const font = await readFont(data)
+  const id = nextFontId++
+  FONT_BY_ID_CACHE.set(id, font)
+  return id
+}
+
+export function getFontById(fontId: number) {
+  return FONT_BY_ID_CACHE.get(fontId) ?? null
+}
+
+async function loadFont(fontUrl: string) {
+  const req = await fetch(fontUrl)
+  const data = await req.bytes()
+  return readFont(data)
 }
 
 async function loadFontForUse(font: Font) {
