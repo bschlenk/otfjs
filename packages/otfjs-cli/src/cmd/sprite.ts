@@ -1,8 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { ElementType } from 'htmlparser2'
+
 import { stripExt } from '../lib/cli.js'
-import { type Element,parseSvg, stringifySvg } from '../lib/svg.js'
+import { type Element, parseSvg, stringifySvg } from '../lib/svg.js'
 
 export function run(args: string[]) {
   const [dir, outDir, complexPath] = args
@@ -31,7 +33,7 @@ export function run(args: string[]) {
     // because symbols can't reference internal ids.
     {
       const defs = svg.children.find(
-        (child) => child.type === 'tag' && child.name === 'defs',
+        (child) => child.type === ElementType.Tag && child.name === 'defs',
       )
 
       if (defs) {
