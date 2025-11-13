@@ -1,6 +1,7 @@
 import { createFileRoute, useRouterState } from '@tanstack/react-router'
-import { NoFontView } from '../components/no-font-view/no-font-view'
+
 import { FontView } from '../components/font-view/font-view'
+import { NoFontView } from '../components/no-font-view/no-font-view'
 import { getFontById } from '../utils/fetch-font'
 
 export const Route = createFileRoute('/')({

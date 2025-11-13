@@ -35,6 +35,7 @@ export function createElementWalker(
   root: Element,
   predicate: (node: Element) => boolean,
 ): ElementWalker<any> {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return document.createTreeWalker(
     root,
     1 /* NodeFilter.SHOW_ELEMENT */,

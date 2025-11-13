@@ -1,4 +1,5 @@
 import fs from 'fs/promises'
+
 import { decodeWoff2 } from 'otfjs/woff2'
 
 import { changeExt, usage } from '../lib/cli.js'

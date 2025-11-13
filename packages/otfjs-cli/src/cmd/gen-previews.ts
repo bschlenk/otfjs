@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
-import { Font, GlyphEnriched, glyphToColorSvg, type Node } from 'otfjs'
 import path from 'path'
+
+import { Font, GlyphEnriched, glyphToColorSvg, type Node } from 'otfjs'
 import { optimize } from 'svgo'
 
 import { eat } from '../lib/cli.js'

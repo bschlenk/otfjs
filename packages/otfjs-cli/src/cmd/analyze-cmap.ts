@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
-import { PlatformId } from 'otfjs'
 import path from 'path'
+
+import { PlatformId } from 'otfjs'
 
 import { loadFont } from '../lib/utils.js'
 

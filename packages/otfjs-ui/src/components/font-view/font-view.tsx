@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { Font, NameId } from 'otfjs'
 
@@ -12,7 +13,6 @@ import { Text } from '../text'
 import { TABLE_MAP } from './font-view.utils'
 
 import styles from './font-view.module.css'
-import { Link } from '@tanstack/react-router'
 
 interface FontViewProps {
   font: Font

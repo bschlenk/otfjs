@@ -1,22 +1,21 @@
 import { memo, useEffect, useMemo, useRef } from 'react'
+import { Link, useRouter } from '@tanstack/react-router'
 
+import { useTimeoutAfterSet } from '../../hooks/use-timeout-after-set'
 import { handle } from '../../shortcuts/shortcuts'
+import { Fonts } from '../../types/fonts'
+import { createElementWalkerFactory } from '../../utils/dom'
 import { addListener } from '../../utils/event'
 import { entriesFilterMap } from '../../utils/object'
 import { FontIcon } from '../font-icon/font-icon'
 
 import styles from './font-grid.module.css'
-import { Link, useRouter } from '@tanstack/react-router'
-import { Fonts } from '../../types/fonts'
-import { createElementWalkerFactory } from '../../utils/dom'
-import { useTimeoutAfterSet } from '../../hooks/use-timeout-after-set'
 
 type CellEl = HTMLButtonElement
 
 export interface FontGridProps {
   fonts: Fonts
   filter?: string
-  onBeforeChange: (fontUrl: string) => void
 }
 
 export const FontGrid = memo(function FontGrid({
@@ -28,7 +27,7 @@ export const FontGrid = memo(function FontGrid({
   const router = useRouter()
 
   const preloadLink = (el: HTMLAnchorElement) => {
-    router.preloadRoute({
+    void router.preloadRoute({
       to: '/fonts/$name',
       params: { name: el.getAttribute('data-name')! },
     })

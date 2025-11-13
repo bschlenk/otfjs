@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 async function bytes(this: Blob | Request | Response): Promise<Uint8Array> {
   return new Uint8Array(await this.arrayBuffer())
 }

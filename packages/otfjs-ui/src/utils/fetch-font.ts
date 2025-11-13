@@ -1,6 +1,7 @@
 import { Font, isWoff2, NameId } from 'otfjs'
-import fonts from '../fonts.json'
+
 import { GOOGLE_FONT_DOMAIN } from '../constants'
+import fonts from '../fonts.json'
 
 let nextFontId = 0
 

@@ -1,15 +1,14 @@
 import './polyfill'
 
 import { StrictMode } from 'react'
+import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { createRoot } from 'react-dom/client'
 
+import { routeTree } from './route-tree.gen'
 import { registerShortcuts } from './shortcuts/shortcuts'
 
 import './styles/colors.css'
 import './main.css'
-
-import { routeTree } from './route-tree.gen'
-import { createRouter, RouterProvider } from '@tanstack/react-router'
 
 const router = createRouter({ routeTree })
 

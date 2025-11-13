@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { stripExt } from '../lib/cli.js'
-import { parseSvg, stringifySvg, type Element } from '../lib/svg.js'
+import { type Element,parseSvg, stringifySvg } from '../lib/svg.js'
 
 export function run(args: string[]) {
   const [dir, outDir, complexPath] = args
@@ -41,7 +41,7 @@ export function run(args: string[]) {
       }
     }
 
-    const viewBox = svg.attribs['viewBox']!
+    const viewBox = svg.attribs.viewBox
 
     svg.attribs = { id: fileId, viewBox }
     svg.name = 'symbol'

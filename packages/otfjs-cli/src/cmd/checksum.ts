@@ -1,4 +1,5 @@
 import fs from 'fs/promises'
+
 import { computeChecksum } from 'otfjs'
 
 import { usage } from '../lib/cli.js'

@@ -1,6 +1,6 @@
-import { Parser } from 'htmlparser2'
-import { DomHandler, type ChildNode, type Element } from 'domhandler'
 import render from 'dom-serializer'
+import { type ChildNode, DomHandler, type Element } from 'domhandler'
+import { Parser } from 'htmlparser2'
 
 export type { Element }
 

@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
 import fs from 'fs/promises'
+
 import { Font } from 'otfjs'
 
 export async function loadFont(name: string) {

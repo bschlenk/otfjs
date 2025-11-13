@@ -37,7 +37,7 @@ export function useZoomer(
     Object.assign(ctxRef.current, ctx)
   }, [ctx])
 
-  useEffect(() => okzoomer(ref.current!, ctxRef.current), [])
+  useEffect(() => okzoomer(ref.current, ctxRef.current), [])
 }
 
 // https://danburzo.ro/dom-gestures/
