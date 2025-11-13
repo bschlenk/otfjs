@@ -132,7 +132,7 @@ function DocLink({
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="text-md inline-block px-2 py-4 text-[var(--color-text)]"
+      className="text-md inline-block px-2 py-4 text-(--color-text)"
     >
       {children}
     </a>

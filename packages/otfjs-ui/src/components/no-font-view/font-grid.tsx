@@ -224,7 +224,7 @@ function FontTile({ name }: FontTileProps) {
         <div className={styles.tile}>
           <FontIcon name={name} size={100} />
         </div>
-        <span className="text-center text-[var(--color-text-secondary)]">
+        <span className="text-center text-(--color-text-secondary)">
           {name}
         </span>
       </Link>

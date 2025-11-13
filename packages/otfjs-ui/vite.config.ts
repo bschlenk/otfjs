@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { defineConfig } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,6 +12,7 @@ export default defineConfig({
       generatedRouteTree: './src/route-tree.gen.ts',
     }),
     react(),
+    tailwindcss(),
   ],
   build: {
     // based on figma's browser support matrix
