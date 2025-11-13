@@ -27,8 +27,6 @@ export function FullScreenDropZone({ children }: HasChildren) {
         enterCount.current = 0
         setDragover(false)
 
-        e.preventDefault()
-
         e.dataTransfer.files[0]
           .bytes()
           .then(readAndCacheFont)

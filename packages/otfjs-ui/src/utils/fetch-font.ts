@@ -54,7 +54,7 @@ export function getFontById(fontId: number) {
 
 async function loadFont(fontUrl: string) {
   const req = await fetch(fontUrl)
-  const data = new Uint8Array(await req.arrayBuffer())
+  const data = await req.bytes()
   return readFont(data)
 }
 
