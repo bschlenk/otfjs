@@ -1,4 +1,4 @@
-export const EMPTY_U8_ARRAY = new Uint8Array(0)
+export const EMPTY_U8_ARRAY: Uint8Array = new Uint8Array(0)
 
 export function toHex(n: number, bytes = 4) {
   let h = n.toString(16)

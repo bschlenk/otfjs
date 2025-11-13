@@ -60,7 +60,7 @@ async function loadFont(fontUrl: string) {
 
 async function loadFontForUse(font: Font) {
   const fontName = font.getName(NameId.FontFamilyName)!
-  const newFont = new FontFace(fontName, font.data)
+  const newFont = new FontFace(fontName, font.data as Uint8Array<ArrayBuffer>)
   await newFont.load()
   document.fonts.add(newFont)
 }

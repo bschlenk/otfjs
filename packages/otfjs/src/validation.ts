@@ -1,4 +1,4 @@
-import { asUint8Array } from './buffer/utils.js'
+import { asDataView, asUint8Array } from './buffer/utils.js'
 import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
 import type { Header, TableRecord } from './tables/header.js'
@@ -49,10 +49,10 @@ export function validateHeader(header: Header) {
   }
 }
 
-export function validateTable(data: ArrayBuffer, table: TableRecord) {
+export function validateTable(data: Uint8Array, table: TableRecord) {
   const padding = getAlignPadding(table.length, 4)
   const length = table.length + padding
-  const view = new DataView(data, table.offset, length)
+  const view = asDataView(data, table.offset, length)
 
   let checksum = computeChecksum(asUint8Array(data, table.offset, length))
   if (table.tag === 'head') {

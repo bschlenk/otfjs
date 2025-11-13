@@ -2,6 +2,7 @@ import { computeChecksum } from '../checksum.js'
 import { to2dot14 } from '../utils/bit.js'
 import { toLongDateTime } from '../utils/date.js'
 import { assert, getAlignPadding } from '../utils/utils.js'
+import { asUint8Array } from './utils.js'
 
 export class Writer {
   public data: ArrayBuffer
@@ -119,8 +120,8 @@ export class Writer {
     if (p) this.skip(p)
   }
 
-  public buffer(val: Writer | ArrayBuffer, align = 0) {
-    const buff = val instanceof Writer ? val.toBuffer() : new Uint8Array(val)
+  public buffer(val: Writer | ArrayBufferLike | ArrayBufferView, align = 0) {
+    const buff = val instanceof Writer ? val.toBuffer() : asUint8Array(val)
     let length = buff.byteLength
     if (length === 0) return
 

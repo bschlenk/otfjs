@@ -11,7 +11,6 @@ import { Fonts } from '../../types/fonts'
 import { createElementWalkerFactory } from '../../utils/dom'
 import { useTimeoutAfterSet } from '../../hooks/use-timeout-after-set'
 
-type GridEl = HTMLDivElement
 type CellEl = HTMLButtonElement
 
 export interface FontGridProps {
