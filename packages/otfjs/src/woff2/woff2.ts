@@ -8,6 +8,7 @@ import { assert, error, sum } from '../utils/utils.js'
 import { writeGlyfTable } from '../writers/glyf.js'
 import { writeLocaTable } from '../writers/loca.js'
 import { decodeGlyfTransform0 } from './glyf-transform.js'
+import { decodeHmtxTransform1 } from './hmtx-transform.js'
 import { KNOWN_TAGS } from './tags.js'
 import { WOFF2_SIGNATURE } from './utils.js'
 
@@ -75,6 +76,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
   // Store metadata needed for hmtx reconstruction
   let xMins: number[] = []
   let numGlyphs = 0
+  let hmtxTransformBuff: Uint8Array | null = null
 
   for (const table of tableInfo) {
     const buff = asUint8Array(data, offset, table.length)
@@ -122,7 +124,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
 
         // We need to defer hmtx decoding until after glyf is decoded
         // Store the buffer for later processing
-        tables['__hmtx_transform'] = buff
+        hmtxTransformBuff = buff
         break
       }
 
@@ -136,10 +138,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
   }
   
   // Now process hmtx if it was encountered
-  if (tables['__hmtx_transform']) {
-    const hmtxTransformBuff = tables['__hmtx_transform']
-    delete tables['__hmtx_transform']
-    
+  if (hmtxTransformBuff !== null) {
     // We need numHMetrics from hhea table
     if (!tables.hhea) {
       error('hhea table required for hmtx reconstruction')
@@ -149,7 +148,6 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
     const hheaView = new DataView(tables.hhea.buffer, tables.hhea.byteOffset, tables.hhea.byteLength)
     const numHMetrics = hheaView.getUint16(34)
     
-    const { decodeHmtxTransform1 } = await import('./hmtx-transform.js')
     tables.hmtx = decodeHmtxTransform1(hmtxTransformBuff, numGlyphs, numHMetrics, xMins)
   }
 

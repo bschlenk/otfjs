@@ -2,11 +2,6 @@ import { Reader } from '../buffer/reader.js'
 import { Writer } from '../buffer/writer.js'
 import { error } from '../utils/utils.js'
 
-interface HmtxTransformData {
-  advanceWidths: number[]
-  leftSideBearings: number[]
-}
-
 /**
  * Decode WOFF2 hmtx transform 1.
  * 
