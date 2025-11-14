@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { Font, NameId } from 'otfjs'
 
@@ -38,12 +38,18 @@ export function FontView({ font }: FontViewProps) {
 
 function Head({ tag }: { tag: string }) {
   const font = useFont()
+  const router = useRouter()
   const name = font.getName(NameId.FontFamilyName)!
+
+  const handleBack = (e: React.MouseEvent) => {
+    e.preventDefault()
+    router.history.back()
+  }
 
   return (
     <div className={styles.head}>
       <div className="flex items-center">
-        <Link to="/">
+        <Link to="/" onClick={handleBack}>
           <IconBack />
         </Link>
         <FontIcon name={name} size={64} />
