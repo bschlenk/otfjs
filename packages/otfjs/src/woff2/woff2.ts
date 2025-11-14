@@ -71,6 +71,10 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
   let locaEncountered = false
   let offset = 0
   const tables: Record<string, Uint8Array> = {}
+  
+  // Store metadata needed for hmtx reconstruction
+  let xMins: number[] = []
+  let numGlyphs = 0
 
   for (const table of tableInfo) {
     const buff = asUint8Array(data, offset, table.length)
@@ -94,6 +98,10 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
         const { glyphs, indexFormat } = decodeGlyfTransform0(buff)
         tables[table.tag] = writeGlyfTable(glyphs, loca)
         tables.loca = writeLocaTable(loca, indexFormat)
+        
+        // Extract x_mins for hmtx reconstruction
+        numGlyphs = glyphs.length
+        xMins = glyphs.map((g) => g.xMin)
 
         break
       }
@@ -112,8 +120,9 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
           error(`Unrecognized hmtx transform ${table.transform}`)
         }
 
-        error('TODO: decode hmtx transform 1')
-        // decodeHmtxTransform0(``)
+        // We need to defer hmtx decoding until after glyf is decoded
+        // Store the buffer for later processing
+        tables['__hmtx_transform'] = buff
         break
       }
 
@@ -124,6 +133,24 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
 
   if (loca.length && !locaEncountered) {
     error('Expected entry for loca table after glyf table')
+  }
+  
+  // Now process hmtx if it was encountered
+  if (tables['__hmtx_transform']) {
+    const hmtxTransformBuff = tables['__hmtx_transform']
+    delete tables['__hmtx_transform']
+    
+    // We need numHMetrics from hhea table
+    if (!tables.hhea) {
+      error('hhea table required for hmtx reconstruction')
+    }
+    
+    // Read numHMetrics from hhea table (at offset 34)
+    const hheaView = new DataView(tables.hhea.buffer, tables.hhea.byteOffset, tables.hhea.byteLength)
+    const numHMetrics = hheaView.getUint16(34)
+    
+    const { decodeHmtxTransform1 } = await import('./hmtx-transform.js')
+    tables.hmtx = decodeHmtxTransform1(hmtxTransformBuff, numGlyphs, numHMetrics, xMins)
   }
 
   return buildFont({ sfntVersion: flavor, tables })
