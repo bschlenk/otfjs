@@ -115,6 +115,9 @@ function arrayView(tag: string, bytesPerItem?: number) {
   }
 }
 
+const INDENT = new Set(['FDEF', 'IF', 'ELSE'])
+const OUTDENT = new Set(['ENDF', 'ELSE', 'EIF'])
+
 function InstructionView({ data }: { data: Uint8Array }) {
   const instructions = disassemble(data)
   let max = instructions[instructions.length - 1].pc
@@ -125,31 +128,42 @@ function InstructionView({ data }: { data: Uint8Array }) {
     padMultiplier += 1
   }
 
+  let indent = 0
   let nextColor = 0
+
   return (
     <ol style={{ margin: padMultiplier ? padMultiplier * 10 : undefined }}>
-      {instructions.map((inst, i) => (
-        <Fragment key={i}>
-          <li
-            value={inst.pc}
-            style={{
-              color:
-                inst.name === 'FDEF' ? makeColor(nextColor)
-                : inst.name === 'ENDF' ? makeColor(nextColor++)
-                : undefined,
-            }}
-          >
-            {inst.name}
-          </li>
-          {inst.args && (
-            <ol>
-              {inst.args.map((arg, j) => (
-                <li key={j}>{arg}</li>
-              ))}
-            </ol>
-          )}
-        </Fragment>
-      ))}
+      {instructions.map((inst, i) => {
+        if (OUTDENT.has(inst.name)) --indent
+
+        const item = (
+          <Fragment key={i}>
+            <li
+              value={inst.pc}
+              style={{
+                marginLeft: indent * 16,
+                color:
+                  inst.name === 'FDEF' ? makeColor(nextColor)
+                  : inst.name === 'ENDF' ? makeColor(nextColor++)
+                  : undefined,
+              }}
+            >
+              {inst.name}
+            </li>
+            {inst.args && (
+              <ol style={{ marginLeft: (indent + 1) * 16 }}>
+                {inst.args.map((arg, j) => (
+                  <li key={j}>{arg}</li>
+                ))}
+              </ol>
+            )}
+          </Fragment>
+        )
+
+        if (INDENT.has(inst.name)) ++indent
+
+        return item
+      })}
     </ol>
   )
 }
