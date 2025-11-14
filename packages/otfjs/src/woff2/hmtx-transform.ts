@@ -23,8 +23,10 @@ export function decodeHmtxTransform1(
   // Read flags byte
   const flags = view.u8()
 
-  // Bit 0: has_proportional_lsbs (0 means use x_mins for proportional glyphs)
-  // Bit 1: has_monospace_lsbs (0 means use x_mins for monospace glyphs)
+  // Bit 0: if 0, proportional LSBs are present in the data (read them)
+  //        if 1, proportional LSBs are omitted (use x_mins instead)
+  // Bit 1: if 0, monospace LSBs are present in the data (read them)
+  //        if 1, monospace LSBs are omitted (use x_mins instead)
   // Bits 2-7: reserved, must be 0
   const hasProportionalLsbs = (flags & 0x01) === 0
   const hasMonospaceLsbs = (flags & 0x02) === 0
