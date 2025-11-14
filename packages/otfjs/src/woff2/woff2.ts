@@ -1,7 +1,7 @@
 import decompress from 'brotli/decompress.js'
 
 import { Reader } from '../buffer/reader.js'
-import { asUint8Array } from '../buffer/utils.js'
+import { asDataView, asUint8Array } from '../buffer/utils.js'
 import { asSfntVersion } from '../enum-utils.js'
 import { buildFont } from '../font-builder.js'
 import { assert, error, sum } from '../utils/utils.js'
@@ -145,7 +145,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
     }
     
     // Read numHMetrics from hhea table (at offset 34)
-    const hheaView = new DataView(tables.hhea.buffer, tables.hhea.byteOffset, tables.hhea.byteLength)
+    const hheaView = asDataView(tables.hhea)
     const numHMetrics = hheaView.getUint16(34)
     
     tables.hmtx = decodeHmtxTransform1(hmtxTransformBuff, numGlyphs, numHMetrics, xMins)
