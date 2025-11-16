@@ -5,7 +5,7 @@ import { asUint8Array } from './buffer/utils.js'
 import { Cache, createCache } from './cache.js'
 import { NameId, PlatformId } from './enums.js'
 import { compositeGlyphComponentMatrix } from './glyph-utils.js'
-import { CffTable, readCffTable } from './tables/cff.js'
+import { CffTable, parseCharString, readCffTable } from './tables/cff.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { ColrTable, readColrTable } from './tables/colr.js'
 import { readTableAsI16Array, readTableAsU8Array } from './tables/common.js'
@@ -22,7 +22,7 @@ import { MaxpTable, readMaxpTable } from './tables/maxp.js'
 import { NameTable, readNameTable } from './tables/name.js'
 import { OS2Table, readOS2Table } from './tables/os-2.js'
 import { PostTable, readPostTable } from './tables/post.js'
-import type { GlyphSimple } from './types.js'
+import type { GlyphSimple, Point } from './types.js'
 import { toObject } from './utils/utils.js'
 import { validateHeader, validateTable } from './validation.js'
 
@@ -131,6 +131,12 @@ export class Font {
   }
 
   public getGlyph(id: number): GlyphEnriched {
+    // Check if this is a CFF font
+    if (this.hasTable('CFF ')) {
+      return this.getCffGlyph(id)
+    }
+
+    // TrueType font (glyf table)
     const loca = this.getTable('loca')
     const hmtx = this.getTable('hmtx')
 
@@ -192,6 +198,61 @@ export class Font {
     }
 
     return fullGlyph
+  }
+
+  private getCffGlyph(id: number): GlyphEnriched {
+    const cff = this.getTable('CFF ')
+    const hmtx = this.getTable('hmtx')
+
+    const { advanceWidth } =
+      hmtx.longHorMetrics[id] ??
+      hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
+
+    if (!cff.charStrings || id >= cff.charStrings.length) {
+      // Return empty glyph
+      return {
+        type: 'simple',
+        id,
+        xMin: 0,
+        yMin: 0,
+        xMax: 0,
+        yMax: 0,
+        endPtsOfContours: [],
+        instructions: new Uint8Array(0),
+        points: [],
+        contoursOverlap: false,
+        advanceWidth,
+      }
+    }
+
+    const charString = cff.charStrings[id]
+    const defaultWidthX = cff.privateDict?.defaultWidthX?.[0] ?? 0
+    const nominalWidthX = cff.privateDict?.nominalWidthX?.[0] ?? 0
+
+    const path = parseCharString(
+      charString,
+      cff.globalSubrIndex,
+      cff.localSubrIndex,
+      defaultWidthX,
+      nominalWidthX,
+    )
+
+    // Convert CFF path commands to Point[] format used by TrueType
+    const { points, endPtsOfContours } = convertCffPathToPoints(path.commands)
+
+    return {
+      type: 'simple',
+      id,
+      xMin: path.xMin,
+      yMin: path.yMin,
+      xMax: path.xMax,
+      yMax: path.yMax,
+      endPtsOfContours,
+      instructions: new Uint8Array(0),
+      points,
+      contoursOverlap: false,
+      advanceWidth: path.width || advanceWidth,
+    }
   }
 
   public *glyphs() {
@@ -265,4 +326,54 @@ export class Font {
         return readTableAsU8Array(view)
     }
   }
+}
+
+// Helper function to convert CFF path commands to Point[] format
+function convertCffPathToPoints(
+  commands: (
+    | { type: 'moveTo'; x: number; y: number }
+    | { type: 'lineTo'; x: number; y: number }
+    | {
+        type: 'curveTo'
+        x1: number
+        y1: number
+        x2: number
+        y2: number
+        x: number
+        y: number
+      }
+  )[],
+): { points: Point[]; endPtsOfContours: number[] } {
+  const points: Point[] = []
+  const endPtsOfContours: number[] = []
+  let contourStart = 0
+
+  for (const cmd of commands) {
+
+    if (cmd.type === 'moveTo') {
+      // Start a new contour
+      if (points.length > contourStart) {
+        endPtsOfContours.push(points.length - 1)
+        contourStart = points.length
+      }
+      // Don't add moveTo as a point, it just sets position
+      continue
+    } else if (cmd.type === 'lineTo') {
+      points.push({ x: cmd.x, y: cmd.y, onCurve: true })
+    } else if (cmd.type === 'curveTo') {
+      // Add cubic bezier curve as two quadratic curves
+      // For CFF, we have cubic curves (x1, y1, x2, y2, x, y)
+      // We'll approximate with control points
+      points.push({ x: cmd.x1, y: cmd.y1, onCurve: false })
+      points.push({ x: cmd.x2, y: cmd.y2, onCurve: false })
+      points.push({ x: cmd.x, y: cmd.y, onCurve: true })
+    }
+  }
+
+  // Close the last contour
+  if (points.length > contourStart) {
+    endPtsOfContours.push(points.length - 1)
+  }
+
+  return { points, endPtsOfContours }
 }
