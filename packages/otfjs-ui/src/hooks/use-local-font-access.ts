@@ -4,6 +4,7 @@ export interface LocalFontData {
   family: string
   fullName: string
   postscriptName: string
+  style: string
   blob: () => Promise<Blob>
 }
 
@@ -38,9 +39,7 @@ export function useLocalFonts() {
       setLoading(true)
       setError(null)
       
-      // @ts-expect-error - queryLocalFonts is not in standard TypeScript definitions
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const availableFonts: LocalFontData[] = await window.queryLocalFonts()
+      const availableFonts: FontData[] = await window.queryLocalFonts()
       
       setFonts(availableFonts)
     } catch (err) {
