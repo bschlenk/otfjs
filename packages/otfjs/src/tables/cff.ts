@@ -2,10 +2,18 @@ import { Reader } from '../buffer/reader.js'
 import { highNibble, lowNibble } from '../utils/bit.js'
 import { assert, error } from '../utils/utils.js'
 
+// https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
+// https://adobe-type-tools.github.io/font-tech-notes/pdfs/5177.Type2.pdf
+
 export type CffTable = ReturnType<typeof readCffTable>
 
 const INVALID_DICT_VALUES = new Set([22, 23, 24, 25, 26, 27, 31, 255])
 
+/**
+ * Reads a CFF (Compact Font Format) table from the given view.
+ * Parses the header, name INDEX, Top DICT, strings INDEX, global subroutines,
+ * CharStrings, Private DICT, local subroutines, and charset.
+ */
 export function readCffTable(view: Reader) {
   const tableStart = view.offset
   const major = view.u8()
@@ -316,6 +324,16 @@ type PathCommand =
   | { type: 'lineTo'; x: number; y: number }
   | { type: 'curveTo'; x1: number; y1: number; x2: number; y2: number; x: number; y: number }
 
+/**
+ * Parses a Type 2 CharString program into a path with commands and bounds.
+ * Implements the stack-based interpreter for CFF CharStrings.
+ * @param charString The raw CharString bytes to parse
+ * @param globalSubrs Global subroutines INDEX (can be null)
+ * @param localSubrs Local subroutines INDEX (can be null)
+ * @param defaultWidthX Default width value from Private DICT
+ * @param nominalWidthX Nominal width value from Private DICT
+ * @returns A CharStringPath with commands, width, and bounding box
+ */
 export function parseCharString(
   charString: Uint8Array,
   globalSubrs: Uint8Array[] | null,
