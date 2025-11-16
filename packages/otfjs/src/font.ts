@@ -208,6 +208,7 @@ export class Font {
       hmtx.longHorMetrics[id] ??
       hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
 
+    // Handle missing or out-of-bounds glyphs
     if (!cff.charStrings || id >= cff.charStrings.length) {
       // Return empty glyph
       return {
