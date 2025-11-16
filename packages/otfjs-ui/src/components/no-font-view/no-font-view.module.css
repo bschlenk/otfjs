@@ -5,6 +5,14 @@
   grid-template-columns: 26px 1fr auto 1fr 26px;
   grid-template-rows: auto 1fr;
   grid-template-areas:
-    '. . search . .'
+    '. . controls . .'
     'grid grid grid grid grid';
+}
+
+.controls {
+  grid-area: controls;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
 }
