@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { NameId } from 'otfjs'
 
 import { HasFont } from '../../../types/has-font'
-import { sizeToSTring as sizeToString } from '../../../utils/bytes'
+import { sizeToString } from '../../../utils/bytes'
 import { useFont } from '../../font-context'
 import { FontIcon } from '../../font-icon/font-icon'
 import { IconBack } from '../../icons/icon-back'
