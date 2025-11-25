@@ -16,6 +16,7 @@
     "@bschlenk/vec": "^0.0.8",
     "@tanstack/react-router": "^1.135.2",
     "@tanstack/react-router-devtools": "^1.135.2",
+    "@uiw/react-json-view": "2.0.0-alpha.39",
     "clsx": "^2.1.1",
     "otfjs": "workspace:^",
     "react": "^19.2.0",

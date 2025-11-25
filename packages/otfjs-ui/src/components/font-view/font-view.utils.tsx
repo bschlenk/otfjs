@@ -1,7 +1,8 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useState } from 'react'
 import { disassemble, Font } from 'otfjs'
 
 import { makeColor } from '../../utils/color'
+import { JsonView } from './components/json-view'
 import { GlyfView } from './glyf-view'
 
 import styles from './font-view.module.css'
@@ -27,33 +28,13 @@ export const TABLE_MAP: Record<string, React.ComponentType<{ font: Font }>> = {
   prep: instructionView('prep'),
 }
 
-function JsonView({
-  data,
-  replacements,
-}: {
-  data: unknown
-  replacements?: Record<string, (value: unknown) => any>
-}) {
-  const replacer = useMemo(() => {
-    if (!replacements) return undefined
-
-    return (key: string, value: any): any => {
-      const r = replacements[key]
-      if (r) return r(value)
-      return value
-    }
-  }, [replacements])
-
-  return <pre>{JSON.stringify(data, replacer, 2)}</pre>
-}
-
 function jsonView(
   tag: string,
   replacements?: Record<string, (value: any) => any>,
 ) {
   return ({ font }: { font: Font }) => {
     const table = font.getTable(tag)
-    return <JsonView data={table} replacements={replacements} />
+    return <JsonView data={table as object} replacements={replacements} />
   }
 }
 
