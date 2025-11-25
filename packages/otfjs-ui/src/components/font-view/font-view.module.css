@@ -1,32 +1,19 @@
 .root {
   display: grid;
-  grid:
-    'head head' 64px
-    'sidebar table' 1fr
-    / fit-content(100px) 1fr;
+  grid-template-columns: auto 1fr;
   height: 100%;
   overflow: hidden;
-
-  & > * {
-    min-width: 0;
-  }
-}
-
-.head {
-  grid-area: head;
-  display: flex;
-  gap: 16px;
-  box-sizing: border-box;
-  border-bottom: 1px solid var(--color-border);
-  align-items: center;
 }
 
 .sidebar {
-  grid-area: sidebar;
-  border-right: 1px solid var(--color-border);
-  padding-top: 8px;
   overflow: scroll;
+  width: 240px;
+  box-sizing: content-box;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg-sidebar);
+}
 
+.tabs {
   & ul {
     list-style: none;
     padding: 0;
@@ -63,7 +50,6 @@
 }
 
 .tableView {
-  grid-area: table;
   position: relative;
   overflow: scroll;
 }

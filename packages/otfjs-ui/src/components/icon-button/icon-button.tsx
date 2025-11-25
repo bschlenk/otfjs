@@ -1,5 +1,9 @@
+import clsx from 'clsx'
 import styles from './icon-button.module.css'
 
-export function IconButton(props: React.HTMLAttributes<HTMLButtonElement>) {
-  return <button {...props} className={styles.root} />
+export function IconButton({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLButtonElement>) {
+  return <button {...props} className={clsx(styles.root, className)} />
 }
