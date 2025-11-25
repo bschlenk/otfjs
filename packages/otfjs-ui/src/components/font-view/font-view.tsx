@@ -83,7 +83,7 @@ function Overview() {
       <textarea
         autoFocus
         defaultValue={fontFamily!}
-        style={{ fontFamily }}
+        style={{ fontFamily: `"${fontFamily}"` }}
         className="block h-full w-full resize-none bg-[var(--color-bg)] p-2 text-2xl"
       />
     </div>
