@@ -1,13 +1,14 @@
 import decompress from 'brotli/decompress.js'
 
 import { Reader } from '../buffer/reader.js'
-import { asUint8Array } from '../buffer/utils.js'
+import { asDataView, asUint8Array } from '../buffer/utils.js'
 import { asSfntVersion } from '../enum-utils.js'
 import { buildFont } from '../font-builder.js'
 import { assert, error, sum } from '../utils/utils.js'
 import { writeGlyfTable } from '../writers/glyf.js'
 import { writeLocaTable } from '../writers/loca.js'
 import { decodeGlyfTransform0 } from './glyf-transform.js'
+import { decodeHmtxTransform1 } from './hmtx-transform.js'
 import { KNOWN_TAGS } from './tags.js'
 import { WOFF2_SIGNATURE } from './utils.js'
 
@@ -71,6 +72,11 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
   let locaEncountered = false
   let offset = 0
   const tables: Record<string, Uint8Array> = {}
+  
+  // Store metadata needed for hmtx reconstruction
+  let xMins: number[] = []
+  let numGlyphs = 0
+  let hmtxTransformBuff: Uint8Array | null = null
 
   for (const table of tableInfo) {
     const buff = asUint8Array(data, offset, table.length)
@@ -94,6 +100,10 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
         const { glyphs, indexFormat } = decodeGlyfTransform0(buff)
         tables[table.tag] = writeGlyfTable(glyphs, loca)
         tables.loca = writeLocaTable(loca, indexFormat)
+        
+        // Extract x_mins for hmtx reconstruction
+        numGlyphs = glyphs.length
+        xMins = glyphs.map((g) => g.xMin)
 
         break
       }
@@ -112,8 +122,9 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
           error(`Unrecognized hmtx transform ${table.transform}`)
         }
 
-        error('TODO: decode hmtx transform 1')
-        // decodeHmtxTransform0(``)
+        // We need to defer hmtx decoding until after glyf is decoded
+        // Store the buffer for later processing
+        hmtxTransformBuff = buff
         break
       }
 
@@ -124,6 +135,20 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
 
   if (loca.length && !locaEncountered) {
     error('Expected entry for loca table after glyf table')
+  }
+  
+  // Now process hmtx if it was encountered
+  if (hmtxTransformBuff !== null) {
+    // We need numHMetrics from hhea table
+    if (!tables.hhea) {
+      error('hhea table required for hmtx reconstruction')
+    }
+    
+    // Read numHMetrics from hhea table (at offset 34)
+    const hheaView = asDataView(tables.hhea)
+    const numHMetrics = hheaView.getUint16(34)
+    
+    tables.hmtx = decodeHmtxTransform1(hmtxTransformBuff, numGlyphs, numHMetrics, xMins)
   }
 
   return buildFont({ sfntVersion: flavor, tables })
