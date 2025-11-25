@@ -17,11 +17,9 @@ export function Head({ className }: { className?: string }) {
 
   return (
     <div className={clsx(styles.head, className)}>
-      <div className="relative flex items-center overflow-hidden rounded-md bg-[var(--color-bg)]">
+      <div className="relative flex items-center overflow-hidden rounded-md bg-(--color-bg)">
         <FontIcon name={name} size={80} />
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:bg-[var(--color-bg)] hover:opacity-100">
-          <BackButton className="h-full w-full" />
-        </div>
+        <BackButton className="absolute inset-0 flex h-full w-full items-center justify-center opacity-0 hover:bg-(--color-bg) hover:opacity-100" />
       </div>
       <div className="flex flex-col justify-center">
         <FontName font={font} />
