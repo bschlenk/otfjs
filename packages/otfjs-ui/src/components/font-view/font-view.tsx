@@ -19,25 +19,11 @@ export function FontView({ font }: FontViewProps) {
   return (
     <FontContext value={font}>
       <div className={styles.root}>
-        <Sidebar tab={tab} setTab={setTab} />
+        <Head />
+        <Tabs tab={tab} setTab={setTab} />
         <View tab={tab} />
       </div>
     </FontContext>
-  )
-}
-
-function Sidebar({
-  tab,
-  setTab,
-}: {
-  tab: string
-  setTab: React.Dispatch<React.SetStateAction<string>>
-}) {
-  return (
-    <div className={styles.sidebar}>
-      <Head className="mb-2" />
-      <Tabs tab={tab} setTab={setTab} />
-    </div>
   )
 }
 
@@ -45,7 +31,7 @@ function Tabs({ tab, setTab }: { tab: string; setTab: (tab: string) => void }) {
   const font = useFont()
 
   return (
-    <div className={styles.tabs}>
+    <div className={`${styles.tabs} pt-2`}>
       <ul>
         <li>
           <button
