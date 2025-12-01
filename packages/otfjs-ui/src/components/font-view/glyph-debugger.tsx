@@ -123,18 +123,20 @@ export function GlyphDebugger({ glyph, font, upem }: GlyphDebuggerProps) {
               />
               <span>Debug Mode</span>
             </label>
-            {debugMode && (
+            {debugMode && (() => {
+              const isExecutionComplete = vm.pc >= (glyph.instructions?.length ?? 0);
+              return (
               <>
                 <button
                   onClick={stepInstruction}
-                  disabled={vm.pc >= (glyph.instructions?.length ?? 0)}
+                  disabled={isExecutionComplete}
                   className="rounded bg-blue-600 px-3 py-1 text-sm disabled:opacity-50 hover:bg-blue-500"
                 >
                   Step
                 </button>
                 <button
                   onClick={continueExecution}
-                  disabled={vm.pc >= (glyph.instructions?.length ?? 0)}
+                  disabled={isExecutionComplete}
                   className="rounded bg-green-600 px-3 py-1 text-sm disabled:opacity-50 hover:bg-green-500"
                 >
                   Continue
@@ -146,7 +148,7 @@ export function GlyphDebugger({ glyph, font, upem }: GlyphDebuggerProps) {
                   Reset
                 </button>
               </>
-            )}
+            )})()}
           </>
         )}
       </div>

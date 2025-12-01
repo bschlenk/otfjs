@@ -165,7 +165,7 @@ export function GlyphEditorEnhanced({ glyph, upem }: GlyphEditorEnhancedProps) {
               stroke="red"
               strokeWidth={0.5 / s}
             />
-            <line x1={0} y1={0} x2={upem} stroke="red" strokeWidth={0.5 / s} />
+            <line x1={0} y1={0} x2={upem} y2={0} stroke="red" strokeWidth={0.5 / s} />
             {s >= 0.075 && <circle cx={0} cy={0} r={4 / s} fill="blue" />}
             {s >= 0.075 && (
               <path d={d} stroke="var(--color-icon)" strokeWidth={1 / s} />
