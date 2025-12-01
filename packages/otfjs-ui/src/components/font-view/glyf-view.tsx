@@ -14,23 +14,76 @@ import {
 } from 'otfjs'
 
 import { rgbaToCss } from '../../utils/color'
+import { GlyphDebugger } from './glyph-debugger'
 import { GlyphEditor } from './glyph-editor'
+import { GlyphEditorEnhanced } from './glyph-editor-enhanced'
 
 export function GlyfView({ font }: { font: Font }) {
   const [glyf, setGlyf] = useState<number | null>(null)
+  const [view, setView] = useState<'simple' | 'enhanced' | 'debugger'>('simple')
   const head = font.getTable('head')
 
   if (!glyf) {
     return <AllGlyfView font={font} onClick={(i) => setGlyf(i)} />
   }
 
+  const glyph = font.getGlyph(glyf)
+
   return (
-    <>
-      <GlyphEditor glyph={font.getGlyph(glyf)} upem={head.unitsPerEm} />
-      <button className="absolute" onClick={() => setGlyf(null)}>
-        Back
-      </button>
-    </>
+    <div className="relative flex h-full flex-col">
+      <div className="flex items-center gap-2 border-b border-gray-700 bg-gray-800 p-2">
+        <button
+          className="rounded bg-gray-700 px-3 py-1 hover:bg-gray-600"
+          onClick={() => setGlyf(null)}
+        >
+          ← Back
+        </button>
+        <div className="mx-4 h-6 w-px bg-gray-600" />
+        <div className="flex gap-2">
+          <button
+            className={`rounded px-3 py-1 ${
+              view === 'simple'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 hover:bg-gray-600'
+            }`}
+            onClick={() => setView('simple')}
+          >
+            Simple View
+          </button>
+          <button
+            className={`rounded px-3 py-1 ${
+              view === 'enhanced'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 hover:bg-gray-600'
+            }`}
+            onClick={() => setView('enhanced')}
+          >
+            Coordinate Controls
+          </button>
+          <button
+            className={`rounded px-3 py-1 ${
+              view === 'debugger'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 hover:bg-gray-600'
+            }`}
+            onClick={() => setView('debugger')}
+          >
+            Hinting Debugger
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-hidden">
+        {view === 'simple' && (
+          <GlyphEditor glyph={glyph} upem={head.unitsPerEm} />
+        )}
+        {view === 'enhanced' && (
+          <GlyphEditorEnhanced glyph={glyph} upem={head.unitsPerEm} />
+        )}
+        {view === 'debugger' && (
+          <GlyphDebugger glyph={glyph} font={font} upem={head.unitsPerEm} />
+        )}
+      </div>
+    </div>
   )
 }
 
