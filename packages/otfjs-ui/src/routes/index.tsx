@@ -1,6 +1,6 @@
 import { createFileRoute, useRouterState } from '@tanstack/react-router'
 
-import { NoFontView } from '../components/font-list/font-list'
+import { FontList } from '../components/font-list/font-list'
 import { FontView } from '../components/font-view/font-view'
 import { getFontById } from '../utils/fetch-font'
 
@@ -17,5 +17,5 @@ function Index() {
     if (font) return <FontView font={font} />
   }
 
-  return <NoFontView />
+  return <FontList />
 }

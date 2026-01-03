@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { Font, NameId } from 'otfjs'
 
@@ -64,11 +64,19 @@ function Overview() {
   const font = useFont()
   const fontFamily = font.getName(NameId.FontFamilyName)
 
+  const value = `${fontFamily}\n\nThe quick brown fox jumps over the lazy dog.\n0123456789\n\n`
+
+  const ref = useCallback((el: HTMLTextAreaElement | null) => {
+    if (!el) return
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length)
+  }, [])
+
   return (
     <div className={styles.tableView}>
       <textarea
-        autoFocus
-        defaultValue={fontFamily!}
+        ref={ref}
+        defaultValue={value}
         style={{ fontFamily: `"${fontFamily}"` }}
         className="block h-full w-full resize-none bg-[var(--color-bg)] p-2 text-2xl"
       />

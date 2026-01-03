@@ -6,7 +6,7 @@ import { SearchBar } from './font-list.components/search-bar'
 
 import styles from './font-list.module.css'
 
-export function NoFontView() {
+export function FontList() {
   const [filter, setFilter] = useState('')
   const deferredSearch = useDeferredValue(filter)
 
