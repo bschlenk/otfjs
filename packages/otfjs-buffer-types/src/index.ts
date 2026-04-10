@@ -35,24 +35,24 @@ export type Const<T, U extends T> = U
  * At the type level this is just T[], so existing code that works with arrays
  * is unaffected.
  */
-export type Array<T, CountField extends string = string> = T[]
+export type CountedArray<T, CountField extends string = string> = T[]
 
 /**
- * Validate that all Array count fields in an interface reference an existing
- * field. Resolves to T if valid, never if not.
+ * Validate that all CountedArray count fields in an interface reference an
+ * existing field. Resolves to T if valid, never if not.
  *
  * Usage:
  *   interface HmtxTable {
  *     numberOfHMetrics: t.u16
- *     longHorMetrics: t.Array<LongHorMetric, 'numberOfHMetrics'>
+ *     longHorMetrics: t.CountedArray<LongHorMetric, 'numberOfHMetrics'>
  *   }
  *   type _ = t.ValidateSchema<HmtxTable>  // type error if any count field is wrong
  */
 export type ValidateSchema<T> = {
-  [K in keyof T]: T[K] extends Array<any, infer CountField>
+  [K in keyof T]: T[K] extends CountedArray<any, infer CountField>
     ? CountField extends keyof T
       ? T[K]
-      : `Error: '${string & CountField}' referenced in Array<T, CountField> is not a field of this interface`
+      : `Error: '${string & CountField}' referenced in CountedArray<T, CountField> is not a field of this interface`
     : T[K]
 } extends T
   ? T
