@@ -1,6 +1,6 @@
 import { computeChecksum } from '../checksum.js'
 import { to2dot14 } from '../utils/bit.js'
-import { toLongDateTime } from '../utils/date.js'
+import { toLongDateTime } from '@otfjs/buffer'
 import { assert, getAlignPadding } from '../utils/utils.js'
 import { asUint8Array } from './utils.js'
 

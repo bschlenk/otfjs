@@ -1,5 +1,5 @@
 import { from2dot14, from16dot16 } from '../utils/bit.js'
-import { fromLongDateTime } from '../utils/date.js'
+import { fromLongDateTime } from '@otfjs/buffer'
 import { error } from '../utils/utils.js'
 import { asDataView, asUint8Array } from './utils.js'
 
