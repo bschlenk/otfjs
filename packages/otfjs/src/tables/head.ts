@@ -1,39 +1,39 @@
+import * as t from '../buffer/buffer.types.js'
 import { Reader } from '../buffer/reader.js'
 import { createFlagReader } from '../flags.js'
-import { toHex } from '../utils/utils.js'
 
 export interface HeadTable {
   // Major version number of the font header table — set to 1.
-  majorVersion: number
+  majorVersion: t.u16
   // Minor version number of the font header table — set to 0.
-  minorVersion: number
+  minorVersion: t.u16
   // Fixed	fontRevision	Set by font manufacturer.
-  fontRevision: string
+  fontRevision: t.u32
   // To compute: set it to 0, sum the entire font as uint32, then store
   // 0xB1B0AFBA - sum. If the font is used as a component in a font collection
   // file, the value of this field will be invalidated by changes to the file
   // structure and font table directory, and must be ignored.
-  checksumAdjustment: number
+  checksumAdjustment: t.u32
   // Set to 0x5F0F3CF5.
-  magicNumber: string
+  magicNumber: t.u32
   // See HeadTableFlags.
   flags: HeadTableFlags
   // Set to a value from 16 to 16384. Any value in this range is valid. In fonts
   // that have TrueType outlines, a power of 2 is recommended as this allows
   // performance optimizations in some rasterizers.
-  unitsPerEm: number
+  unitsPerEm: t.u16
   // Number of seconds since 12:00 midnight that started January 1st 1904 in GMT/UTC time zone.
   created: Date
   // Number of seconds since 12:00 midnight that started January 1st 1904 in GMT/UTC time zone.
   modified: Date
   // Minimum x coordinate across all glyph bounding boxes.
-  xMin: number
+  xMin: t.i16
   // Minimum y coordinate across all glyph bounding boxes.
-  yMin: number
+  yMin: t.i16
   // Maximum x coordinate across all glyph bounding boxes.
-  xMax: number
+  xMax: t.i16
   // Maximum y coordinate across all glyph bounding boxes.
-  yMax: number
+  yMax: t.i16
   // Bit 0: Bold (if set to 1);
   // Bit 1: Italic (if set to 1)
   // Bit 2: Underline (if set to 1)
@@ -42,9 +42,9 @@ export interface HeadTable {
   // Bit 5: Condensed (if set to 1)
   // Bit 6: Extended (if set to 1)
   // Bits 7–15: Reserved (set to 0).
-  macStyle: number
+  macStyle: t.u16
   // Smallest readable size in pixels.
-  lowestRecPPEM: number
+  lowestRecPpem: t.u16
   // Deprecated (Set to 2).
   // 0: Fully mixed directional glyphs;
   // 1: Only strongly left to right;
@@ -58,11 +58,11 @@ export interface HeadTable {
   // For example, Roman letters (left-to-right) and Arabic letters (right-to-left)
   // have directionality. In a “normal” Roman font where spaces and punctuation
   // are present, the font direction hints should be set to two (2).)
-  fontDirectionHint: number
+  fontDirectionHint: t.i16
   // 0 for short offsets (Offset16), 1 for long (Offset32).
-  indexToLocFormat: number
+  indexToLocFormat: t.i16
   // 0 for current format.
-  glyphDataFormat: number
+  glyphDataFormat: t.i16
 }
 
 const flagReader = createFlagReader({
@@ -106,7 +106,7 @@ export function readHeadTable(view: Reader) {
   const yMax = view.i16()
 
   const macStyle = view.u16()
-  const lowestRecPPEM = view.u16()
+  const lowestRecPpem = view.u16()
   const fontDirectionHint = view.i16()
   const indexToLocFormat = view.i16()
   const glyphDataFormat = view.i16()
@@ -114,9 +114,9 @@ export function readHeadTable(view: Reader) {
   const head: HeadTable = {
     majorVersion,
     minorVersion,
-    fontRevision: toHex(fontRevision),
+    fontRevision,
     checksumAdjustment,
-    magicNumber: toHex(magicNumber),
+    magicNumber,
     flags,
     unitsPerEm,
     created,
@@ -126,7 +126,7 @@ export function readHeadTable(view: Reader) {
     xMax,
     yMax,
     macStyle,
-    lowestRecPPEM,
+    lowestRecPpem,
     fontDirectionHint,
     indexToLocFormat,
     glyphDataFormat,

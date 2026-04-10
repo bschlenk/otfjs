@@ -1,0 +1,27 @@
+{
+  "name": "@otfjs/buffer",
+  "version": "0.0.1",
+  "author": "Brian Schlenker <bschlenk@umich.edu>",
+  "description": "Utilities for parsing buffers in font files.",
+  "keywords": [],
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "dev": "tsc --watch --incremental",
+    "build": "tsc",
+    "build:gh": "pnpm build",
+    "lint": "eslint . --color",
+    "lint:fix": "pnpm lint --fix",
+    "test": "vitest"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8"
+  }
+}

@@ -16,7 +16,7 @@ export const TABLE_MAP: Record<string, React.ComponentType<{ font: Font }>> = {
   fpgm: instructionView('fpgm'),
   glyf: GlyfView,
   GPOS: jsonView('GPOS', { version: toHex }),
-  head: jsonView('head'),
+  head: jsonView('head', { magicNumber: toHex, fontRevision: toHex }),
   hhea: jsonView('hhea'),
   hmtx: jsonView('hmtx'),
   MATH: jsonView('MATH'),
