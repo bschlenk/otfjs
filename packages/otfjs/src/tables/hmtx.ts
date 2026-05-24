@@ -1,8 +1,12 @@
-import { Reader } from '../buffer/reader.js'
+import { Reader, Writer } from '@otfjs/buffer'
 
-// TODO: give this a function to get metrics by glyph id
+export interface LongHorMetric {
+  advanceWidth: number
+  leftSideBearing: number
+}
+
 export interface HmtxTable {
-  longHorMetrics: { advanceWidth: number; leftSideBearing: number }[]
+  longHorMetrics: LongHorMetric[]
   leftSideBearings: number[]
 }
 
@@ -21,4 +25,20 @@ export function readHmtxTable(
   )
 
   return { longHorMetrics, leftSideBearings }
+}
+
+export function writeHmtxTable(table: HmtxTable): Uint8Array {
+  const size = table.longHorMetrics.length * 4 + table.leftSideBearings.length * 2
+  const w = new Writer(size)
+
+  for (const { advanceWidth, leftSideBearing } of table.longHorMetrics) {
+    w.u16(advanceWidth)
+    w.i16(leftSideBearing)
+  }
+
+  for (const lsb of table.leftSideBearings) {
+    w.i16(lsb)
+  }
+
+  return w.toBuffer()
 }
