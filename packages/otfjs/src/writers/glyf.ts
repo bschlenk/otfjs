@@ -1,6 +1,6 @@
 import * as vec from '@bschlenk/vec'
 
-import { Writer } from '../buffer/writer.js'
+import { Writer } from '@otfjs/buffer'
 import { GlyphFlags, glyphFlags } from '../glyph-utils.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
 import { assert } from '../utils/utils.js'

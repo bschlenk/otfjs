@@ -1,4 +1,4 @@
-import { type Reader } from '../buffer/reader.js'
+import { type Reader } from '@otfjs/buffer'
 
 export function readTableAsU8Array(view: Reader) {
   return view.u8Array(view.length)

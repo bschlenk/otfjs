@@ -1,7 +1,7 @@
 import * as mat from '@bschlenk/mat'
 import * as vec from '@bschlenk/vec'
 
-import { Reader } from '../buffer/reader.js'
+import { Reader } from '@otfjs/buffer'
 import type { Extend } from '../enums.js'
 import { binarySearch } from '../utils/binary-search.js'
 

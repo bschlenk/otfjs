@@ -1,4 +1,5 @@
-import { Reader } from '../buffer/reader.js'
+import { Reader } from '@otfjs/buffer'
+
 import { PlatformId } from '../enums.js'
 
 export class CmapTable {

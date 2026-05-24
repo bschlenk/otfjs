@@ -1,4 +1,4 @@
-import { Writer } from '../buffer/writer.js'
+import { Writer } from '@otfjs/buffer'
 
 export function writeLocaTable(
   offsets: number[],

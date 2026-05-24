@@ -1,5 +1,5 @@
-import { Reader } from '../buffer/reader.js'
-import { Writer } from '../buffer/writer.js'
+import { Reader } from '@otfjs/buffer'
+import { Writer } from '@otfjs/buffer'
 import { error } from '../utils/utils.js'
 
 /**

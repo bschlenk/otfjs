@@ -1,4 +1,4 @@
-import { Reader } from '../buffer/reader.js'
+import { Reader } from '@otfjs/buffer'
 import { createFlagReader } from '../flags.js'
 import { assert } from '../utils/utils.js'
 

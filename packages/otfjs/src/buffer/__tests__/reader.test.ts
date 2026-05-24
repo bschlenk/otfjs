@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { Reader } from '../reader.js'
+import { Reader } from '@otfjs/buffer'
 import { asDataView } from '../utils.js'
 
 describe('reader.ts', () => {

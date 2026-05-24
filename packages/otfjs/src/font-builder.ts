@@ -6,7 +6,7 @@
 // font at least)
 
 import { asDataView } from './buffer/utils.js'
-import { Writer } from './buffer/writer.js'
+import { Writer } from '@otfjs/buffer'
 import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
 import { padToMultiple } from './utils/utils.js'

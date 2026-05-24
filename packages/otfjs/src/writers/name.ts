@@ -1,4 +1,4 @@
-import { Writer } from '../buffer/writer.js'
+import { Writer } from '@otfjs/buffer'
 import { NameId } from '../enums.js'
 
 interface NameRecord {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { Writer } from '../writer.js'
+import { Writer } from '@otfjs/buffer'
 
 describe('writer.ts', () => {
   describe('Writer', () => {

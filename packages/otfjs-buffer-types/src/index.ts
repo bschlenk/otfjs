@@ -24,6 +24,13 @@ export type uBase128 = number
 export type Const<T, U extends T> = U
 
 /**
+ * Marks N bytes as reserved/padding in the binary format. These bytes are
+ * skipped during reading and written as zeros during writing. Reserved fields
+ * do not appear in the parsed object or writer parameter.
+ */
+export type Reserved<N extends number = 1> = void
+
+/**
  * Declare a field as an array whose length is determined by another field in
  * the same struct. The CountField string must match the name of a preceding
  * field of a numeric type.

@@ -12,8 +12,9 @@
     "./package.json": "./package.json"
   },
   "scripts": {
+    "generate": "tsx ../../packages/otfjs-buffer-gen/src/index.ts 'src/tables/schema/*.ts' src/tables",
     "dev": "tsc --watch --incremental",
-    "build": "tsc",
+    "build": "pnpm generate && tsc",
     "build:gh": "pnpm build",
     "lint": "eslint . --color",
     "lint:fix": "pnpm lint --fix",
@@ -23,9 +24,11 @@
     "@bschlenk/mat": "^0.0.12",
     "@bschlenk/vec": "^0.0.8",
     "@otfjs/buffer": "workspace:*",
+    "@otfjs/buffer-types": "workspace:*",
     "brotli": "^1.3.3"
   },
   "devDependencies": {
+    "@otfjs/buffer-gen": "workspace:*",
     "@types/brotli": "^1.3.4",
     "@types/node": "^22.15.0",
     "typescript": "^5.9.3",

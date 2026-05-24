@@ -1,8 +1,11 @@
-import { computeChecksum } from '../checksum.js'
-import { to2dot14 } from '../utils/bit.js'
-import { toLongDateTime } from '../utils/date.js'
-import { assert, getAlignPadding } from '../utils/utils.js'
-import { asUint8Array } from './utils.js'
+import { to2dot14 } from './bit.js'
+import { toLongDateTime } from './date.js'
+import {
+  assert,
+  asUint8Array,
+  computeChecksum,
+  getAlignPadding,
+} from './utils.js'
 
 export class Writer {
   public data: ArrayBuffer
@@ -151,11 +154,10 @@ export class Writer {
 
   private maybeResize(n: number) {
     let size = this.capacity
-    if (this.offset + n <= size) return
+    const newOffset = this.offset + n
 
-    while (this.offset + n > size) {
-      size *= 2
-    }
+    if (newOffset <= size) return
+    while (newOffset > size) size *= 2
 
     const newBuffer = new ArrayBuffer(size)
     new Uint8Array(newBuffer).set(new Uint8Array(this.data))

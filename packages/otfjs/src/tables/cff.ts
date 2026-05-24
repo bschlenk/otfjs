@@ -1,4 +1,4 @@
-import { type Reader } from '../buffer/reader.js'
+import { type Reader } from '@otfjs/buffer'
 import { highNibble, lowNibble } from '../utils/bit.js'
 import { assert, error } from '../utils/utils.js'
 

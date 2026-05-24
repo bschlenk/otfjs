@@ -1,6 +1,6 @@
 import * as mat from '@bschlenk/mat'
 
-import type { Reader } from './buffer/reader.js'
+import type { Reader } from '@otfjs/buffer'
 import { createFlagReader } from './flags.js'
 import { PathBuilder } from './path-builder.js'
 import type { Glyph, GlyphCompositeComponent, Point } from './types.js'

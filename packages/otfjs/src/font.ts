@@ -1,6 +1,6 @@
 import * as mat from '@bschlenk/mat'
 
-import { Reader } from './buffer/reader.js'
+import { Reader } from '@otfjs/buffer'
 import { asUint8Array } from './buffer/utils.js'
 import { Cache, createCache } from './cache.js'
 import { NameId, PlatformId } from './enums.js'

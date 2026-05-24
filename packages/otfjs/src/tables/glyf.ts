@@ -1,6 +1,6 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/glyf
 
-import type { Reader } from '../buffer/reader.js'
+import type { Reader } from '@otfjs/buffer'
 import {
   type GlyphFlags,
   glyphFlags,
