@@ -8,6 +8,7 @@
   "type": "module",
   "exports": {
     ".": "./dist/index.js",
+    "./schema": "./src/schema.ts",
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -19,11 +20,11 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@otfjs/buffer-types": "workspace:*",
     "tinyglobby": "^0.2.15"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^4.0.8"
   }
