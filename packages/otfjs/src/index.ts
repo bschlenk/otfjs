@@ -1,11 +1,13 @@
 export * from './canvas.js'
 export { computeChecksum } from './checksum.js'
 export * from './enums.js'
+export * from './fns/index.js'
 export * from './font.js'
+export { FontHandle, type TableMap } from './font-handle.js'
 export { disassemble } from './instruct/disassemble.js'
 export { VirtualMachine } from './instruct/vm.js'
 export * from './svg.js'
-export { getGlyphIndex, type CmapTable } from './tables/cmap.js'
+export type { CmapTable } from './tables/cmap.js'
 export type { ColrTable } from './tables/colr.js'
 export {
   type ColorLayer,

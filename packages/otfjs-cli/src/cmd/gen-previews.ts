@@ -61,10 +61,8 @@ async function processFonts(fontFiles: string[], outDir: string) {
 /** returns an svg string */
 function generatePreview(font: Font): string | null {
   const upem = font.unitsPerEm
-  const cmap = font.getTable('cmap')
-
-  const glyphId1 = getGlyphIndex(cmap, 'A'.codePointAt(0)!)
-  const glyphId2 = getGlyphIndex(cmap, 'a'.codePointAt(0)!)
+  const glyphId1 = getGlyphIndex(font, 'A'.codePointAt(0)!)
+  const glyphId2 = getGlyphIndex(font, 'a'.codePointAt(0)!)
 
   if (glyphId1 == null || glyphId2 == null) return null
 

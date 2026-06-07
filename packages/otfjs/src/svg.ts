@@ -3,7 +3,8 @@ import * as vec from '@bschlenk/vec'
 
 import { rgbaToCss } from './color.js'
 import { Extend } from './enums.js'
-import type { Font, GlyphEnriched } from './font.js'
+import type { Font } from './font.js'
+import type { GlyphEnriched } from './types.js'
 import { walkGlyphPath } from './glyph-utils.js'
 import { SvgPathBuilder } from './path-builder.js'
 import {

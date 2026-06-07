@@ -46,6 +46,11 @@ export interface RGBA {
   a: number
 }
 
+export interface GlyphEnriched extends GlyphSimple {
+  id: number
+  advanceWidth: number
+}
+
 export interface ColorVisitor {
   paintSolid(paletteIndex: number, alpha: number): void
   paintLinearGradient(

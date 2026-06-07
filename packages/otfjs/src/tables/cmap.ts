@@ -1,3 +1,4 @@
+// cSpell:ignore segs
 import { Reader, Writer } from '@otfjs/buffer'
 
 import { PlatformId } from '../enums.js'
@@ -23,42 +24,6 @@ interface CmapSubtable4 {
   idDeltas: number[]
   idRangeOffsets: number[]
   glyphIdArray: number[]
-}
-
-export function getGlyphIndex(table: CmapTable, codePoint: number): number {
-  const platformId = PlatformId.Windows
-  const encodingId = codePoint > 0xffff ? 10 : 1
-
-  const record = table.encodingRecords.find(
-    (r) => r.platformId === platformId && r.encodingId === encodingId,
-  )
-
-  if (!record) {
-    console.error(
-      `Encoding record not found for platformId = ${platformId}, encodingId = ${encodingId}`,
-    )
-    return 0
-  }
-
-  return getGlyphIndexFormat4(record.subtable, codePoint)
-}
-
-function getGlyphIndexFormat4(subtable: CmapSubtable4, codePoint: number): number {
-  let i = 0
-  while (subtable.endCodes[i] < codePoint) ++i
-
-  if (subtable.startCodes[i] > codePoint) return 0
-
-  if (subtable.idRangeOffsets[i] === 0) {
-    return (codePoint + subtable.idDeltas[i]) & 0xffff
-  }
-
-  const segCount = subtable.endCodes.length
-  const glyphArrayIndex =
-    subtable.idRangeOffsets[i] / 2 + (codePoint - subtable.startCodes[i]) + i - segCount
-  const glyphId = subtable.glyphIdArray[glyphArrayIndex]
-  if (glyphId === 0) return 0
-  return (glyphId + subtable.idDeltas[i]) & 0xffff
 }
 
 export function readCmapTable(view: Reader): CmapTable {
