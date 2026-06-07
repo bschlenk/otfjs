@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 
-import { Font, GlyphEnriched, glyphToColorSvg, type Node } from 'otfjs'
+import { Font, getGlyphIndex, GlyphEnriched, glyphToColorSvg, type Node } from 'otfjs'
 import { optimize } from 'svgo'
 
 import { eat } from '../lib/cli.js'
@@ -63,8 +63,8 @@ function generatePreview(font: Font): string | null {
   const upem = font.unitsPerEm
   const cmap = font.getTable('cmap')
 
-  const glyphId1 = cmap.getGlyphIndex('A'.codePointAt(0)!)
-  const glyphId2 = cmap.getGlyphIndex('a'.codePointAt(0)!)
+  const glyphId1 = getGlyphIndex(cmap, 'A'.codePointAt(0)!)
+  const glyphId2 = getGlyphIndex(cmap, 'a'.codePointAt(0)!)
 
   if (glyphId1 == null || glyphId2 == null) return null
 

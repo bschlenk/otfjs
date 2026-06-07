@@ -5,7 +5,7 @@ export * from './font.js'
 export { disassemble } from './instruct/disassemble.js'
 export { VirtualMachine } from './instruct/vm.js'
 export * from './svg.js'
-export type { CmapTable } from './tables/cmap.js'
+export { getGlyphIndex, type CmapTable } from './tables/cmap.js'
 export type { ColrTable } from './tables/colr.js'
 export {
   type ColorLayer,
