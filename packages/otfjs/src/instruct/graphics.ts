@@ -13,11 +13,11 @@ export const enum RoundState {
 export function makeGraphicsState() {
   return {
     autoFlip: true,
-    // TODO: not sure what this means
-    controlValueCutIn: 17 / 16, // pixels
+    controlValueCutIn: 17 / 16, // pixels (17/16 is the default: 0x44 in 26.6)
     deltaBase: 9,
     deltaShift: 3,
-    dualProjectionVectors: { x: 0, y: 0 },
+    /** Dual projection vector; null means "fall back to projectionVector". */
+    dualProjectionVector: null as { x: number; y: number } | null,
     freedomVector: { x: 1, y: 0 },
     zp0: 1,
     zp1: 1,

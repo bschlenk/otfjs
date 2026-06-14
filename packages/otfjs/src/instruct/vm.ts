@@ -36,6 +36,22 @@ const enum Touched {
   BOTH,
 }
 
+/**
+ * If `distance` is within [-minimumDistance, +minimumDistance], snap it to the
+ * boundary (negative boundary if biasNegative, positive otherwise).
+ */
+function clampToMinimumDistance(
+  minimumDistance: number,
+  distance: number,
+  biasNegative: boolean,
+): number {
+  const absMin = Math.abs(minimumDistance)
+  if (distance >= -absMin && distance <= absMin) {
+    return biasNegative ? -absMin : absMin
+  }
+  return distance
+}
+
 interface Fdef {
   inst: Uint8Array
   pc: number
@@ -301,46 +317,22 @@ export class VirtualMachine {
       case Opcode.SPVTL0:
       case Opcode.SPVTL1: {
         const rotate = opcode === Opcode.SPVTL1
-        const p1 = this.zones[this.gs.zp2][this.stack.popU32()]
-        const p2 = this.zones[this.gs.zp1][this.stack.popU32()]
-
-        let x = p2.x - p1.x
-        let y = p2.y - p1.y
-        const m = Math.hypot(x, y)
-
-        x /= m
-        y /= m
-
-        if (rotate) {
-          const tmp = x
-          x = -y
-          y = tmp
-        }
-
-        this.gs.projectionVector = { x, y }
+        const p2Idx = this.stack.popU32()
+        const p1Idx = this.stack.popU32()
+        const p2 = this.zones[this.gs.zp2][p2Idx]
+        const p1 = this.zones[this.gs.zp1][p1Idx]
+        this.gs.projectionVector = this.unitVectorFromPoints(p1, p2, rotate)
         break
       }
 
       case Opcode.SFVTL0:
       case Opcode.SFVTL1: {
         const rotate = opcode === Opcode.SFVTL1
-        const p1 = this.zones[this.gs.zp2][this.stack.popU32()]
-        const p2 = this.zones[this.gs.zp1][this.stack.popU32()]
-
-        let x = p2.x - p1.x
-        let y = p2.y - p1.y
-        const m = Math.hypot(x, y)
-
-        x /= m
-        y /= m
-
-        if (rotate) {
-          const tmp = x
-          x = -y
-          y = tmp
-        }
-
-        this.gs.freedomVector = { x, y }
+        const p2Idx = this.stack.popU32()
+        const p1Idx = this.stack.popU32()
+        const p2 = this.zones[this.gs.zp2][p2Idx]
+        const p1 = this.zones[this.gs.zp1][p1Idx]
+        this.gs.freedomVector = this.unitVectorFromPoints(p1, p2, rotate)
         break
       }
 
@@ -352,21 +344,21 @@ export class VirtualMachine {
       case Opcode.SDPVTL0:
       case Opcode.SDPVTL1: {
         const rotate = opcode === Opcode.SDPVTL1
-        const p1 = this.zones[this.gs.zp2][this.stack.popU32()]
-        const p2 = this.zones[this.gs.zp1][this.stack.popU32()]
+        const p2Idx = this.stack.popU32()
+        const p1Idx = this.stack.popU32()
 
-        let v = vec.normalize(vec.subtract(p2, p1))
+        // Projection vector computed from hinted (current) positions
+        const p1h = this.zones[this.gs.zp1][p1Idx]
+        const p2h = this.zones[this.gs.zp2][p2Idx]
+        // Dual projection vector computed from scaled (original) positions
+        const p1s = this.zonesOriginal[this.gs.zp1][p1Idx]
+        const p2s = this.zonesOriginal[this.gs.zp2][p2Idx]
 
-        if (rotate) {
-          v = vec.rotate90(v)
-        }
+        const projVec = this.unitVectorFromPoints(p1h, p2h, rotate)
+        const dualProjVec = this.unitVectorFromPoints(p1s, p2s, rotate)
 
-        // TODO: need to keep track of zones before anything has changed, and set both here
-        // sounds like the dual one gets set and then is used in place of the projection vector
-        // until the next instruction that sets the projection vector
-
-        this.gs.dualProjectionVectors = v
-        this.gs.projectionVector = v
+        this.gs.projectionVector = projVec
+        this.gs.dualProjectionVector = dualProjVec
         break
       }
 
@@ -591,45 +583,54 @@ export class VirtualMachine {
       case Opcode.GC1: {
         const useOriginal = opcode === Opcode.GC1
         const p = this.stack.popU32()
-        // TODO: zp2 determins which zone to look at
-        const pt = useOriginal ? this.zonesOriginal[1][p] : this.zones[1][p]
-        // TODO: how to project a point? is that cross product?
-
-        // TODO: verify y x is the correct order
-        this.stack.push(pt.y)
-        this.stack.push(pt.x)
+        const pt = useOriginal ?
+          this.zonesOriginal[this.gs.zp2][p]
+        : this.zones[this.gs.zp2][p]
+        const pv = useOriginal ? this.dualProjVec() : this.gs.projectionVector
+        // Project the point onto the (dual) projection vector
+        this.stack.push26dot6(pv.x * pt.x + pv.y * pt.y)
         break
       }
 
       case Opcode.SCFS: {
         const value = this.stack.pop26dot6()
         const p = this.stack.popU32()
-        // TODO: not sure about the math here at all
-        // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM05/Chap5.html#SCFS
+        const pv = this.gs.projectionVector
+        const pt = this.zones[this.gs.zp2][p]
+        // Current projection of the point along the projection vector
+        const currentProj = pv.x * pt.x + pv.y * pt.y
+        // Move it so its projection equals value
+        this.movePoint(this.gs.zp2, p, value - currentProj)
+        // In twilight zone, also update the original position
+        if (this.gs.zp2 === 0) {
+          const hinted = this.zones[0][p]
+          const orig = this.zonesOriginal[0][p]
+          orig.x = hinted.x
+          orig.y = hinted.y
+        }
         break
       }
 
       case Opcode.MD0:
       case Opcode.MD1: {
         const useOriginal = opcode === Opcode.MD1
-        const p1 = this.stack.popU32()
+        // Stack: p2 on top (zp1), p1 below (zp0)
         const p2 = this.stack.popU32()
+        const p1 = this.stack.popU32()
 
-        // TODO: the use original ones need to use zp1 and zp0 as well
-        // TODO: apple's docs say zp0 and zp1, double check this?
-        const pt1 =
-          useOriginal ?
-            this.zonesOriginal[this.gs.zp1][p1]
-          : this.zones[this.gs.zp1][p1]
-        const pt2 =
-          useOriginal ?
-            this.zonesOriginal[this.gs.zp0][p2]
-          : this.zones[this.gs.zp0][p2]
-
-        // TODO: verify I should use dual projection vector if that is set over projection vector
-        // get disantce between points, projected onto projection vector
-        // pushes distance in pixels as 26.6
-        this.stack.push26dot6(1)
+        if (!useOriginal) {
+          // MD0: hinted positions, projection vector
+          const pt1 = this.zones[this.gs.zp0][p1]
+          const pt2 = this.zones[this.gs.zp1][p2]
+          const pv = this.gs.projectionVector
+          this.stack.push26dot6(pv.x * (pt1.x - pt2.x) + pv.y * (pt1.y - pt2.y))
+        } else {
+          // MD1: original (unscaled) positions, dual projection vector
+          const pt1 = this.zonesOriginal[this.gs.zp0][p1]
+          const pt2 = this.zonesOriginal[this.gs.zp1][p2]
+          const dv = this.dualProjVec()
+          this.stack.push26dot6(dv.x * (pt1.x - pt2.x) + dv.y * (pt1.y - pt2.y))
+        }
 
         break
       }
@@ -681,6 +682,7 @@ export class VirtualMachine {
 
       case Opcode.SHP0:
       case Opcode.SHP1: {
+        // a=0: use rp2 in zp1; a=1: use rp1 in zp0
         const a = opcode & 0b1
         const rp = a === 0 ? this.gs.rp2 : this.gs.rp1
         const z = a === 0 ? this.gs.zp1 : this.gs.zp0
@@ -688,24 +690,13 @@ export class VirtualMachine {
         const refo = this.zonesOriginal[z][rp]
         const refm = this.zones[z][rp]
 
-        // measure the relative distance of the reference point
-        // along the projection vector
-        const dist = vec.projectLength(
-          vec.subtract(refm, refo),
-          this.gs.projectionVector,
-        )
-        const dv = vec.scale(this.gs.freedomVector, dist)
+        // How much the reference point moved along the projection vector
+        const pv = this.gs.projectionVector
+        const dist = pv.x * (refm.x - refo.x) + pv.y * (refm.y - refo.y)
 
         const points = this.loop()
         for (const p of points) {
-          const point = this.zones[this.gs.zp2][p]
-          this.touched[this.gs.zp2].add(p)
-
-          // TODO: I don't think this is correct
-          // move the point p by that distance, along the freedom vector
-          const newPoint = vec.add(point, dv)
-          point.x = newPoint.x
-          point.y = newPoint.y
+          this.movePoint(this.gs.zp2, p, dist)
         }
 
         break
@@ -720,34 +711,27 @@ export class VirtualMachine {
         const refo = this.zonesOriginal[z][rp]
         const refm = this.zones[z][rp]
 
-        // measure the relative distance of the reference point
-        // along the projection vector
-        const dist = vec.projectLength(
-          vec.subtract(refm, refo),
-          this.gs.projectionVector,
-        )
-        const dv = vec.scale(this.gs.freedomVector, dist)
+        const pv = this.gs.projectionVector
+        const dist = pv.x * (refm.x - refo.x) + pv.y * (refm.y - refo.y)
 
         const c = this.stack.popU32()
 
         const start = c === 0 ? 0 : this.glyph.endPtsOfContours[c - 1] + 1
         const end = this.glyph.endPtsOfContours[c]
 
-        const skip = z === this.gs.zp2 ? { ...refm } : null
-        const skipTouch = skip ? this.touched[this.gs.zp2].has(rp) : false
+        const skipPos = z === this.gs.zp2 ? { x: refm.x, y: refm.y } : null
+        const skipTouched = skipPos ? this.touched[this.gs.zp2].has(rp) : false
 
         for (let i = start; i <= end; ++i) {
-          const point = this.zones[this.gs.zp2][i]
-          const newPoint = vec.add(point, dv)
-          point.x = newPoint.x
-          point.y = newPoint.y
-          this.touched[this.gs.zp2].add(i)
+          if (i === rp && z === this.gs.zp2) continue
+          this.movePoint(this.gs.zp2, i, dist)
         }
 
-        if (skip) {
-          // if the reference point is on the contour, it should not be updated
-          this.zones[this.gs.zp2][rp] = skip
-          if (!skipTouch) {
+        if (skipPos) {
+          const pt = this.zones[this.gs.zp2][rp]
+          pt.x = skipPos.x
+          pt.y = skipPos.y
+          if (!skipTouched) {
             this.touched[this.gs.zp2].delete(rp)
           }
         }
@@ -764,31 +748,24 @@ export class VirtualMachine {
         const refo = this.zonesOriginal[z][rp]
         const refm = this.zones[z][rp]
 
-        // measure the relative distance of the reference point
-        // along the projection vector
-        const dist = vec.projectLength(
-          vec.subtract(refm, refo),
-          this.gs.projectionVector,
-        )
-        const dv = vec.scale(this.gs.freedomVector, dist)
+        const pv = this.gs.projectionVector
+        const dist = pv.x * (refm.x - refo.x) + pv.y * (refm.y - refo.y)
 
         const e = this.stack.popU32()
 
-        const skip = z === e ? { ...refm } : null
-        const skipTouch = skip ? this.touched[e].has(rp) : false
+        const skipPos = z === e ? { x: refm.x, y: refm.y } : null
+        const skipTouched = skipPos ? this.touched[e].has(rp) : false
 
         for (let i = 0; i < this.zones[e].length; ++i) {
-          const point = this.zones[e][i]
-          const newPoint = vec.add(point, dv)
-          point.x = newPoint.x
-          point.y = newPoint.y
-          this.touched[e].add(i)
+          if (i === rp && z === e) continue
+          this.movePoint(e, i, dist)
         }
 
-        if (skip) {
-          // if the reference point is on the zone, it should not be updated
-          this.zones[e][rp] = skip
-          if (!skipTouch) {
+        if (skipPos) {
+          const pt = this.zones[e][rp]
+          pt.x = skipPos.x
+          pt.y = skipPos.y
+          if (!skipTouched) {
             this.touched[e].delete(rp)
           }
         }
@@ -814,29 +791,35 @@ export class VirtualMachine {
 
       case Opcode.MSIRP0:
       case Opcode.MSIRP1: {
-        const a = opcode & 0b1
-        const d = this.stack.pop26dot6()
-        const p = this.stack.popU32()
+        const setRp0 = Boolean(opcode & 0b1)
+        const distanceValue = this.stack.pop26dot6()
+        const pointToModify = this.stack.popU32()
+        const rp0 = this.gs.rp0
 
-        const point = this.zones[this.gs.zp1][p]
-        const ref = this.zones[this.gs.zp0][this.gs.rp0]
+        const refHinted = this.zones[this.gs.zp0][rp0]
 
-        // find the distance by projecting freedom vector onto projection vector
-        // TODO: I don't think this logic is correct
-        const proj = vec.projectOnto(point, this.gs.projectionVector)
-        const currentDistance = vec.magnitude(proj)
-        const scale = d / currentDistance
-        const newPoint = vec.scale(point, scale)
+        // In twilight zone, pre-position the point along projection vector
+        if (this.gs.zp1 === 0) {
+          const pv = this.gs.projectionVector
+          const refOrig = this.zonesOriginal[this.gs.zp0][rp0]
+          const orig = this.zonesOriginal[0][pointToModify]
+          orig.x = refOrig.x + distanceValue * pv.x
+          orig.y = refOrig.y + distanceValue * pv.y
+          const hinted = this.zones[0][pointToModify]
+          hinted.x = refHinted.x + distanceValue * pv.x
+          hinted.y = refHinted.y + distanceValue * pv.y
+        }
 
-        point.x = newPoint.x
-        point.y = newPoint.y
-        this.touched[this.gs.zp1].add(p)
+        const pt = this.zones[this.gs.zp1][pointToModify]
+        const pv = this.gs.projectionVector
+        // Current projected distance from ref to point
+        const currentDist = pv.x * (pt.x - refHinted.x) + pv.y * (pt.y - refHinted.y)
+        this.movePoint(this.gs.zp1, pointToModify, distanceValue - currentDist)
 
-        this.gs.rp1 = this.gs.rp0
-        this.gs.rp2 = p
-
-        if (a === 1) {
-          this.gs.rp0 = p
+        this.gs.rp1 = rp0
+        this.gs.rp2 = pointToModify
+        if (setRp0) {
+          this.gs.rp0 = pointToModify
         }
 
         break
@@ -847,14 +830,17 @@ export class VirtualMachine {
         const round = (opcode & 0b1) === 1
         const p = this.stack.popU32()
 
+        const pv = this.gs.projectionVector
+        const pt = this.zones[this.gs.zp0][p]
+        const currentProj = pv.x * pt.x + pv.y * pt.y
+
+        let delta = 0
         if (round) {
-          // TODO: need to figure out rounding rules
+          const rounded = this.round(currentProj)
+          delta = rounded - currentProj
         }
 
-        // TODO: touch needs to be direction aware (i.e. if the freedom vector
-        // is orthogonal, only the pointed direction is marked touched)
-        this.touched[this.gs.zp0].add(p)
-
+        this.movePoint(this.gs.zp0, p, delta)
         this.gs.rp0 = this.gs.rp1 = p
 
         break
@@ -866,8 +852,33 @@ export class VirtualMachine {
         const n = this.stack.popU32()
         const p = this.stack.popU32()
 
-        // TOOD: this instruction
+        const cvtValue = this.cvt[n] ?? 0
+        const pv = this.gs.projectionVector
 
+        let currentProj: number
+        if (this.gs.zp0 === 0) {
+          // Twilight zone: pre-position the point along the projection vector
+          const pt = this.zones[0][p]
+          pt.x = cvtValue * pv.x
+          pt.y = cvtValue * pv.y
+          const orig = this.zonesOriginal[0][p]
+          orig.x = pt.x
+          orig.y = pt.y
+          currentProj = cvtValue
+        } else {
+          const pt = this.zones[this.gs.zp0][p]
+          currentProj = pv.x * pt.x + pv.y * pt.y
+        }
+
+        this.gs.rp0 = p
+        this.gs.rp1 = p
+
+        let newProj = cvtValue
+        if (round) {
+          newProj = this.roundAndCutIn(cvtValue, currentProj)
+        }
+
+        this.movePoint(this.gs.zp0, p, newProj - currentProj)
         break
       }
 
@@ -903,13 +914,47 @@ export class VirtualMachine {
       case Opcode.MDRP1D:
       case Opcode.MDRP1E:
       case Opcode.MDRP1F: {
-        const a = Boolean(opcode & (0b1 << 4))
-        const b = Boolean(opcode & (0b1 << 3))
-        const c = Boolean(opcode & (0b1 << 2))
-        const de = opcode & 0b11
-        const p = this.stack.popU32()
+        // Flags: a=set rp0, b=use minimum distance, c=round, de=distance type
+        const setRp0 = Boolean(opcode & (0b1 << 4))
+        const useMinDist = Boolean(opcode & (0b1 << 3))
+        const doRound = Boolean(opcode & (0b1 << 2))
+        const distType = asDistanceType(opcode & 0b11)
 
-        // TODO: this instruction
+        const pt1Index = this.stack.popU32()
+        const pt0Index = this.gs.rp0
+
+        // Measure original distance between rp0 and point (along dual projection vector)
+        const dv = this.dualProjVec()
+        const pt0Orig = this.zonesOriginal[this.gs.zp0][pt0Index]
+        const pt1Orig = this.zonesOriginal[this.gs.zp1][pt1Index]
+        let distanceToMove = dv.x * (pt1Orig.x - pt0Orig.x) + dv.y * (pt1Orig.y - pt0Orig.y)
+
+        distanceToMove = this.applySingleWidthCutIn(distanceToMove)
+        const wasNegative = distanceToMove < 0
+
+        if (doRound) {
+          distanceToMove = this.round(this.compensate(distanceToMove, distType))
+        }
+
+        if (useMinDist) {
+          distanceToMove = clampToMinimumDistance(
+            this.gs.minimumDistance,
+            distanceToMove,
+            wasNegative,
+          )
+        }
+
+        // Compute how far the point currently is from rp0 along projection vector
+        const pv = this.gs.projectionVector
+        const pt0Hinted = this.zones[this.gs.zp0][pt0Index]
+        const pt1Hinted = this.zones[this.gs.zp1][pt1Index]
+        const currentDist = pv.x * (pt1Hinted.x - pt0Hinted.x) + pv.y * (pt1Hinted.y - pt0Hinted.y)
+
+        this.movePoint(this.gs.zp1, pt1Index, distanceToMove - currentDist)
+
+        this.gs.rp1 = pt0Index
+        this.gs.rp2 = pt1Index
+        if (setRp0) this.gs.rp0 = pt1Index
 
         break
       }
@@ -946,25 +991,82 @@ export class VirtualMachine {
       case Opcode.MIRP1D:
       case Opcode.MIRP1E:
       case Opcode.MIRP1F: {
-        const a = Boolean(opcode & (0b1 << 4))
-        const b = Boolean(opcode & (0b1 << 3))
-        const c = Boolean(opcode & (0b1 << 2))
-        const de = opcode & 0b11
-        const n = this.stack.popU32()
-        const p = this.stack.popU32()
+        // Flags: a=set rp0, b=use min distance, c=round+cutIn, de=distance type
+        const setRp0 = Boolean(opcode & (0b1 << 4))
+        const useMinDist = Boolean(opcode & (0b1 << 3))
+        const roundAndCutInFlag = Boolean(opcode & (0b1 << 2))
+        const distType = asDistanceType(opcode & 0b11)
 
-        // TODO: this instruction
+        const cvtIndex = this.stack.popU32()
+        const pointIndex = this.stack.popU32()
+        const rp0 = this.gs.rp0
+
+        let distanceToMove = this.cvt[cvtIndex] ?? 0
+        distanceToMove = this.applySingleWidthCutIn(distanceToMove)
+
+        const pv = this.gs.projectionVector
+        const rpHinted = this.zones[this.gs.zp0][rp0]
+        const pt = this.zones[this.gs.zp1][pointIndex]
+
+        let distanceBetweenPoints: number
+        if (this.gs.zp1 === 0) {
+          // Twilight zone: pre-position the point
+          const rpOrig = this.zonesOriginal[this.gs.zp0][rp0]
+          const orig = this.zonesOriginal[0][pointIndex]
+          orig.x = rpOrig.x + distanceToMove * pv.x
+          orig.y = rpOrig.y + distanceToMove * pv.y
+          pt.x = rpHinted.x
+          pt.y = rpHinted.y
+          distanceBetweenPoints = distanceToMove
+        } else {
+          const dv = this.dualProjVec()
+          const rpOrig = this.zonesOriginal[this.gs.zp0][rp0]
+          const ptOrig = this.zonesOriginal[this.gs.zp1][pointIndex]
+          distanceBetweenPoints = dv.x * (ptOrig.x - rpOrig.x) + dv.y * (ptOrig.y - rpOrig.y)
+        }
+
+        // Auto-flip: if CVT value and measured distance have opposite signs, negate
+        if (this.gs.autoFlip && (distanceToMove < 0) !== (distanceBetweenPoints < 0)) {
+          distanceToMove = -distanceToMove
+        }
+
+        if (roundAndCutInFlag) {
+          distanceToMove = this.roundAndCutIn(
+            this.compensate(distanceToMove, distType),
+            distanceBetweenPoints,
+          )
+        }
+
+        if (useMinDist) {
+          distanceToMove = clampToMinimumDistance(
+            this.gs.minimumDistance,
+            distanceToMove,
+            distanceBetweenPoints < 0,
+          )
+        }
+
+        const currentDist = pv.x * (pt.x - rpHinted.x) + pv.y * (pt.y - rpHinted.y)
+        this.movePoint(this.gs.zp1, pointIndex, distanceToMove - currentDist)
+
+        this.gs.rp1 = rp0
+        this.gs.rp2 = pointIndex
+        if (setRp0) this.gs.rp0 = pointIndex
 
         break
       }
 
       case Opcode.ALIGNRP: {
-        const points = this.loop()
-        const rp = this.zones[this.gs.zp0][this.gs.rp0]
+        const rp0 = this.gs.rp0
+        const rpHinted = this.zones[this.gs.zp0][rp0]
+        const pv = this.gs.projectionVector
+        const rpProj = pv.x * rpHinted.x + pv.y * rpHinted.y
 
+        const points = this.loop()
         for (const p of points) {
-          const point = this.zones[this.gs.zp1][p]
-          // TODO: reduce measured distance to 0 along projection vector
+          const pt = this.zones[this.gs.zp1][p]
+          const ptProj = pv.x * pt.x + pv.y * pt.y
+          // Move p so its projection equals rp0's projection (delta = 0 distance)
+          this.movePoint(this.gs.zp1, p, rpProj - ptProj)
         }
 
         break
@@ -977,34 +1079,145 @@ export class VirtualMachine {
       }
 
       case Opcode.ISECT: {
+        // Stack (top to bottom): b1, b0, a1, a0, p
+        // Line A through a0, a1 (from zp1); line B through b0, b1 (from zp0)
         const b1 = this.stack.popU32()
         const b0 = this.stack.popU32()
         const a1 = this.stack.popU32()
         const a0 = this.stack.popU32()
         const p = this.stack.popU32()
 
-        // If lines A and B are parallel, point p is moved to a position in the middle of the lines. That is:
-        // px = (a0x + a1x)/4 + (b0x + b1x)/4
-        // py = (a0y + a1y)/4 + (b0y + b1y)/4
+        const pA0 = this.zones[this.gs.zp1][a0]
+        const pA1 = this.zones[this.gs.zp1][a1]
+        const pB0 = this.zones[this.gs.zp0][b0]
+        const pB1 = this.zones[this.gs.zp0][b1]
+        const pt = this.zones[this.gs.zp2][p]
 
-        // TODO: this instruction
+        const dAx = pA0.x - pA1.x
+        const dAy = pA0.y - pA1.y
+        const dBx = pB0.x - pB1.x
+        const dBy = pB0.y - pB1.y
 
+        // Midpoint fallback for parallel/degenerate cases
+        const midX = (pA0.x + pA1.x + pB0.x + pB1.x) / 4
+        const midY = (pA0.y + pA1.y + pB0.y + pB1.y) / 4
+
+        let nx: number
+        let ny: number
+
+        if (dAy === 0 && dAx === 0) {
+          nx = midX
+          ny = midY
+        } else if (dAy === 0) {
+          if (dBx === 0) {
+            nx = pB1.x
+            ny = pA1.y
+          } else {
+            const n = pB1.y - pA1.y
+            const d = -dBy
+            if (d === 0) {
+              nx = midX
+              ny = midY
+            } else {
+              const t = n / d
+              nx = pB1.x + dBx * t
+              ny = pB1.y + dBy * t
+            }
+          }
+        } else if (dAx === 0) {
+          if (dBy === 0) {
+            nx = pA1.x
+            ny = pB1.y
+          } else {
+            const n = pB1.x - pA1.x
+            const d = -dBx
+            if (d === 0) {
+              nx = midX
+              ny = midY
+            } else {
+              const t = n / d
+              nx = pB1.x + dBx * t
+              ny = pB1.y + dBy * t
+            }
+          }
+        } else {
+          const D = dBx * dAy - dBy * dAx
+          if (D === 0) {
+            nx = midX
+            ny = midY
+          } else {
+            const N = (pB1.y - pA1.y) * dAx - (pB1.x - pA1.x) * dAy
+            const t = N / D
+            nx = pB1.x + dBx * t
+            ny = pB1.y + dBy * t
+          }
+        }
+
+        pt.x = nx
+        pt.y = ny
         break
       }
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/tt_instructions#align-points
       case Opcode.ALIGNPTS: {
+        // p1 from zp1, p2 from zp0
         const p1 = this.stack.popU32()
         const p2 = this.stack.popU32()
 
-        // TODO: this instruction
+        const pv = this.gs.projectionVector
+        const pt1 = this.zones[this.gs.zp1][p1]
+        const pt2 = this.zones[this.gs.zp0][p2]
+
+        // Distance between the two points along projection vector
+        const dist = pv.x * (pt2.x - pt1.x) + pv.y * (pt2.y - pt1.y)
+        // Move each point half the distance toward the other
+        const move = Math.trunc(dist / 2)
+
+        this.movePoint(this.gs.zp1, p1, move)
+        this.movePoint(this.gs.zp0, p2, move - dist)
         break
       }
 
       case Opcode.IP: {
+        const rp1 = this.gs.rp1
+        const rp2 = this.gs.rp2
+        const dv = this.dualProjVec()
+        const pv = this.gs.projectionVector
+
+        // Reference point positions (hinted)
+        const ref1Hinted = this.zones[this.gs.zp0][rp1]
+        const ref2Hinted = this.zones[this.gs.zp1][rp2]
+
+        // Reference point positions (original/scaled for dual projection)
+        const ref1Orig = this.zonesOriginal[this.gs.zp0][rp1]
+        const ref2Orig = this.zonesOriginal[this.gs.zp1][rp2]
+
+        // Ranges in hinted space and original space along the projection vectors
+        const currentRange =
+          pv.x * (ref2Hinted.x - ref1Hinted.x) + pv.y * (ref2Hinted.y - ref1Hinted.y)
+        const oldRange =
+          dv.x * (ref2Orig.x - ref1Orig.x) + dv.y * (ref2Orig.y - ref1Orig.y)
+
         const points = this.loop()
         for (const p of points) {
-          // TODO: this instruction
+          const ptHinted = this.zones[this.gs.zp2][p]
+          const ptOrig = this.zonesOriginal[this.gs.zp2][p]
+
+          // Desired projection in original space (relative to ref1)
+          const origRef1Proj = dv.x * ref1Orig.x + dv.y * ref1Orig.y
+          const ptOrigProj = dv.x * ptOrig.x + dv.y * ptOrig.y
+          let desiredProjection = ptOrigProj - origRef1Proj
+
+          if (oldRange !== 0) {
+            // Scale: desiredProjection = desiredProjection * currentRange / oldRange
+            desiredProjection = (desiredProjection * currentRange) / oldRange
+          }
+
+          // Current projection relative to ref1
+          const ref1HintedProj = pv.x * ref1Hinted.x + pv.y * ref1Hinted.y
+          const currentProjection = pv.x * ptHinted.x + pv.y * ptHinted.y - ref1HintedProj
+
+          this.movePoint(this.gs.zp2, p, desiredProjection - currentProjection)
         }
 
         break
@@ -1019,8 +1232,9 @@ export class VirtualMachine {
 
       case Opcode.IUP0:
       case Opcode.IUP1: {
-        const a = opcode & 0b1
-        // TODO: this instruction
+        // IUP0 = y axis (0x30), IUP1 = x axis (0x31)
+        const useX = Boolean(opcode & 0b1)
+        this.interpolateUntouchedPoints(useX)
         break
       }
 
@@ -1106,13 +1320,15 @@ export class VirtualMachine {
 
       case Opcode.CINDEX: {
         const k = this.stack.pop()
-        this.stack.push(this.stack.at(k))
+        // k is 1-indexed from the top; convert to 0-indexed from bottom
+        this.stack.push(this.stack.at(this.stack.depth() - k))
         break
       }
 
       case Opcode.MINDEX: {
         const k = this.stack.pop()
-        const value = this.stack.delete(k)
+        // k is 1-indexed from the top; convert to 0-indexed from bottom
+        const value = this.stack.delete(this.stack.depth() - k)
         this.stack.push(value)
         break
       }
@@ -1356,14 +1572,9 @@ export class VirtualMachine {
       case Opcode.NROUND1:
       case Opcode.NROUND2:
       case Opcode.NROUND3: {
-        const ab = opcode & 0b11
+        // No engine characteristics in this implementation; value passes through unchanged.
         const n1 = this.stack.pop()
-
-        // TODO: do something with engine characteristic
-
-        const n2 = n1
-        this.stack.push(n2)
-
+        this.stack.push(n1)
         break
       }
 
@@ -1460,6 +1671,21 @@ export class VirtualMachine {
         // TODO: this instruction
         this.stack.push(0)
         this.stack.push(0)
+        break
+      }
+
+      case Opcode.GETDATA: {
+        // Apple implementation: type 1 = random number; anything else = failure
+        const type = this.stack.pop()
+        let success = false
+        if (type === 1) {
+          const n = this.stack.popU32()
+          if (n !== 0) {
+            this.stack.push(17 % n) // "fair dice roll" constant from Apple
+            success = true
+          }
+        }
+        this.stack.push(success ? 1 : 0)
         break
       }
 
@@ -1561,6 +1787,190 @@ export class VirtualMachine {
         return value + this.compensation.black
       case DistanceType.WHITE:
         return value + this.compensation.white
+    }
+  }
+
+  /** Returns the dual projection vector, falling back to projectionVector if not set. */
+  private dualProjVec() {
+    return this.gs.dualProjectionVector ?? this.gs.projectionVector
+  }
+
+  /**
+   * Moves a point by `delta` (measured along the projection vector) in the direction
+   * of the freedom vector. Accounts for the dot product between the two vectors.
+   */
+  private movePoint(zoneIdx: number, pointIdx: number, delta: number) {
+    const { freedomVector: fv, projectionVector: pv } = this.gs
+
+    let pDotF = pv.x * fv.x + pv.y * fv.y
+
+    // If the vectors are nearly orthogonal, clamp to avoid degenerate division.
+    // Apple uses 1/16 as the minimum magnitude threshold.
+    if (pDotF !== 0 && Math.abs(pDotF) < 1 / 16) {
+      pDotF = pDotF < 0 ? -1 : 1
+    } else if (pDotF === 0) {
+      pDotF = 1
+    }
+
+    const pt = this.zones[zoneIdx][pointIdx]
+    pt.x += (delta * fv.x) / pDotF
+    pt.y += (delta * fv.y) / pDotF
+
+    this.touched[zoneIdx].add(pointIdx)
+  }
+
+  /**
+   * Returns a unit vector from p1 to p2, optionally rotated 90° CCW.
+   * Falls back to (1, 0) if p1 === p2 (zero-length line).
+   */
+  private unitVectorFromPoints(
+    p1: { x: number; y: number },
+    p2: { x: number; y: number },
+    rotate: boolean,
+  ): { x: number; y: number } {
+    let dx = p2.x - p1.x
+    let dy = p2.y - p1.y
+    const m = Math.hypot(dx, dy)
+
+    if (m === 0) {
+      // Zero-length line: default to x-axis
+      return rotate ? { x: 0, y: 1 } : { x: 1, y: 0 }
+    }
+
+    dx /= m
+    dy /= m
+
+    if (rotate) {
+      return { x: -dy, y: dx }
+    }
+    return { x: dx, y: dy }
+  }
+
+  /** Applies single-width cut-in: if distance is close to singleWidthValue, snap to it. */
+  private applySingleWidthCutIn(distance: number): number {
+    const swci = this.gs.singeWidthCutIn
+    if (swci === 0) return distance
+    const sw = Math.abs(this.gs.singleWidthValue)
+    if (Math.abs(Math.abs(distance) - sw) < swci) {
+      return distance < 0 ? -sw : sw
+    }
+    return distance
+  }
+
+  /**
+   * Rounds distanceToMove, applying CVT cut-in: if the distance deviates from
+   * distanceBetweenPoints by more than controlValueCutIn, use distanceBetweenPoints.
+   */
+  private roundAndCutIn(distanceToMove: number, distanceBetweenPoints: number): number {
+    const cut = Math.abs(distanceToMove - distanceBetweenPoints)
+    if (cut > this.gs.controlValueCutIn) {
+      distanceToMove = distanceBetweenPoints
+    }
+    return this.round(distanceToMove)
+  }
+
+  /** IUP: interpolate untouched points along x (useX=true) or y (useX=false) axis. */
+  private interpolateUntouchedPoints(useX: boolean) {
+    const zone = this.zones[1] // IUP always operates on zone 1 (glyph zone)
+    const origZone = this.zonesOriginal[1]
+    const touched = this.touched[1]
+    const contours = this.glyph.endPtsOfContours
+
+    let contourStart = 0
+    for (const contourEnd of contours) {
+      const contourLen = contourEnd - contourStart + 1
+
+      if (contourLen === 0) {
+        contourStart = contourEnd + 1
+        continue
+      }
+
+      // Find first touched point in this contour
+      let firstTouched = -1
+      for (let i = contourStart; i <= contourEnd; i++) {
+        if (touched.has(i)) {
+          firstTouched = i
+          break
+        }
+      }
+
+      if (firstTouched === -1) {
+        // No touched points in this contour; leave untouched points as-is
+        contourStart = contourEnd + 1
+        continue
+      }
+
+      // Walk the contour starting from the first touched point
+      let refStart = firstTouched
+      let refEnd = firstTouched
+
+      do {
+        // Advance refEnd to next touched point (wrapping within contour)
+        let next = refEnd
+        do {
+          next = next === contourEnd ? contourStart : next + 1
+          if (next === refStart) break
+        } while (!touched.has(next))
+
+        refEnd = next
+
+        if (refStart === refEnd) {
+          // Only one touched point: shift all untouched by this point's delta
+          const origCoord = useX ? origZone[refStart].x : origZone[refStart].y
+          const hintedCoord = useX ? zone[refStart].x : zone[refStart].y
+          const delta = hintedCoord - origCoord
+
+          for (let i = contourStart; i <= contourEnd; i++) {
+            if (!touched.has(i)) {
+              if (useX) zone[i].x += delta
+              else zone[i].y += delta
+            }
+          }
+          break
+        }
+
+        // Interpolate untouched points between refStart and refEnd
+        const origLow = useX ? origZone[refStart].x : origZone[refStart].y
+        const origHigh = useX ? origZone[refEnd].x : origZone[refEnd].y
+
+        const [lowIdx, highIdx] =
+          origLow <= origHigh ? [refStart, refEnd] : [refEnd, refStart]
+        const origMin = useX ? origZone[lowIdx].x : origZone[lowIdx].y
+        const origMax = useX ? origZone[highIdx].x : origZone[highIdx].y
+        const hintedMin = useX ? zone[lowIdx].x : zone[lowIdx].y
+        const hintedMax = useX ? zone[highIdx].x : zone[highIdx].y
+        const dMin = hintedMin - (useX ? origZone[lowIdx].x : origZone[lowIdx].y)
+        const dMax = hintedMax - (useX ? origZone[highIdx].x : origZone[highIdx].y)
+
+        // Walk from refStart+1 to refEnd-1 (wrapping)
+        let i = refStart
+        while (true) {
+          i = i === contourEnd ? contourStart : i + 1
+          if (i === refEnd) break
+          if (touched.has(i)) continue
+
+          const origCoord = useX ? origZone[i].x : origZone[i].y
+          let newCoord: number
+
+          if (origCoord <= origMin) {
+            newCoord = (useX ? zone[i].x : zone[i].y) + dMin
+          } else if (origCoord >= origMax) {
+            newCoord = (useX ? zone[i].x : zone[i].y) + dMax
+          } else {
+            // Linear interpolation in original space, applied in hinted space
+            const ratio = (origMax - origMin) !== 0 ?
+              (origCoord - origMin) / (origMax - origMin) : 0
+            newCoord = hintedMin + ratio * (hintedMax - hintedMin)
+          }
+
+          if (useX) zone[i].x = newCoord
+          else zone[i].y = newCoord
+        }
+
+        refStart = refEnd
+      } while (refStart !== firstTouched)
+
+      contourStart = contourEnd + 1
     }
   }
 

@@ -282,4 +282,5 @@ export enum Opcode {
 
   GETINFO = 0x88,
   GETVARIATION = 0x91,
+  GETDATA = 0x92,
 }
