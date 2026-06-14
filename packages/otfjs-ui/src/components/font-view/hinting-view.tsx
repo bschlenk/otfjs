@@ -3,10 +3,11 @@ import {
   Font,
   GlyphEnriched,
   GlyphSimple,
-  VirtualMachine,
   renderGlyphToCanvas,
   getGlyphIndex,
 } from 'otfjs'
+
+import { runHintingVM } from './hinting-utils'
 
 import styles from './hinting-view.module.css'
 
@@ -406,34 +407,8 @@ function runHinting(
   upem: number,
 ): HintResult | null {
   if (!glyph.instructions.length) return null
-
-  try {
-    const scale = fontSize / upem
-    const scaledGlyph = scaleGlyph(glyph, scale)
-
-    const vm = new VirtualMachine(font)
-    vm.setFontSize(fontSize)
-    vm.cvt = vm.cvt.map((v) => v * scale)
-    vm.runFpgm()
-    vm.runPrep()
-    vm.setGlyph(scaledGlyph)
-    vm.runGlyph()
-
-    const hintedGlyph = vm.getGlyph()
-    const canvas = renderGlyphToOffscreen(hintedGlyph, 1)
-    return { glyph: hintedGlyph, canvas }
-  } catch {
-    return null
-  }
-}
-
-function scaleGlyph(glyph: GlyphSimple, scale: number): GlyphSimple {
-  return {
-    ...glyph,
-    xMin: glyph.xMin * scale,
-    yMin: glyph.yMin * scale,
-    xMax: glyph.xMax * scale,
-    yMax: glyph.yMax * scale,
-    points: glyph.points.map((p) => ({ ...p, x: p.x * scale, y: p.y * scale })),
-  }
+  const { glyph: hintedGlyph, error } = runHintingVM(font, glyph, fontSize, upem)
+  if (error) return null
+  const canvas = renderGlyphToOffscreen(hintedGlyph, 1)
+  return { glyph: hintedGlyph, canvas }
 }

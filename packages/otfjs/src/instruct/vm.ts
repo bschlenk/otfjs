@@ -1583,10 +1583,9 @@ export class VirtualMachine {
       case Opcode.CALL: {
         const f = this.stack.pop()
         const fn = this.fns[f]
-
-        assert(!!fn, `Function ${f} not defined`)
-
-        this.run(fn.inst, fn.pc)
+        // Apple: silently ignore calls to undefined functions (matching the
+        // original C interpreter's "quietly returned if not yet defined" behaviour).
+        if (fn) this.run(fn.inst, fn.pc)
         break
       }
 
@@ -1594,10 +1593,11 @@ export class VirtualMachine {
         const f = this.stack.pop()
         const count = this.stack.pop()
         const fn = this.fns[f]
-        assert(!!fn, `Function ${f} not defined`)
-
-        for (let i = 0; i < count; ++i) {
-          this.run(fn.inst, fn.pc)
+        // Same leniency as CALL.
+        if (fn) {
+          for (let i = 0; i < count; ++i) {
+            this.run(fn.inst, fn.pc)
+          }
         }
 
         break

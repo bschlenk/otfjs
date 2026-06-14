@@ -17,11 +17,12 @@ import {
 
 import { rgbaToCss } from '../../utils/color'
 import { GlyphEditor } from './glyph-editor'
+import { HintingDebug } from './hinting-debug'
 import { HintingView } from './hinting-view'
 
 import glyfStyles from './glyf-view.module.css'
 
-type GlyfMode = 'outline' | 'hinting'
+type GlyfMode = 'outline' | 'hinting' | 'debug'
 
 export function GlyfView({ font }: { font: Font }) {
   const [glyfId, setGlyfId] = useState<number | null>(null)
@@ -61,13 +62,23 @@ export function GlyfView({ font }: { font: Font }) {
           >
             Hinting
           </button>
+          <button
+            className={clsx(glyfStyles.modeTab, {
+              [glyfStyles.modeTabActive]: mode === 'debug',
+            })}
+            onClick={() => setMode('debug')}
+          >
+            Debug
+          </button>
         </div>
       </div>
 
       <div className={glyfStyles.glyphDetailBody}>
         {mode === 'outline' ?
           <GlyphEditor glyph={glyph} upem={head.unitsPerEm} />
-        : <HintingView font={font} glyphId={glyfId} />}
+        : mode === 'hinting' ?
+          <HintingView font={font} glyphId={glyfId} />
+        : <HintingDebug font={font} glyphId={glyfId} />}
       </div>
     </div>
   )

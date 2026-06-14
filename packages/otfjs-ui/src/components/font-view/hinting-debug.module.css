@@ -1,0 +1,170 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Controls bar — reuses design from hinting-view */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.glyphNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navBtn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.navBtn:hover { background: var(--color-bg-selected); }
+
+.glyphInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+}
+
+.glyphChar {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.glyphId {
+  font-size: 0.65rem;
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+  font-family: monospace;
+}
+
+.charInput {
+  width: 90px;
+  padding: 4px 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-family: inherit;
+}
+
+.charInput:focus { outline: 1px solid var(--color-border-selected); }
+.charInput::placeholder { color: var(--color-text-tertiary); }
+
+.sizeControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sizeLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  min-width: 28px;
+  text-align: center;
+}
+
+.sizeValue {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+}
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 140px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  outline: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.toggle input { cursor: pointer; }
+
+.legend {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+
+.legendOriginal { color: rgb(255, 80, 80); }
+.legendHinted   { color: rgb(80, 160, 255); }
+
+/* Status bar */
+
+.status {
+  padding: 5px 16px;
+  font-size: 0.78rem;
+  font-family: monospace;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.statusOk    { color: var(--color-text-secondary); }
+.statusWarn  { color: #d4a520; }
+.statusError { color: #e05555; }
+
+/* SVG area */
+
+.svg {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: block;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  font-size: 0.9rem;
+}
