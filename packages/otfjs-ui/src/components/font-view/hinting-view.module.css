@@ -1,0 +1,228 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Controls bar ─────────────────────────────── */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* Glyph navigation */
+
+.glyphNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navBtn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.navBtn:hover {
+  background: var(--color-bg-selected);
+  color: var(--color-text);
+}
+
+.glyphInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+}
+
+.glyphChar {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.glyphCharMissing {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  font-family: monospace;
+}
+
+.glyphId {
+  font-size: 0.65rem;
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+}
+
+.charInput {
+  width: 90px;
+  padding: 4px 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-family: inherit;
+}
+
+.charInput:focus {
+  outline: 1px solid var(--color-border-selected);
+}
+
+.charInput::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Font size slider */
+
+.sizeControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sizeLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  min-width: 28px;
+  text-align: center;
+}
+
+.sizeValue {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+}
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 140px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  outline: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+}
+
+.noHintingNote {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  font-style: italic;
+  margin-left: auto;
+}
+
+/* ── Compare view ─────────────────────────────── */
+
+.compare {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 1px;
+  background: var(--color-border);
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  font-size: 0.9rem;
+}
+
+/* ── Individual panel ─────────────────────────── */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  align-items: center;
+  background: var(--color-bg);
+  overflow: hidden;
+  padding: 12px 8px 12px;
+  gap: 10px;
+}
+
+.panelLabel {
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+
+.canvasWrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pixelCanvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.actualSize {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  min-height: 36px;
+  justify-content: center;
+}
+
+.actualLabel {
+  font-size: 0.65rem;
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.actualCanvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+  min-width: 4px;
+  min-height: 4px;
+}

@@ -1,0 +1,63 @@
+.glyphDetail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.glyphDetailHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.backButton {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.backButton:hover {
+  background: var(--color-bg-selected);
+}
+
+.modeTabs {
+  display: flex;
+  gap: 2px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.modeTab {
+  padding: 3px 12px;
+  font-size: 0.8rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.modeTab:hover {
+  color: var(--color-text);
+}
+
+.modeTabActive {
+  background: var(--color-bg-selected);
+  color: var(--color-text);
+}
+
+.glyphDetailBody {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}

@@ -636,23 +636,14 @@ export class VirtualMachine {
       }
 
       case Opcode.MPPEM: {
-        // Pushes the current number of pixels per em onto the stack. Pixels per
-        // em is a function of the resolution of the rendering device and the
-        // current point size and the current transformation matrix. This
-        // instruction looks at the projection vector and returns the number of
-        // pixels per em in that direction. The number is always an integer.
-
-        // TODO: not sure what it means to measure along the projection vector,
-        // or why that would always be an integer
-        this.stack.push(16)
+        // Pixels per em — for axis-aligned projection vectors, equals fontSize.
+        this.stack.push(Math.round(this.fontSize))
         break
       }
 
       case Opcode.MPS: {
-        // TODO: this needs to be passed in to the process function
-        // TODO: microsoft and apple docs disagree on what the pushed type looks
-        // like, microsoft says 26.6, apple says u16
-        this.stack.push26dot6(12)
+        // Point size — treat as equal to pixel size for screen rendering.
+        this.stack.push(Math.round(this.fontSize))
         break
       }
 

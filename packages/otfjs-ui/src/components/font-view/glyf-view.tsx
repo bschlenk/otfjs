@@ -1,4 +1,5 @@
 import { createElement, type JSX, useState } from 'react'
+import clsx from 'clsx'
 import * as mat from '@bschlenk/mat'
 import * as vec from '@bschlenk/vec'
 import {
@@ -10,27 +11,65 @@ import {
   Extend,
   Font,
   GlyphEnriched,
+  GlyphSimple,
   glyphToSvgPath,
 } from 'otfjs'
 
 import { rgbaToCss } from '../../utils/color'
 import { GlyphEditor } from './glyph-editor'
+import { HintingView } from './hinting-view'
+
+import glyfStyles from './glyf-view.module.css'
+
+type GlyfMode = 'outline' | 'hinting'
 
 export function GlyfView({ font }: { font: Font }) {
-  const [glyf, setGlyf] = useState<number | null>(null)
+  const [glyfId, setGlyfId] = useState<number | null>(null)
+  const [mode, setMode] = useState<GlyfMode>('hinting')
+
   const head = font.getTable('head')
 
-  if (!glyf) {
-    return <AllGlyfView font={font} onClick={(i) => setGlyf(i)} />
+  if (glyfId === null) {
+    return <AllGlyfView font={font} onClick={(i) => setGlyfId(i)} />
   }
 
+  const glyph = font.getGlyph(glyfId) as GlyphSimple
+
   return (
-    <>
-      <GlyphEditor glyph={font.getGlyph(glyf)} upem={head.unitsPerEm} />
-      <button className="absolute" onClick={() => setGlyf(null)}>
-        Back
-      </button>
-    </>
+    <div className={glyfStyles.glyphDetail}>
+      <div className={glyfStyles.glyphDetailHeader}>
+        <button
+          className={glyfStyles.backButton}
+          onClick={() => setGlyfId(null)}
+        >
+          ← Back
+        </button>
+        <div className={glyfStyles.modeTabs}>
+          <button
+            className={clsx(glyfStyles.modeTab, {
+              [glyfStyles.modeTabActive]: mode === 'outline',
+            })}
+            onClick={() => setMode('outline')}
+          >
+            Outline
+          </button>
+          <button
+            className={clsx(glyfStyles.modeTab, {
+              [glyfStyles.modeTabActive]: mode === 'hinting',
+            })}
+            onClick={() => setMode('hinting')}
+          >
+            Hinting
+          </button>
+        </div>
+      </div>
+
+      <div className={glyfStyles.glyphDetailBody}>
+        {mode === 'outline' ?
+          <GlyphEditor glyph={glyph} upem={head.unitsPerEm} />
+        : <HintingView font={font} glyphId={glyfId} />}
+      </div>
+    </div>
   )
 }
 
