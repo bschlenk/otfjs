@@ -25,10 +25,10 @@ const BINARY_FILTER = `url('data:image/svg+xml,\
 export interface HintingViewProps {
   font: Font
   glyphId: number
+  onGlyphChange: (id: number) => void
 }
 
-export function HintingView({ font, glyphId: initialGlyphId }: HintingViewProps) {
-  const [glyphId, setGlyphId] = useState(initialGlyphId)
+export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) {
   const [fontSize, setFontSize] = useState(16)
   const [charInput, setCharInput] = useState('')
 
@@ -48,9 +48,9 @@ export function HintingView({ font, glyphId: initialGlyphId }: HintingViewProps)
       const cp = char.codePointAt(0)
       if (cp == null) return
       const id = getGlyphIndex(font, cp)
-      if (id > 0) setGlyphId(id)
+      if (id > 0) onGlyphChange(id)
     },
-    [font],
+    [font, onGlyphChange],
   )
 
   // Find the Unicode character for the current glyph.
@@ -88,7 +88,7 @@ export function HintingView({ font, glyphId: initialGlyphId }: HintingViewProps)
         <div className={styles.glyphNav}>
           <button
             className={styles.navBtn}
-            onClick={() => setGlyphId((id) => Math.max(0, id - 1))}
+            onClick={() => onGlyphChange(Math.max(0, glyphId - 1))}
             title="Previous glyph"
           >
             ‹
@@ -105,9 +105,7 @@ export function HintingView({ font, glyphId: initialGlyphId }: HintingViewProps)
           </span>
           <button
             className={styles.navBtn}
-            onClick={() =>
-              setGlyphId((id) => Math.min(numGlyphs - 1, id + 1))
-            }
+            onClick={() => onGlyphChange(Math.min(numGlyphs - 1, glyphId + 1))}
             title="Next glyph"
           >
             ›

@@ -7,10 +7,10 @@ import styles from './hinting-debug.module.css'
 export interface HintingDebugProps {
   font: Font
   glyphId: number
+  onGlyphChange: (id: number) => void
 }
 
-export function HintingDebug({ font, glyphId: initialGlyphId }: HintingDebugProps) {
-  const [glyphId, setGlyphId] = useState(initialGlyphId)
+export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps) {
   const [fontSize, setFontSize] = useState(16)
   const [charInput, setCharInput] = useState('')
   const [showPoints, setShowPoints] = useState(true)
@@ -36,7 +36,7 @@ export function HintingDebug({ font, glyphId: initialGlyphId }: HintingDebugProp
     const cp = char.codePointAt(0)
     if (cp == null) return
     const id = getGlyphIndex(font, cp)
-    if (id > 0) setGlyphId(id)
+    if (id > 0) onGlyphChange(id)
   }
 
   // Run hinting VM and compare point positions
@@ -79,12 +79,12 @@ export function HintingDebug({ font, glyphId: initialGlyphId }: HintingDebugProp
       <div className={styles.controls}>
         {/* Glyph nav */}
         <div className={styles.glyphNav}>
-          <button className={styles.navBtn} onClick={() => setGlyphId((id) => Math.max(0, id - 1))}>‹</button>
+          <button className={styles.navBtn} onClick={() => onGlyphChange(Math.max(0, glyphId - 1))}>‹</button>
           <span className={styles.glyphInfo}>
             <span className={styles.glyphChar}>{glyphChar ?? <span className={styles.glyphId}>#{glyphId}</span>}</span>
             {glyphChar && <span className={styles.glyphId}>glyph {glyphId}</span>}
           </span>
-          <button className={styles.navBtn} onClick={() => setGlyphId((id) => Math.min(numGlyphs - 1, id + 1))}>›</button>
+          <button className={styles.navBtn} onClick={() => onGlyphChange(Math.min(numGlyphs - 1, glyphId + 1))}>›</button>
           <input
             className={styles.charInput}
             value={charInput}

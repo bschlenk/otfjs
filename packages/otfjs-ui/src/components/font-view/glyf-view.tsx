@@ -77,8 +77,8 @@ export function GlyfView({ font }: { font: Font }) {
         {mode === 'outline' ?
           <GlyphEditor glyph={glyph} upem={head.unitsPerEm} />
         : mode === 'hinting' ?
-          <HintingView font={font} glyphId={glyfId} />
-        : <HintingDebug font={font} glyphId={glyfId} />}
+          <HintingView font={font} glyphId={glyfId} onGlyphChange={setGlyfId} />
+        : <HintingDebug font={font} glyphId={glyfId} onGlyphChange={setGlyfId} />}
       </div>
     </div>
   )
