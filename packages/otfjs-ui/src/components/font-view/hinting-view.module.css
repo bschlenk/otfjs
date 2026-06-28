@@ -134,6 +134,16 @@
   cursor: pointer;
 }
 
+.aaToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
 .noHintingNote {
   font-size: 0.75rem;
   color: var(--color-text-tertiary);
@@ -189,6 +199,11 @@
   justify-content: center;
   min-height: 0;
   overflow: hidden;
+  cursor: grab;
+}
+
+.canvasWrap:active {
+  cursor: grabbing;
 }
 
 .pixelCanvas {

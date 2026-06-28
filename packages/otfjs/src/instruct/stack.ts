@@ -31,6 +31,7 @@ export class Stack {
   }
 
   pop() {
+    if (this.top <= 0) throw new Error(`Stack underflow (depth=${this.top})`)
     return this.values[--this.top]
   }
 

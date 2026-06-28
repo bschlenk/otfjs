@@ -550,17 +550,15 @@ describe('IF / ELSE / EIF', () => {
 
 describe('JMPR', () => {
   it('jumps unconditionally by offset', () => {
-    // Jump forward 3 bytes, skipping a PUSHB
-    // bytes: NPUSHB 1 2 | JMPR-offset PUSHB0 99 | PUSHB0 42
-    // offset = 2 (skip PUSHB0 99 = 2 bytes; from after JMPR, advance 2-1=1 byte)
+    // JMPR offset is from the start of the JMPR instruction, so offset=3 skips 2 bytes
+    // (PUSHB0 opcode + its data byte 99) and lands at PUSHB0 42.
     const vm = run([
-      ...npushb(2),          // value to skip = 2
-      ...npushb(2),          // push offset = 2
-      Opcode.JMPR,           // jump forward 2-1=1 byte (relative to current pc)
-      Opcode.PUSHB0, 99,     // this gets skipped
-      Opcode.PUSHB0, 42,     // this is reached
+      ...npushb(2),          // push value 2 (left on stack after jump)
+      ...npushb(3),          // push offset = 3 (skips 2 bytes: PUSHB0 + 99)
+      Opcode.JMPR,
+      Opcode.PUSHB0, 99,     // skipped
+      Opcode.PUSHB0, 42,     // reached
     ])
-    // Stack: 2, 42 (2 is the original push, 42 is pushed after jump)
     expect(stackTop(vm, 1)).toEqual([42])
   })
 })

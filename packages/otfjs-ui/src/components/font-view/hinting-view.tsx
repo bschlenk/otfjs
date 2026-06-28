@@ -11,16 +11,6 @@ import { runHintingVM } from './hinting-utils'
 
 import styles from './hinting-view.module.css'
 
-// SVG filter that quantizes alpha to 0 or 1, giving crisp binary pixels.
-// Same approach as glyph-editor.tsx.
-const BINARY_FILTER = `url('data:image/svg+xml,\
-<svg xmlns="http://www.w3.org/2000/svg">\
-<filter id="f" color-interpolation-filters="sRGB">\
-<feComponentTransfer>\
-<feFuncA type="discrete" tableValues="0 0 0 0 0 1 1 1"/>\
-</feComponentTransfer>\
-</filter>\
-</svg>#f')`
 
 export interface HintingViewProps {
   font: Font
@@ -31,6 +21,8 @@ export interface HintingViewProps {
 export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) {
   const [fontSize, setFontSize] = useState(16)
   const [charInput, setCharInput] = useState('')
+  const [antiAlias, setAntiAlias] = useState(false)
+  const [gridOffset, setGridOffset] = useState({ x: 0, y: 0 })
 
   const upem = useMemo(() => font.getTable('head').unitsPerEm, [font])
   const numGlyphs = useMemo(() => font.getTable('maxp').numGlyphs, [font])
@@ -66,19 +58,36 @@ export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) 
 
   const scale = fontSize / upem
 
+  // Fractional pixel offset in [0,1) — drives both rendering and grid display shift
+  const subPixelX = ((gridOffset.x % 1) + 1) % 1
+  const subPixelY = ((gridOffset.y % 1) + 1) % 1
+  // Integer parity tracks cumulative full-pixel crossings so the checkerboard
+  // doesn't flip when subPixelX wraps at each 1px boundary
+  const parityX = ((Math.floor(gridOffset.x) % 2) + 2) % 2
+  const parityY = ((Math.floor(gridOffset.y) % 2) + 2) % 2
+
   const unhintedPixels = useMemo(
-    () => (glyph ? renderGlyphToOffscreen(glyph, scale) : null),
-    [glyph, scale],
+    () => (glyph ? renderGlyphToOffscreen(glyph, scale, antiAlias, subPixelX, subPixelY) : null),
+    [glyph, scale, antiAlias, subPixelX, subPixelY],
   )
 
-  const hintedResult = useMemo(
-    () => (glyph ? runHinting(font, glyph, fontSize, upem) : null),
-    [font, glyph, fontSize, upem],
+  // VM run — phase-aware, re-runs when phase or font/glyph/size changes
+  const hintedGlyphResult = useMemo(
+    () => (glyph ? runHintingVM(font, glyph, fontSize, upem, subPixelX, subPixelY) : null),
+    [font, glyph, fontSize, upem, subPixelX, subPixelY],
   )
 
-  const hintedPixels = hintedResult?.canvas ?? unhintedPixels
-  const hintedGlyph = hintedResult?.glyph ?? glyph
-  const hintedScale = hintedResult ? 1 : scale
+  // Canvas render — phase is baked into the VM output coordinates, so no
+  // additional sub-pixel offset here; the bitmap aligns with the grid as-is
+  const hintedPixels = useMemo(() => {
+    if (!hintedGlyphResult || hintedGlyphResult.error) return null
+    return renderGlyphToOffscreen(hintedGlyphResult.glyph, 1, antiAlias, 0, 0)
+  }, [hintedGlyphResult, antiAlias])
+
+  const handleDrag = useCallback((dx: number, dy: number) => {
+    setGridOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }))
+  }, [])
+
   const hasHinting = glyph ? glyph.instructions.length > 0 : false
 
   return (
@@ -140,6 +149,15 @@ export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) 
           <span className={styles.sizeValue}>{fontSize}px</span>
         </div>
 
+        <label className={styles.aaToggle}>
+          <input
+            type="checkbox"
+            checked={antiAlias}
+            onChange={(e) => setAntiAlias(e.target.checked)}
+          />
+          Anti-aliased
+        </label>
+
         {!hasHinting && (
           <span className={styles.noHintingNote}>No hinting instructions</span>
         )}
@@ -152,12 +170,22 @@ export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) 
             glyph={glyph}
             pixels={unhintedPixels}
             scale={scale}
+            subPixelX={subPixelX}
+            subPixelY={subPixelY}
+            parityX={parityX}
+            parityY={parityY}
+            onDrag={handleDrag}
           />
           <GlyphPanel
             label="With hinting"
-            glyph={hintedGlyph ?? glyph}
-            pixels={hintedPixels}
-            scale={hintedScale}
+            glyph={glyph}
+            pixels={hintedPixels ?? unhintedPixels}
+            scale={scale}
+            subPixelX={subPixelX}
+            subPixelY={subPixelY}
+            parityX={parityX}
+            parityY={parityY}
+            onDrag={handleDrag}
           />
         </div>
       ) : (
@@ -176,12 +204,19 @@ interface GlyphPanelProps {
   glyph: GlyphSimple
   pixels: HTMLCanvasElement | null
   scale: number
+  subPixelX: number
+  subPixelY: number
+  parityX: number
+  parityY: number
+  onDrag: (dx: number, dy: number) => void
 }
 
-function GlyphPanel({ label, glyph, pixels, scale }: GlyphPanelProps) {
+function GlyphPanel({ label, glyph, pixels, scale, subPixelX, subPixelY, parityX, parityY, onDrag }: GlyphPanelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const actualRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
+  const zoomRef = useRef(1)
+  const dragRef = useRef<{ x: number; y: number } | null>(null)
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current
@@ -195,6 +230,7 @@ function GlyphPanel({ label, glyph, pixels, scale }: GlyphPanelProps) {
     const zoomH = Math.max(1, Math.floor(wrapH / pixels.height))
     const zoomW = Math.max(1, Math.floor(wrapW / pixels.width))
     const zoom = Math.min(zoomH, zoomW)
+    zoomRef.current = zoom
     const displayW = pixels.width * zoom
     const displayH = pixels.height * zoom
 
@@ -209,39 +245,47 @@ function GlyphPanel({ label, glyph, pixels, scale }: GlyphPanelProps) {
     ctx.imageSmoothingEnabled = false
     ctx.clearRect(0, 0, displayW, displayH)
 
-    // Checkerboard background (shows empty pixels clearly)
+    // Shift the pixel grid while keeping the glyph path outline fixed
+    ctx.save()
+    ctx.translate(-subPixelX * zoom, -subPixelY * zoom)
+
+    // Checkerboard background — extends one extra row/col to fill the display
+    // after the sub-pixel translate. Parity is derived from the accumulated
+    // integer offset so the pattern doesn't flip when subPixelX wraps at 1px.
     const sq = zoom
     ctx.fillStyle = 'rgba(255,255,255,0.03)'
-    for (let r = 0; r < pixels.height; r++) {
-      for (let c = 0; c < pixels.width; c++) {
-        if ((r + c) % 2 === 0) ctx.fillRect(c * sq, r * sq, sq, sq)
+    for (let r = 0; r <= pixels.height; r++) {
+      for (let c = 0; c <= pixels.width; c++) {
+        if (((c + parityX) + (r + parityY)) % 2 === 0) ctx.fillRect(c * sq, r * sq, sq, sq)
       }
     }
 
     // Scale-up the pixel-exact offscreen canvas — nearest-neighbor via imageSmoothingEnabled
     ctx.drawImage(pixels, 0, 0, displayW, displayH)
 
-    // Pixel grid when large enough
+    // Pixel grid when large enough — extends one extra to cover the trailing gap
     if (zoom >= 5) {
       ctx.strokeStyle = 'rgba(255,255,255,0.18)'
       ctx.lineWidth = 0.5
       ctx.beginPath()
-      for (let x = 0; x <= pixels.width; x++) {
-        ctx.moveTo(x * zoom, 0)
-        ctx.lineTo(x * zoom, displayH)
+      for (let x = 0; x <= pixels.width + 1; x++) {
+        ctx.moveTo(x * zoom, -zoom)
+        ctx.lineTo(x * zoom, displayH + zoom)
       }
-      for (let y = 0; y <= pixels.height; y++) {
-        ctx.moveTo(0, y * zoom)
-        ctx.lineTo(displayW, y * zoom)
+      for (let y = 0; y <= pixels.height + 1; y++) {
+        ctx.moveTo(-zoom, y * zoom)
+        ctx.lineTo(displayW + zoom, y * zoom)
       }
       ctx.stroke()
     }
 
-    // Outline overlay
+    ctx.restore()
+
+    // Outline overlay — drawn outside the grid translation so it stays fixed
     if (zoom >= 3) {
       drawOutline(ctx, glyph, scale, zoom)
     }
-  }, [pixels, glyph, scale])
+  }, [pixels, glyph, scale, subPixelX, subPixelY, parityX, parityY])
 
   // Redraw on content change
   useEffect(() => {
@@ -273,10 +317,34 @@ function GlyphPanel({ label, glyph, pixels, scale }: GlyphPanelProps) {
     ctx.drawImage(pixels, 0, 0, canvas.width, canvas.height)
   }, [pixels])
 
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    dragRef.current = { x: e.clientX, y: e.clientY }
+    e.preventDefault()
+  }, [])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragRef.current) return
+    const dx = e.clientX - dragRef.current.x
+    const dy = e.clientY - dragRef.current.y
+    dragRef.current = { x: e.clientX, y: e.clientY }
+    onDrag(-dx / zoomRef.current, -dy / zoomRef.current)
+  }, [onDrag])
+
+  const handleMouseUp = useCallback(() => {
+    dragRef.current = null
+  }, [])
+
   return (
     <div className={styles.panel}>
       <span className={styles.panelLabel}>{label}</span>
-      <div className={styles.canvasWrap} ref={wrapRef}>
+      <div
+        className={styles.canvasWrap}
+        ref={wrapRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         <canvas ref={canvasRef} className={styles.pixelCanvas} />
       </div>
       <div className={styles.actualSize}>
@@ -301,12 +369,13 @@ function drawOutline(
 ) {
   if (!glyph.points.length) return
 
-  const xOff = glyph.xMin * scale
-  const yOff = glyph.yMax * scale
+  // Match renderGlyphToOffscreen: ox = -floor(xMin*scale)+1, oy = ceil(yMax*scale)+1
+  const xOff = Math.floor(glyph.xMin * scale) - 1
+  const yOff = Math.ceil(glyph.yMax * scale) + 1
 
   // Map glyph coords → display coords
-  const tx = (x: number) => (x * scale - xOff) * zoom + 0.5
-  const ty = (y: number) => (yOff - y * scale) * zoom + 0.5
+  const tx = (x: number) => (x * scale - xOff) * zoom
+  const ty = (y: number) => (yOff - y * scale) * zoom
 
   ctx.save()
   ctx.strokeStyle = 'rgba(80, 200, 255, 0.8)'
@@ -369,11 +438,15 @@ function drawOutline(
 function renderGlyphToOffscreen(
   glyph: GlyphSimple,
   scale: number,
+  antiAlias = false,
+  subPixelX = 0,
+  subPixelY = 0,
 ): HTMLCanvasElement | null {
   if (!glyph.points.length) return null
 
-  const w = Math.max(1, Math.ceil((glyph.xMax - glyph.xMin) * scale) + 2)
-  const h = Math.max(1, Math.ceil((glyph.yMax - glyph.yMin) * scale) + 2)
+  // +4 instead of +2 to give headroom for the [0,1) sub-pixel shift
+  const w = Math.max(1, Math.ceil((glyph.xMax - glyph.xMin) * scale) + 4)
+  const h = Math.max(1, Math.ceil((glyph.yMax - glyph.yMin) * scale) + 4)
 
   const canvas = document.createElement('canvas')
   canvas.width = w
@@ -381,32 +454,25 @@ function renderGlyphToOffscreen(
 
   const ctx = canvas.getContext('2d')!
   ctx.fillStyle = 'white'
-  ctx.filter = BINARY_FILTER
 
-  const ox = -Math.floor(glyph.xMin * scale) + 1
-  const oy = Math.ceil(glyph.yMax * scale) + 1
+  const ox = -Math.floor(glyph.xMin * scale) + 1 + subPixelX
+  const oy = Math.ceil(glyph.yMax * scale) + 1 + subPixelY
   ctx.setTransform(scale, 0, 0, -scale, ox, oy)
 
   renderGlyphToCanvas(glyph, ctx)
   ctx.fill()
 
+  if (!antiAlias) {
+    // Threshold alpha to binary so each pixel is fully on or off.
+    // Safari doesn't support SVG filter references on canvas, so we do this in JS.
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    const img = ctx.getImageData(0, 0, w, h)
+    for (let i = 3; i < img.data.length; i += 4) {
+      img.data[i] = img.data[i] >= 128 ? 255 : 0
+    }
+    ctx.putImageData(img, 0, 0)
+  }
+
   return canvas
 }
 
-interface HintResult {
-  glyph: GlyphSimple
-  canvas: HTMLCanvasElement | null
-}
-
-function runHinting(
-  font: Font,
-  glyph: GlyphSimple,
-  fontSize: number,
-  upem: number,
-): HintResult | null {
-  if (!glyph.instructions.length) return null
-  const { glyph: hintedGlyph, error } = runHintingVM(font, glyph, fontSize, upem)
-  if (error) return null
-  const canvas = renderGlyphToOffscreen(hintedGlyph, 1)
-  return { glyph: hintedGlyph, canvas }
-}

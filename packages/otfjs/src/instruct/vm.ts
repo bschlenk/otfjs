@@ -1,6 +1,3 @@
-// Temporary while I work on this
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import * as vec from '@bschlenk/vec'
 
 import type { Font } from '../font.js'
@@ -100,9 +97,11 @@ export class VirtualMachine {
 
   setFontSize(px: number) {
     this.fontSize = px
+    const scale = px / this.upem
+    this.cvt = [...(this.font.getTableOrNull('cvt ') ?? [])].map(v => v * scale)
   }
 
-  setGlyph(glyph: GlyphSimple | null) {
+  setGlyph(glyph: GlyphSimple | null, advanceWidth = 0, lsb = 0, phaseX = 0, phaseY = 0) {
     // reset each time a new glyph is set
     // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM02/Chap2.html#graphics_state
     this.gs = makeGraphicsState()
@@ -116,33 +115,45 @@ export class VirtualMachine {
     }
 
     this.glyph = glyph
-    // TODO: these need to be scaled first, all instructions expect to operate
-    // on pixel values
+
+    // 4 public phantom points + 4 private zeros (matching Apple's kPrivatePhantomCount = 8)
+    const pp = (x: number, y: number) => ({ x, y, onCurve: true as const })
+    const phantomPoints = [
+      pp(lsb + phaseX, phaseY), // pp0: left side bearing
+      pp(lsb + advanceWidth + phaseX, phaseY), // pp1: advance width endpoint
+      pp(phaseX, phaseY), // pp2: top origin (vertical metrics)
+      pp(phaseX, phaseY), // pp3: advance height endpoint
+      pp(0, 0),
+      pp(0, 0),
+      pp(0, 0),
+      pp(0, 0), // pp4–pp7: private zeros
+    ]
+
+    const shiftedPoints = glyph.points.map(p => ({
+      ...p,
+      x: p.x + phaseX,
+      y: p.y + phaseY,
+    }))
+
     this.zonesOriginal = [
       range(this.maxp.maxTwilightPoints, () => ({ x: 0, y: 0, onCurve: true })),
-      [
-        ...glyph.points,
-        // TODO: these are wrong
-        // phantom points
-        // glyph origin
-        { x: 0, y: 0, onCurve: true },
-        // advance width
-        { x: 0, y: 0, onCurve: true },
-        // top origin
-        { x: 0, y: 0, onCurve: true },
-        // advanc
-        { x: 0, y: 0, onCurve: true },
-      ],
+      [...shiftedPoints, ...phantomPoints],
     ]
     this.zones = structuredClone(this.zonesOriginal)
     this.touched = [new Set(), new Set()]
   }
 
   getGlyph() {
-    return {
-      ...this.glyph,
-      points: this.zones[1].slice(0, this.glyph.points.length),
+    const points = this.zones[1].slice(0, this.glyph.points.length)
+    if (!points.length) return { ...this.glyph, points }
+    let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity
+    for (const p of points) {
+      if (p.x < xMin) xMin = p.x
+      if (p.x > xMax) xMax = p.x
+      if (p.y < yMin) yMin = p.y
+      if (p.y > yMax) yMax = p.y
     }
+    return { ...this.glyph, xMin, xMax, yMin, yMax, points }
   }
 
   /**
@@ -168,12 +179,14 @@ export class VirtualMachine {
       this.run(inst)
     }
   }
+  _tracePrep = false
 
   runGlyph() {
     const inst = this.glyph.instructions
     this.stack.clear()
     this.run(inst)
   }
+  _traceGlyph = false
 
   run(inst: Uint8Array, pc?: number) {
     if (pc != null) {
@@ -275,9 +288,7 @@ export class VirtualMachine {
       case Opcode.WCVTF: {
         const value = this.stack.popU32()
         const c = this.stack.popU32()
-
         const scale = this.fontSize / this.upem
-
         this.cvt[c] = value * scale
         break
       }
@@ -392,42 +403,52 @@ export class VirtualMachine {
 
       case Opcode.SRP0: {
         const value = this.stack.popU32()
+        if (this._traceGlyph || this._tracePrep)
+          console.log(
+            `[${this._tracePrep ? 'prep' : 'vm'}] SRP0 → rp0=${value}`,
+          )
         this.gs.rp0 = value
         break
       }
 
       case Opcode.SRP1: {
         const value = this.stack.popU32()
+        if (this._traceGlyph) console.log(`[vm] SRP1 → rp1=${value}`)
         this.gs.rp1 = value
         break
       }
 
       case Opcode.SRP2: {
         const value = this.stack.popU32()
+        if (this._traceGlyph) console.log(`[vm] SRP2 → rp2=${value}`)
         this.gs.rp2 = value
         break
       }
 
       case Opcode.SZP0: {
         const value = this.stack.popU32()
+        if (this._tracePrep) console.log(`[prep] SZP0 → zp0=${value}`)
         this.gs.zp0 = value
         break
       }
 
       case Opcode.SZP1: {
         const value = this.stack.popU32()
+        if (this._tracePrep) console.log(`[prep] SZP1 → zp1=${value}`)
         this.gs.zp1 = value
         break
       }
 
       case Opcode.SZP2: {
         const value = this.stack.popU32()
+        if (this._tracePrep) console.log(`[prep] SZP2 → zp2=${value}`)
         this.gs.zp2 = value
         break
       }
 
       case Opcode.SZPS: {
         const value = this.stack.popU32()
+        if (this._tracePrep) console.log(`[prep] SZPS → zp0=zp1=zp2=${value}`)
         this.gs.zp0 = this.gs.zp1 = this.gs.zp2 = value
         break
       }
@@ -546,8 +567,7 @@ export class VirtualMachine {
 
       case Opcode.SSW: {
         const value = this.stack.popU32()
-        // TODO: convert to pixels??
-        this.gs.singleWidthValue = value
+        this.gs.singleWidthValue = value * (this.fontSize / this.upem)
         break
       }
 
@@ -583,9 +603,10 @@ export class VirtualMachine {
       case Opcode.GC1: {
         const useOriginal = opcode === Opcode.GC1
         const p = this.stack.popU32()
-        const pt = useOriginal ?
-          this.zonesOriginal[this.gs.zp2][p]
-        : this.zones[this.gs.zp2][p]
+        const pt =
+          useOriginal ?
+            this.zonesOriginal[this.gs.zp2][p]
+          : this.zones[this.gs.zp2][p]
         const pv = useOriginal ? this.dualProjVec() : this.gs.projectionVector
         // Project the point onto the (dual) projection vector
         this.stack.push26dot6(pv.x * pt.x + pv.y * pt.y)
@@ -686,6 +707,11 @@ export class VirtualMachine {
         const dist = pv.x * (refm.x - refo.x) + pv.y * (refm.y - refo.y)
 
         const points = this.loop()
+        if (Math.abs(dist) > 1) {
+          console.log(
+            `[vm] SHP${a} rp=${rp} z=${z} dist=${dist.toFixed(3)} pts=${JSON.stringify(points)}`,
+          )
+        }
         for (const p of points) {
           this.movePoint(this.gs.zp2, p, dist)
         }
@@ -804,8 +830,15 @@ export class VirtualMachine {
         const pt = this.zones[this.gs.zp1][pointToModify]
         const pv = this.gs.projectionVector
         // Current projected distance from ref to point
-        const currentDist = pv.x * (pt.x - refHinted.x) + pv.y * (pt.y - refHinted.y)
-        this.movePoint(this.gs.zp1, pointToModify, distanceValue - currentDist)
+        const currentDist =
+          pv.x * (pt.x - refHinted.x) + pv.y * (pt.y - refHinted.y)
+        const msirpDelta = distanceValue - currentDist
+        if (Math.abs(msirpDelta) > 1) {
+          console.log(
+            `[vm] MSIRP pt=${pointToModify} rp0=${rp0} zp0=${this.gs.zp0} zp1=${this.gs.zp1} rp0y=${refHinted.y.toFixed(3)} pty=${pt.y.toFixed(3)} dist=${distanceValue.toFixed(3)} cur=${currentDist.toFixed(3)} delta=${msirpDelta.toFixed(3)}`,
+          )
+        }
+        this.movePoint(this.gs.zp1, pointToModify, msirpDelta)
 
         this.gs.rp1 = rp0
         this.gs.rp2 = pointToModify
@@ -832,6 +865,8 @@ export class VirtualMachine {
         }
 
         this.movePoint(this.gs.zp0, p, delta)
+        if (this._traceGlyph)
+          console.log(`[vm] MDAP${round ? 1 : 0} p=${p} → rp0=rp1=${p}`)
         this.gs.rp0 = this.gs.rp1 = p
 
         break
@@ -861,6 +896,10 @@ export class VirtualMachine {
           currentProj = pv.x * pt.x + pv.y * pt.y
         }
 
+        if (this._traceGlyph || this._tracePrep)
+          console.log(
+            `[${this._tracePrep ? 'prep' : 'vm'}] MIAP${round ? 1 : 0} p=${p} cvt[${n}]=${cvtValue.toFixed(3)} zp0=${this.gs.zp0} → rp0=rp1=${p}`,
+          )
         this.gs.rp0 = p
         this.gs.rp1 = p
 
@@ -869,6 +908,11 @@ export class VirtualMachine {
           newProj = this.roundAndCutIn(cvtValue, currentProj)
         }
 
+        if (Math.abs(newProj - currentProj) > 1) {
+          console.log(
+            `[vm] MIAP p=${p} cvt[${n}]=${cvtValue.toFixed(3)} cur=${currentProj.toFixed(3)} new=${newProj.toFixed(3)} delta=${(newProj - currentProj).toFixed(3)} round=${round}`,
+          )
+        }
         this.movePoint(this.gs.zp0, p, newProj - currentProj)
         break
       }
@@ -918,7 +962,8 @@ export class VirtualMachine {
         const dv = this.dualProjVec()
         const pt0Orig = this.zonesOriginal[this.gs.zp0][pt0Index]
         const pt1Orig = this.zonesOriginal[this.gs.zp1][pt1Index]
-        let distanceToMove = dv.x * (pt1Orig.x - pt0Orig.x) + dv.y * (pt1Orig.y - pt0Orig.y)
+        let distanceToMove =
+          dv.x * (pt1Orig.x - pt0Orig.x) + dv.y * (pt1Orig.y - pt0Orig.y)
 
         distanceToMove = this.applySingleWidthCutIn(distanceToMove)
         const wasNegative = distanceToMove < 0
@@ -939,9 +984,17 @@ export class VirtualMachine {
         const pv = this.gs.projectionVector
         const pt0Hinted = this.zones[this.gs.zp0][pt0Index]
         const pt1Hinted = this.zones[this.gs.zp1][pt1Index]
-        const currentDist = pv.x * (pt1Hinted.x - pt0Hinted.x) + pv.y * (pt1Hinted.y - pt0Hinted.y)
+        const currentDist =
+          pv.x * (pt1Hinted.x - pt0Hinted.x) +
+          pv.y * (pt1Hinted.y - pt0Hinted.y)
 
-        this.movePoint(this.gs.zp1, pt1Index, distanceToMove - currentDist)
+        const mdrpDelta = distanceToMove - currentDist
+        if (Math.abs(mdrpDelta) > 1) {
+          console.log(
+            `[vm] MDRP pt=${pt1Index} rp0=${pt0Index} orig_dist=${distanceToMove.toFixed(3)} cur=${currentDist.toFixed(3)} delta=${mdrpDelta.toFixed(3)}`,
+          )
+        }
+        this.movePoint(this.gs.zp1, pt1Index, mdrpDelta)
 
         this.gs.rp1 = pt0Index
         this.gs.rp2 = pt1Index
@@ -1013,11 +1066,15 @@ export class VirtualMachine {
           const dv = this.dualProjVec()
           const rpOrig = this.zonesOriginal[this.gs.zp0][rp0]
           const ptOrig = this.zonesOriginal[this.gs.zp1][pointIndex]
-          distanceBetweenPoints = dv.x * (ptOrig.x - rpOrig.x) + dv.y * (ptOrig.y - rpOrig.y)
+          distanceBetweenPoints =
+            dv.x * (ptOrig.x - rpOrig.x) + dv.y * (ptOrig.y - rpOrig.y)
         }
 
         // Auto-flip: if CVT value and measured distance have opposite signs, negate
-        if (this.gs.autoFlip && (distanceToMove < 0) !== (distanceBetweenPoints < 0)) {
+        if (
+          this.gs.autoFlip &&
+          distanceToMove < 0 !== distanceBetweenPoints < 0
+        ) {
           distanceToMove = -distanceToMove
         }
 
@@ -1036,8 +1093,15 @@ export class VirtualMachine {
           )
         }
 
-        const currentDist = pv.x * (pt.x - rpHinted.x) + pv.y * (pt.y - rpHinted.y)
-        this.movePoint(this.gs.zp1, pointIndex, distanceToMove - currentDist)
+        const currentDist =
+          pv.x * (pt.x - rpHinted.x) + pv.y * (pt.y - rpHinted.y)
+        const mirpDelta = distanceToMove - currentDist
+        if (Math.abs(mirpDelta) > 1) {
+          console.log(
+            `[vm] MIRP pt=${pointIndex} cvt=${cvtIndex}(${(this.cvt[cvtIndex] ?? 0).toFixed(3)}) rp0=${rp0} rp0y=${rpHinted.y.toFixed(3)} pty=${pt.y.toFixed(3)} dist=${currentDist.toFixed(3)} target=${distanceToMove.toFixed(3)} delta=${mirpDelta.toFixed(3)}`,
+          )
+        }
+        this.movePoint(this.gs.zp1, pointIndex, mirpDelta)
 
         this.gs.rp1 = rp0
         this.gs.rp2 = pointIndex
@@ -1185,7 +1249,8 @@ export class VirtualMachine {
 
         // Ranges in hinted space and original space along the projection vectors
         const currentRange =
-          pv.x * (ref2Hinted.x - ref1Hinted.x) + pv.y * (ref2Hinted.y - ref1Hinted.y)
+          pv.x * (ref2Hinted.x - ref1Hinted.x) +
+          pv.y * (ref2Hinted.y - ref1Hinted.y)
         const oldRange =
           dv.x * (ref2Orig.x - ref1Orig.x) + dv.y * (ref2Orig.y - ref1Orig.y)
 
@@ -1206,7 +1271,8 @@ export class VirtualMachine {
 
           // Current projection relative to ref1
           const ref1HintedProj = pv.x * ref1Hinted.x + pv.y * ref1Hinted.y
-          const currentProjection = pv.x * ptHinted.x + pv.y * ptHinted.y - ref1HintedProj
+          const currentProjection =
+            pv.x * ptHinted.x + pv.y * ptHinted.y - ref1HintedProj
 
           this.movePoint(this.gs.zp2, p, desiredProjection - currentProjection)
         }
@@ -1336,6 +1402,10 @@ export class VirtualMachine {
 
       case Opcode.IF: {
         const e = this.stack.popU32()
+        if (this._tracePrep)
+          console.log(
+            `[prep] IF(${e}) → ${e !== 0 ? 'enter' : 'skip'} pc=${this.pc}`,
+          )
 
         // continue into the block
         if (e !== 0) break
@@ -1375,7 +1445,16 @@ export class VirtualMachine {
       }
 
       case Opcode.ELSE: {
-        this.seek(inst, Opcode.EIF)
+        let depth = 0
+        while (this.pc < inst.length) {
+          const next = this.seekOne(inst)
+          if (next === Opcode.IF) {
+            ++depth
+          } else if (next === Opcode.EIF) {
+            if (depth === 0) break
+            --depth
+          }
+        }
         break
       }
 
@@ -1582,16 +1661,28 @@ export class VirtualMachine {
 
       case Opcode.CALL: {
         const f = this.stack.pop()
+        if (this._tracePrep)
+          console.log(`[prep] CALL fn${f} stack_depth=${this.stack.depth()}`)
+        if (this._traceGlyph)
+          console.log(`[vm] CALL fn${f} stack_depth=${this.stack.depth()}`)
         const fn = this.fns[f]
         // Apple: silently ignore calls to undefined functions (matching the
         // original C interpreter's "quietly returned if not yet defined" behaviour).
         if (fn) this.run(fn.inst, fn.pc)
+        if (this._traceGlyph)
+          console.log(
+            `[vm] CALL fn${f} returned, stack_depth=${this.stack.depth()}`,
+          )
         break
       }
 
       case Opcode.LOOPCALL: {
         const f = this.stack.pop()
         const count = this.stack.pop()
+        if (this._tracePrep)
+          console.log(
+            `[prep] LOOPCALL fn=${f} count=${count} stack_depth=${this.stack.depth()}`,
+          )
         const fn = this.fns[f]
         // Same leniency as CALL.
         if (fn) {
@@ -1627,8 +1718,7 @@ export class VirtualMachine {
         let result = 0
 
         if (flags.version) {
-          // TODO: allow configuring the version?
-          result |= 42
+          result |= 7
         }
 
         if (flags.rotation) {
@@ -1644,7 +1734,7 @@ export class VirtualMachine {
         }
 
         if (flags.verticalPhantom) {
-          // TODO: not sure what this means
+          result |= 1 << 11
         }
 
         if (flags.greyscale) {
@@ -1717,9 +1807,7 @@ export class VirtualMachine {
     const n = this.stack.popU32()
     const pairs = range(n, () => [this.stack.popU32(), this.stack.popU32()])
 
-    // TODO: need to know the ppem to know when this delta applies
-    // if the ppem is greater than gs.deltaBase + 16, skip
-    const ppem = 16
+    const ppem = Math.round(this.fontSize)
 
     if (ppem < this.gs.deltaBase + offset) return
     if (ppem >= this.gs.deltaBase + 16 + offset) return
@@ -1727,8 +1815,8 @@ export class VirtualMachine {
     const step = 1 / 2 ** this.gs.deltaShift
 
     for (const [i, arg] of pairs) {
-      // TODO: check the ppem here against the current ppem
-      const ppem = ((arg >>> 4) & 0b1111) + this.gs.deltaBase
+      const targetPpem = ((arg >>> 4) & 0b1111) + this.gs.deltaBase + offset
+      if (targetPpem !== ppem) continue
       const magnitude = deltaValue(arg & 0b1111) * step
 
       cb(i, magnitude)
@@ -1804,8 +1892,19 @@ export class VirtualMachine {
     }
 
     const pt = this.zones[zoneIdx][pointIdx]
+    const dy = (delta * fv.y) / pDotF
+    if (Math.abs(dy) > 0.05 && this._tracePrep) {
+      console.log(
+        `[prep] movePoint z=${zoneIdx} p=${pointIdx} dy=${dy.toFixed(3)} pty_before=${pt.y.toFixed(3)}`,
+      )
+    }
+    if (Math.abs(dy) > 1 && zoneIdx === 1 && !this._tracePrep) {
+      console.log(
+        `[vm] movePoint z=${zoneIdx} p=${pointIdx} delta=${delta.toFixed(3)} dy=${dy.toFixed(3)} fv=(${fv.x.toFixed(2)},${fv.y.toFixed(2)}) pDotF=${pDotF.toFixed(3)}`,
+      )
+    }
     pt.x += (delta * fv.x) / pDotF
-    pt.y += (delta * fv.y) / pDotF
+    pt.y += dy
 
     this.touched[zoneIdx].add(pointIdx)
   }
@@ -1852,7 +1951,10 @@ export class VirtualMachine {
    * Rounds distanceToMove, applying CVT cut-in: if the distance deviates from
    * distanceBetweenPoints by more than controlValueCutIn, use distanceBetweenPoints.
    */
-  private roundAndCutIn(distanceToMove: number, distanceBetweenPoints: number): number {
+  private roundAndCutIn(
+    distanceToMove: number,
+    distanceBetweenPoints: number,
+  ): number {
     const cut = Math.abs(distanceToMove - distanceBetweenPoints)
     if (cut > this.gs.controlValueCutIn) {
       distanceToMove = distanceBetweenPoints
@@ -1930,8 +2032,10 @@ export class VirtualMachine {
         const origMax = useX ? origZone[highIdx].x : origZone[highIdx].y
         const hintedMin = useX ? zone[lowIdx].x : zone[lowIdx].y
         const hintedMax = useX ? zone[highIdx].x : zone[highIdx].y
-        const dMin = hintedMin - (useX ? origZone[lowIdx].x : origZone[lowIdx].y)
-        const dMax = hintedMax - (useX ? origZone[highIdx].x : origZone[highIdx].y)
+        const dMin =
+          hintedMin - (useX ? origZone[lowIdx].x : origZone[lowIdx].y)
+        const dMax =
+          hintedMax - (useX ? origZone[highIdx].x : origZone[highIdx].y)
 
         // Walk from refStart+1 to refEnd-1 (wrapping)
         let i = refStart
@@ -1949,8 +2053,10 @@ export class VirtualMachine {
             newCoord = (useX ? zone[i].x : zone[i].y) + dMax
           } else {
             // Linear interpolation in original space, applied in hinted space
-            const ratio = (origMax - origMin) !== 0 ?
-              (origCoord - origMin) / (origMax - origMin) : 0
+            const ratio =
+              origMax - origMin !== 0 ?
+                (origCoord - origMin) / (origMax - origMin)
+              : 0
             newCoord = hintedMin + ratio * (hintedMax - hintedMin)
           }
 
