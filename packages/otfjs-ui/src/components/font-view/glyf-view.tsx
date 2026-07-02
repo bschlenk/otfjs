@@ -1,7 +1,7 @@
 import { createElement, type JSX, useState } from 'react'
-import clsx from 'clsx'
 import * as mat from '@bschlenk/mat'
 import * as vec from '@bschlenk/vec'
+import clsx from 'clsx'
 import {
   ColorLayer,
   ColorRecordType,
