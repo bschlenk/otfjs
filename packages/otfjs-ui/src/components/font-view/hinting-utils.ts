@@ -1,4 +1,4 @@
-import { Font, GlyphEnriched, GlyphSimple, VirtualMachine } from 'otfjs'
+import { Font, GlyphEnriched, GlyphSimple, renderGlyphToCanvas,VirtualMachine } from 'otfjs'
 
 export function scaleGlyph(glyph: GlyphSimple, scale: number): GlyphSimple {
   return {
@@ -33,7 +33,6 @@ export function runHintingVM(
   const scale = fontSize / upem
   const scaledGlyph = scaleGlyph(glyph, scale)
 
-  // Resolve advance width and left side bearing for phantom points.
   let awFU = 0
   let lsbFU = glyph.xMin
   try {
@@ -47,26 +46,62 @@ export function runHintingVM(
       lsbFU = record.leftSideBearing
     }
   } catch {
-    // hmtx unavailable — phantom points default to zeros
+    // hmtx unavailable
   }
 
   try {
     const vm = new VirtualMachine(font)
     vm.setFontSize(fontSize)
     vm.runFpgm()
-    console.log('[hint] cvt[0..19] after fpgm:', vm.cvt.slice(0,20).map((v,i)=>`${i}:${(v??0).toFixed(0)}`).join(' '))
     vm.runPrep()
-    console.log('[hint] cvt[0..19] after prep:', vm.cvt.slice(0,20).map((v,i)=>`${i}:${(v??0).toFixed(2)}`).join(' '))
     vm.setGlyph(scaledGlyph, awFU * scale, lsbFU * scale, phaseX, phaseY)
     vm.runGlyph()
-    const hinted = vm.getGlyph()
-    const n = hinted.points.length
-    console.log(
-      `[hint] hinted ${n} pts, sample y values:`,
-      hinted.points.map((p, i) => `[${i}]${p.y.toFixed(2)}`).filter((_, i) => i < 5 || i > n - 4).join(' '),
-    )
-    return { glyph: hinted, error: null }
+    return { glyph: vm.getGlyph(), error: null }
   } catch (e) {
     return { glyph: scaledGlyph, error: String(e) }
   }
+}
+
+/**
+ * Renders a glyph to an offscreen canvas at the given scale.
+ * The canvas uses a Y-flipped coordinate system matching the font's convention.
+ * Returns null if the glyph has no points.
+ */
+export function renderGlyphToOffscreen(
+  glyph: GlyphSimple,
+  scale: number,
+  antiAlias = false,
+  subPixelX = 0,
+  subPixelY = 0,
+): HTMLCanvasElement | null {
+  if (!glyph.points.length) return null
+
+  // +4 instead of +2 to give headroom for the [0,1) sub-pixel shift
+  const w = Math.max(1, Math.ceil((glyph.xMax - glyph.xMin) * scale) + 4)
+  const h = Math.max(1, Math.ceil((glyph.yMax - glyph.yMin) * scale) + 4)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+
+  const ctx = canvas.getContext('2d')!
+  ctx.fillStyle = 'white'
+
+  const ox = -Math.floor(glyph.xMin * scale) + 1 + subPixelX
+  const oy = Math.ceil(glyph.yMax * scale) + 1 + subPixelY
+  ctx.setTransform(scale, 0, 0, -scale, ox, oy)
+
+  renderGlyphToCanvas(glyph, ctx)
+  ctx.fill()
+
+  if (!antiAlias) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    const img = ctx.getImageData(0, 0, w, h)
+    for (let i = 3; i < img.data.length; i += 4) {
+      img.data[i] = img.data[i] >= 128 ? 255 : 0
+    }
+    ctx.putImageData(img, 0, 0)
+  }
+
+  return canvas
 }

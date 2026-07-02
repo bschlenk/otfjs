@@ -1,0 +1,50 @@
+.resizeDivider {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.resizeDivider::after {
+  content: '';
+  position: absolute;
+  background: var(--color-border);
+  transition: background 0.1s;
+}
+
+.resizeDivider:hover::after {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.col {
+  width: 5px;
+  cursor: col-resize;
+}
+
+.col::after {
+  left: 2px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.col:hover::after {
+  left: 1px;
+  width: 3px;
+}
+
+.row {
+  height: 5px;
+  cursor: row-resize;
+}
+
+.row::after {
+  top: 2px;
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.row:hover::after {
+  top: 1px;
+  height: 3px;
+}

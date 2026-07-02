@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react'
-import { disassemble, Font } from 'otfjs'
+import { disassemble, Font, getGlyphIndex } from 'otfjs'
 
 import { makeColor } from '../../utils/color'
 import { JsonView } from './components/json-view'
@@ -46,8 +46,8 @@ function CmapView({ font }: { font: Font }) {
 
   for (const char of chars) {
     const codePoint = char.codePointAt(0)!
-    const glyphIndex = table.getGlyphIndex(codePoint)
-    glyphIndices.push([char, glyphIndex])
+    const glyphIdx = getGlyphIndex(font, codePoint)
+    glyphIndices.push([char, glyphIdx])
   }
 
   return (

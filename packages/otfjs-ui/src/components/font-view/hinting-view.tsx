@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Font,
-  GlyphEnriched,
-  GlyphSimple,
-  renderGlyphToCanvas,
   getGlyphIndex,
+  GlyphSimple,
 } from 'otfjs'
 
-import { runHintingVM } from './hinting-utils'
+import { renderGlyphToOffscreen, runHintingVM } from './hinting-utils'
 
 import styles from './hinting-view.module.css'
 
@@ -30,7 +28,7 @@ export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) 
   // Resolve the glyph, skip composites (no points)
   const glyph = useMemo(() => {
     const g = font.getGlyph(glyphId)
-    return 'points' in g ? (g as GlyphEnriched) : null
+    return 'points' in g ? (g) : null
   }, [font, glyphId])
 
   // Navigate to a glyph by character input
@@ -431,48 +429,4 @@ function drawOutline(
   ctx.restore()
 }
 
-// ---------------------------------------------------------------------------
-// Rendering helpers
-// ---------------------------------------------------------------------------
-
-function renderGlyphToOffscreen(
-  glyph: GlyphSimple,
-  scale: number,
-  antiAlias = false,
-  subPixelX = 0,
-  subPixelY = 0,
-): HTMLCanvasElement | null {
-  if (!glyph.points.length) return null
-
-  // +4 instead of +2 to give headroom for the [0,1) sub-pixel shift
-  const w = Math.max(1, Math.ceil((glyph.xMax - glyph.xMin) * scale) + 4)
-  const h = Math.max(1, Math.ceil((glyph.yMax - glyph.yMin) * scale) + 4)
-
-  const canvas = document.createElement('canvas')
-  canvas.width = w
-  canvas.height = h
-
-  const ctx = canvas.getContext('2d')!
-  ctx.fillStyle = 'white'
-
-  const ox = -Math.floor(glyph.xMin * scale) + 1 + subPixelX
-  const oy = Math.ceil(glyph.yMax * scale) + 1 + subPixelY
-  ctx.setTransform(scale, 0, 0, -scale, ox, oy)
-
-  renderGlyphToCanvas(glyph, ctx)
-  ctx.fill()
-
-  if (!antiAlias) {
-    // Threshold alpha to binary so each pixel is fully on or off.
-    // Safari doesn't support SVG filter references on canvas, so we do this in JS.
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
-    const img = ctx.getImageData(0, 0, w, h)
-    for (let i = 3; i < img.data.length; i += 4) {
-      img.data[i] = img.data[i] >= 128 ? 255 : 0
-    }
-    ctx.putImageData(img, 0, 0)
-  }
-
-  return canvas
-}
 

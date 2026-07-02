@@ -2,7 +2,7 @@ import JsonViewPkg from '@uiw/react-json-view'
 import { darkTheme } from '@uiw/react-json-view/dark'
 
 const theme: React.CSSProperties = {
-  ...darkTheme,
+  ...(darkTheme as React.CSSProperties),
   '--w-rjv-font-family': '"Cascadia Code", monospace',
   '--w-rjv-background-color': 'transparent',
 }
