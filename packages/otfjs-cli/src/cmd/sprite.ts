@@ -19,7 +19,7 @@ export function run(args: string[]) {
   stream.write('<svg xmlns="http://www.w3.org/2000/svg">\n')
 
   for (const file of files) {
-    const data = fs.readFileSync(path.join(dir, file), 'utf-8')
+    const data = fs.readFileSync(path.join(dir, file), 'utf8')
     const svg = parseSvg(data)[0] as Element | null
 
     if (!svg) {

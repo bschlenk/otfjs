@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {
   disassemble,
   Font,
@@ -23,7 +31,13 @@ type PixelMode = 'off' | 'pixels' | 'aa'
 type GS = VirtualMachine['gs']
 
 const ROUND_NAMES = [
-  'HALF_GRID', 'GRID', 'DOUBLE_GRID', 'DOWN_TO_GRID', 'UP_TO_GRID', 'OFF', 'CUSTOM',
+  'HALF_GRID',
+  'GRID',
+  'DOUBLE_GRID',
+  'DOWN_TO_GRID',
+  'UP_TO_GRID',
+  'OFF',
+  'CUSTOM',
 ]
 
 // ---------------------------------------------------------------------------
@@ -73,7 +87,8 @@ function buildPhase(
       const hmtx = font.getTable('hmtx')
       const id = (glyph as GlyphEnriched).id ?? 0
       const rec =
-        hmtx.longHorMetrics[id] ?? hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
+        hmtx.longHorMetrics[id] ??
+        hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
       if (rec) {
         awFU = rec.advanceWidth
         lsbFU = rec.leftSideBearing
@@ -116,7 +131,11 @@ export interface HintingDebugProps {
 // Main component
 // ---------------------------------------------------------------------------
 
-export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps) {
+export function HintingDebug({
+  font,
+  glyphId,
+  onGlyphChange,
+}: HintingDebugProps) {
   const [phase, setPhase] = useState<Phase>('glyph')
   const [fontSize, setFontSize] = useState(16)
   const [instrWidth, setInstrWidth] = useState(310)
@@ -134,7 +153,7 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
 
   const glyph = useMemo(() => {
     const g = font.getGlyph(glyphId)
-    return 'points' in g ? (g) : null
+    return 'points' in g ? g : null
   }, [font, glyphId])
 
   const glyphChar = useMemo(() => {
@@ -154,7 +173,7 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
       setupRef.current = null
       setVmError(String(e))
     }
-    setTick(t => t + 1)
+    setTick((t) => t + 1)
   }, [font, glyph, fontSize, upem, phase])
 
   // initialize: rebuild then auto-run glyph phase to end so the first paint
@@ -166,7 +185,7 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
     } catch (e) {
       setupRef.current = null
       setVmError(String(e))
-      setTick(t => t + 1)
+      setTick((t) => t + 1)
       return
     }
 
@@ -186,7 +205,7 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
       }
     }
 
-    setTick(t => t + 1)
+    setTick((t) => t + 1)
   }, [font, glyph, fontSize, upem, phase])
 
   useEffect(() => {
@@ -214,10 +233,10 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
       s.vm.step(s.inst)
     } catch (e) {
       setVmError(String(e))
-      setTick(t => t + 1)
+      setTick((t) => t + 1)
       return false
     }
-    setTick(t => t + 1)
+    setTick((t) => t + 1)
     return true
   }, [])
 
@@ -236,7 +255,7 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
       }
       if (breakpoints.has(s.vm.pc)) break
     }
-    setTick(t => t + 1)
+    setTick((t) => t + 1)
   }, [breakpoints])
 
   const doRunToLine = useCallback((targetPc: number) => {
@@ -253,11 +272,11 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
         break
       }
     }
-    setTick(t => t + 1)
+    setTick((t) => t + 1)
   }, [])
 
   const toggleBreakpoint = useCallback((pc: number) => {
-    setBreakpoints(prev => {
+    setBreakpoints((prev) => {
       const next = new Set(prev)
       if (next.has(pc)) next.delete(pc)
       else next.add(pc)
@@ -284,8 +303,11 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
   const isDone = !s || (vm?.pc ?? 0) >= s.inst.length
 
   const stackDepth = vm?.stack.depth() ?? 0
-  const stackValues = vm
-    ? Array.from({ length: stackDepth }, (_, i) => vm.stack.at(stackDepth - 1 - i))
+  const stackValues =
+    vm ?
+      Array.from({ length: stackDepth }, (_, i) =>
+        vm.stack.at(stackDepth - 1 - i),
+      )
     : []
 
   const cvt = vm?.cvt ?? []
@@ -301,7 +323,7 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
       <div className={styles.toolbar}>
         {/* Phase tabs */}
         <div className={styles.phaseTabs}>
-          {(['fpgm', 'prep', 'glyph'] as Phase[]).map(p => (
+          {(['fpgm', 'prep', 'glyph'] as Phase[]).map((p) => (
             <button
               key={p}
               className={`${styles.phaseTab} ${phase === p ? styles.phaseTabActive : ''}`}
@@ -326,7 +348,9 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
             <span className={styles.glyphChar}>
               {glyphChar ?? <span className={styles.glyphId}>#{glyphId}</span>}
             </span>
-            {glyphChar && <span className={styles.glyphId}>glyph {glyphId}</span>}
+            {glyphChar && (
+              <span className={styles.glyphId}>glyph {glyphId}</span>
+            )}
           </span>
           <button
             className={styles.navBtn}
@@ -339,11 +363,11 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
             value={charInput}
             placeholder="char…"
             maxLength={2}
-            onChange={e => {
+            onChange={(e) => {
               setCharInput(e.target.value)
               jumpToChar(e.target.value)
             }}
-            onFocus={e => e.target.select()}
+            onFocus={(e) => e.target.select()}
           />
         </div>
 
@@ -357,7 +381,7 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
             max={48}
             step={1}
             value={fontSize}
-            onChange={e => setFontSize(+e.target.value)}
+            onChange={(e) => setFontSize(+e.target.value)}
           />
           <span className={styles.sizeLabel}>48px</span>
           <span className={styles.sizeValue}>{fontSize}px</span>
@@ -366,7 +390,11 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
         <div className={styles.sep} />
 
         {/* Debug controls */}
-        <button className={styles.dbgBtn} onClick={rebuild} title="Reset to beginning (⏮)">
+        <button
+          className={styles.dbgBtn}
+          onClick={rebuild}
+          title="Reset to beginning (⏮)"
+        >
           ⏮
         </button>
         <button
@@ -388,20 +416,19 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
 
         {/* Status chip */}
         <div className={styles.statusChip}>
-          {vmError ? (
+          {vmError ?
             <span className={styles.statusError} title={vmError}>
               error
             </span>
-          ) : !s ? (
+          : !s ?
             <span className={styles.statusWarn}>no instructions</span>
-          ) : isDone ? (
+          : isDone ?
             <span className={styles.statusDone}>done</span>
-          ) : (
-            <span className={styles.statusPc}>
+          : <span className={styles.statusPc}>
               pc&nbsp;
               <code>0x{currentPc.toString(16).padStart(4, '0')}</code>
             </span>
-          )}
+          }
         </div>
 
         <div className={styles.sep} />
@@ -410,7 +437,7 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
         <div className={styles.sizeControl}>
           <span className={styles.sizeLabel}>pixel</span>
           <div className={styles.phaseTabs}>
-            {(['off', 'pixels', 'aa'] as PixelMode[]).map(m => (
+            {(['off', 'pixels', 'aa'] as PixelMode[]).map((m) => (
               <button
                 key={m}
                 className={`${styles.phaseTab} ${pixelMode === m ? styles.phaseTabActive : ''}`}
@@ -428,7 +455,7 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
             <input
               type="checkbox"
               checked={showGrid}
-              onChange={e => setShowGrid(e.target.checked)}
+              onChange={(e) => setShowGrid(e.target.checked)}
             />
             grid
           </label>
@@ -436,7 +463,7 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
             <input
               type="checkbox"
               checked={showPoints}
-              onChange={e => setShowPoints(e.target.checked)}
+              onChange={(e) => setShowPoints(e.target.checked)}
             />
             points
           </label>
@@ -456,13 +483,15 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
         />
         <ResizeDivider
           direction="col"
-          onDrag={dx => setInstrWidth(w => Math.max(150, Math.min(600, w + dx)))}
+          onDrag={(dx) =>
+            setInstrWidth((w) => Math.max(150, Math.min(600, w + dx)))
+          }
         />
 
         {/* Right: canvas + state panels */}
         <div className={styles.rightPanel}>
           <div className={styles.canvasArea}>
-            {phase === 'glyph' && originalGlyph ? (
+            {phase === 'glyph' && originalGlyph ?
               <StepperCanvas
                 originalGlyph={originalGlyph}
                 currentZone1={zones[1] ?? []}
@@ -473,20 +502,21 @@ export function HintingDebug({ font, glyphId, onGlyphChange }: HintingDebugProps
                 numGlyphPoints={numGlyphPoints}
                 pixelMode={pixelMode}
               />
-            ) : (
-              <div className={styles.canvasEmpty}>
-                {phase === 'fpgm'
-                  ? 'fpgm defines functions — no glyph to preview'
-                  : phase === 'prep'
-                    ? 'prep sets CVT values — no glyph to preview'
-                    : 'No glyph outline available'}
+            : <div className={styles.canvasEmpty}>
+                {phase === 'fpgm' ?
+                  'fpgm defines functions — no glyph to preview'
+                : phase === 'prep' ?
+                  'prep sets CVT values — no glyph to preview'
+                : 'No glyph outline available'}
               </div>
-            )}
+            }
           </div>
 
           <ResizeDivider
             direction="row"
-            onDrag={dy => setStateHeight(h => Math.max(80, Math.min(600, h - dy)))}
+            onDrag={(dy) =>
+              setStateHeight((h) => Math.max(80, Math.min(600, h - dy)))
+            }
           />
           <div className={styles.stateArea} style={{ height: stateHeight }}>
             <StackPanel values={stackValues} />
@@ -546,7 +576,13 @@ function InstructionPanel({
           return (
             <div
               key={i}
-              ref={isActive ? el => { activeRef.current = el } : undefined}
+              ref={
+                isActive ?
+                  (el) => {
+                    activeRef.current = el
+                  }
+                : undefined
+              }
               className={`${styles.instrRow}${isActive ? ` ${styles.instrRowActive}` : ''}${hasBp ? ` ${styles.instrRowBp}` : ''}`}
             >
               <div
@@ -555,8 +591,12 @@ function InstructionPanel({
                 title="Toggle breakpoint"
               >
                 {hasBp && <span className={styles.bpDot}>●</span>}
-                {isActive && !hasBp && <span className={styles.pcArrow}>►</span>}
-                {isActive && hasBp && <span className={styles.pcArrowBp}>►</span>}
+                {isActive && !hasBp && (
+                  <span className={styles.pcArrow}>►</span>
+                )}
+                {isActive && hasBp && (
+                  <span className={styles.pcArrowBp}>►</span>
+                )}
               </div>
               <span className={styles.instrPc}>
                 {entry.pc.toString(16).padStart(4, '0')}
@@ -637,14 +677,14 @@ function StepperCanvas({
 
   const u = (px: number) => px / pxPerUnit
 
-  const ptR      = u(4)
-  const origR    = u(3)
-  const ringR    = [u(7), u(10), u(13)]
-  const ringSW   = u(1.5)
-  const labelSz  = u(11)
+  const ptR = u(4)
+  const origR = u(3)
+  const ringR = [u(7), u(10), u(13)]
+  const ringSW = u(1.5)
+  const labelSz = u(11)
   const labelOff = u(8)
   const arrowLen = u(6)
-  const arrowW   = u(3)
+  const arrowW = u(3)
 
   // Expanded viewBox that exactly fills the container
   const cx = vx + vw / 2
@@ -680,8 +720,15 @@ function StepperCanvas({
     const { w: cW, h: cH, ppu } = container
     if (cW === 0 || cH === 0 || ppu <= 0) return
 
-    const currentGlyph: GlyphSimple = { ...originalGlyph, points: currentPoints }
-    const offscreen = renderGlyphToOffscreen(currentGlyph, 1, pixelMode === 'aa')
+    const currentGlyph: GlyphSimple = {
+      ...originalGlyph,
+      points: currentPoints,
+    }
+    const offscreen = renderGlyphToOffscreen(
+      currentGlyph,
+      1,
+      pixelMode === 'aa',
+    )
     if (!offscreen) return
 
     const dpr = window.devicePixelRatio || 1
@@ -718,21 +765,49 @@ function StepperCanvas({
 
     ctx.globalAlpha = 0.55
     ctx.imageSmoothingEnabled = false
-    ctx.drawImage(offscreen, dx, dy, offscreen.width * ppu, offscreen.height * ppu)
+    ctx.drawImage(
+      offscreen,
+      dx,
+      dy,
+      offscreen.width * ppu,
+      offscreen.height * ppu,
+    )
   }, [pixelMode, container, currentPoints, originalGlyph])
 
   // Pixel grid covering the full expanded viewBox
   const gridLines = useMemo(() => {
     if (!showGrid) return null
     const lines: React.ReactNode[] = []
-    const x0 = Math.floor(evx), x1 = Math.ceil(evx + evw)
-    const y0 = Math.floor(evy), y1 = Math.ceil(evy + evh)
+    const x0 = Math.floor(evx),
+      x1 = Math.ceil(evx + evw)
+    const y0 = Math.floor(evy),
+      y1 = Math.ceil(evy + evh)
     for (let x = x0; x <= x1; x++)
-      lines.push(<line key={`v${x}`} x1={x} y1={y0} x2={x} y2={y1}
-        stroke="rgba(255,255,255,0.1)" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />)
+      lines.push(
+        <line
+          key={`v${x}`}
+          x1={x}
+          y1={y0}
+          x2={x}
+          y2={y1}
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth={0.5}
+          vectorEffect="non-scaling-stroke"
+        />,
+      )
     for (let y = y0; y <= y1; y++)
-      lines.push(<line key={`h${y}`} x1={x0} y1={y} x2={x1} y2={y}
-        stroke="rgba(255,255,255,0.1)" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />)
+      lines.push(
+        <line
+          key={`h${y}`}
+          x1={x0}
+          y1={y}
+          x2={x1}
+          y2={y}
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth={0.5}
+          vectorEffect="non-scaling-stroke"
+        />,
+      )
     return lines
   }, [showGrid, evx, evy, evw, evh])
 
@@ -759,27 +834,75 @@ function StepperCanvas({
       const isRp2 = i === rp2 && zp2 === 1
       return (
         <g key={i}>
-          <circle cx={op.x} cy={op.y} r={origR}
+          <circle
+            cx={op.x}
+            cy={op.y}
+            r={origR}
             fill={op.onCurve ? 'rgba(255,80,80,0.45)' : 'none'}
-            stroke="rgba(255,80,80,0.45)" strokeWidth={1}
-            vectorEffect="non-scaling-stroke" />
-          <circle cx={cp.x} cy={cp.y} r={ptR}
+            stroke="rgba(255,80,80,0.45)"
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
+          <circle
+            cx={cp.x}
+            cy={cp.y}
+            r={ptR}
             fill={cp.onCurve ? 'rgba(80,160,255,0.9)' : 'none'}
-            stroke="rgba(80,160,255,0.9)" strokeWidth={1}
-            vectorEffect="non-scaling-stroke" />
-          {isRp0 && <circle cx={cp.x} cy={cp.y} r={ringR[0]}
-            fill="none" stroke="rgba(0,220,255,0.85)" strokeWidth={ringSW}
-            vectorEffect="non-scaling-stroke" />}
-          {isRp1 && <circle cx={cp.x} cy={cp.y} r={ringR[1]}
-            fill="none" stroke="rgba(100,255,100,0.85)" strokeWidth={ringSW}
-            vectorEffect="non-scaling-stroke" />}
-          {isRp2 && <circle cx={cp.x} cy={cp.y} r={ringR[2]}
-            fill="none" stroke="rgba(255,100,220,0.85)" strokeWidth={ringSW}
-            vectorEffect="non-scaling-stroke" />}
+            stroke="rgba(80,160,255,0.9)"
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
+          {isRp0 && (
+            <circle
+              cx={cp.x}
+              cy={cp.y}
+              r={ringR[0]}
+              fill="none"
+              stroke="rgba(0,220,255,0.85)"
+              strokeWidth={ringSW}
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+          {isRp1 && (
+            <circle
+              cx={cp.x}
+              cy={cp.y}
+              r={ringR[1]}
+              fill="none"
+              stroke="rgba(100,255,100,0.85)"
+              strokeWidth={ringSW}
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+          {isRp2 && (
+            <circle
+              cx={cp.x}
+              cy={cp.y}
+              r={ringR[2]}
+              fill="none"
+              stroke="rgba(255,100,220,0.85)"
+              strokeWidth={ringSW}
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
         </g>
       )
     })
-  }, [showPoints, currentPoints, originalPoints, ptR, origR, ringR, ringSW, rp0, rp1, rp2, zp0, zp1, zp2])
+  }, [
+    showPoints,
+    currentPoints,
+    originalPoints,
+    ptR,
+    origR,
+    ringR,
+    ringSW,
+    rp0,
+    rp1,
+    rp2,
+    zp0,
+    zp1,
+    zp2,
+  ])
 
   // Movement arrows rendered after circles so they appear on top.
   // Each arrow is a stem line + filled polygon arrowhead, sized in viewBox
@@ -810,11 +933,17 @@ function StepperCanvas({
 
       return (
         <g key={i}>
-          <line x1={op.x} y1={op.y} x2={bx} y2={by}
-            stroke="rgba(255,200,0,0.65)" strokeWidth={1}
-            vectorEffect="non-scaling-stroke" />
+          <line
+            x1={op.x}
+            y1={op.y}
+            x2={bx}
+            y2={by}
+            stroke="rgba(255,200,0,0.65)"
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
           <polygon
-            points={`${cp.x},${cp.y} ${bx + aw*px},${by + aw*py} ${bx - aw*px},${by - aw*py}`}
+            points={`${cp.x},${cp.y} ${bx + aw * px},${by + aw * py} ${bx - aw * px},${by - aw * py}`}
             fill="rgba(255,200,0,0.8)"
           />
         </g>
@@ -823,25 +952,60 @@ function StepperCanvas({
   }, [showPoints, currentPoints, originalPoints, arrowLen, arrowW])
 
   const twilightMarkers = useMemo(() => {
-    return currentZone0.map((p, i) => {
-      if (Math.abs(p.x) < 0.001 && Math.abs(p.y) < 0.001) return null
-      const isRp0 = i === rp0 && zp0 === 0
-      const isRp1 = i === rp1 && zp1 === 0
-      const isRp2 = i === rp2 && zp2 === 0
-      return (
-        <g key={`z0-${i}`}>
-          <circle cx={p.x} cy={p.y} r={ptR}
-            fill="rgba(255,200,0,0.8)" stroke="rgba(255,200,0,0.9)"
-            strokeWidth={1} vectorEffect="non-scaling-stroke" />
-          {isRp0 && <circle cx={p.x} cy={p.y} r={ringR[0]}
-            fill="none" stroke="rgba(0,220,255,0.85)" strokeWidth={ringSW} vectorEffect="non-scaling-stroke" />}
-          {isRp1 && <circle cx={p.x} cy={p.y} r={ringR[1]}
-            fill="none" stroke="rgba(100,255,100,0.85)" strokeWidth={ringSW} vectorEffect="non-scaling-stroke" />}
-          {isRp2 && <circle cx={p.x} cy={p.y} r={ringR[2]}
-            fill="none" stroke="rgba(255,100,220,0.85)" strokeWidth={ringSW} vectorEffect="non-scaling-stroke" />}
-        </g>
-      )
-    }).filter(Boolean)
+    return currentZone0
+      .map((p, i) => {
+        if (Math.abs(p.x) < 0.001 && Math.abs(p.y) < 0.001) return null
+        const isRp0 = i === rp0 && zp0 === 0
+        const isRp1 = i === rp1 && zp1 === 0
+        const isRp2 = i === rp2 && zp2 === 0
+        return (
+          <g key={`z0-${i}`}>
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={ptR}
+              fill="rgba(255,200,0,0.8)"
+              stroke="rgba(255,200,0,0.9)"
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+            {isRp0 && (
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={ringR[0]}
+                fill="none"
+                stroke="rgba(0,220,255,0.85)"
+                strokeWidth={ringSW}
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
+            {isRp1 && (
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={ringR[1]}
+                fill="none"
+                stroke="rgba(100,255,100,0.85)"
+                strokeWidth={ringSW}
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
+            {isRp2 && (
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={ringR[2]}
+                fill="none"
+                stroke="rgba(255,100,220,0.85)"
+                strokeWidth={ringSW}
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
+          </g>
+        )
+      })
+      .filter(Boolean)
   }, [currentZone0, ptR, ringR, ringSW, rp0, rp1, rp2, zp0, zp1, zp2])
 
   const rpLabels = useMemo(() => {
@@ -854,7 +1018,8 @@ function StepperCanvas({
     return entries.map(({ pt, label, color }) => {
       if (!pt) return null
       return (
-        <text key={label}
+        <text
+          key={label}
           transform={`translate(${pt.x + labelOff}, ${pt.y}) scale(1,-1)`}
           y={labelSz * 0.35}
           fontSize={labelSz}
@@ -878,20 +1043,42 @@ function StepperCanvas({
         <g transform={flipY}>
           {gridLines}
 
-          <line x1={evx} y1={0} x2={evx + evw} y2={0}
-            stroke="rgba(255,160,80,0.5)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
-          <line x1={0} y1={evy} x2={0} y2={evy + evh}
-            stroke="rgba(255,160,80,0.5)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+          <line
+            x1={evx}
+            y1={0}
+            x2={evx + evw}
+            y2={0}
+            stroke="rgba(255,160,80,0.5)"
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
+          <line
+            x1={0}
+            y1={evy}
+            x2={0}
+            y2={evy + evh}
+            stroke="rgba(255,160,80,0.5)"
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
 
-          <path d={origPath} fill="none"
-            stroke="rgba(255,80,80,0.5)" strokeWidth={1.5}
+          <path
+            d={origPath}
+            fill="none"
+            stroke="rgba(255,80,80,0.5)"
+            strokeWidth={1.5}
             strokeDasharray="4 3"
-            vectorEffect="non-scaling-stroke" />
+            vectorEffect="non-scaling-stroke"
+          />
 
           {currPath && (
-            <path d={currPath} fill="none"
-              stroke="rgba(80,160,255,0.85)" strokeWidth={1.5}
-              vectorEffect="non-scaling-stroke" />
+            <path
+              d={currPath}
+              fill="none"
+              stroke="rgba(80,160,255,0.85)"
+              strokeWidth={1.5}
+              vectorEffect="non-scaling-stroke"
+            />
           )}
 
           {twilightMarkers}
@@ -916,18 +1103,20 @@ function StackPanel({ values }: { values: number[] }) {
         <span className={styles.statePanelCount}>{values.length}</span>
       </div>
       <div className={styles.statePanelBody}>
-        {values.length === 0 ? (
+        {values.length === 0 ?
           <span className={styles.emptyNote}>empty</span>
-        ) : (
-          values.map((v, i) => (
-            <div key={i} className={`${styles.stackRow} ${i === 0 ? styles.stackRowTop : ''}`}>
+        : values.map((v, i) => (
+            <div
+              key={i}
+              className={`${styles.stackRow} ${i === 0 ? styles.stackRowTop : ''}`}
+            >
               <span className={styles.stackVal}>{v}</span>
               {v !== 0 && (v & 0x3f) !== 0 && (
                 <span className={styles.stackHint}>{(v / 64).toFixed(2)}</span>
               )}
             </div>
           ))
-        )}
+        }
       </div>
     </div>
   )
@@ -980,18 +1169,25 @@ function VecRow({
     <div className={`${styles.vecRow} ${dim ? styles.vecRowDim : ''}`}>
       <span className={styles.vecLabel}>{label}</span>
       <VectorWidget x={vec.x} y={vec.y} color={color} />
-      {dim && dimLabel ? (
+      {dim && dimLabel ?
         <span className={styles.vecDimLabel}>{dimLabel}</span>
-      ) : (
-        <span className={styles.vecCoords} style={{ color }}>
+      : <span className={styles.vecCoords} style={{ color }}>
           ({vec.x.toFixed(2)}, {vec.y.toFixed(2)})
         </span>
-      )}
+      }
     </div>
   )
 }
 
-function VectorWidget({ x, y, color }: { x: number; y: number; color: string }) {
+function VectorWidget({
+  x,
+  y,
+  color,
+}: {
+  x: number
+  y: number
+  color: string
+}) {
   const id = useId()
   const markerId = `vm-arr-${id}`
   const angle = Math.atan2(y, x)
@@ -1018,9 +1214,17 @@ function VectorWidget({ x, y, color }: { x: number; y: number; color: string }) 
           <path d="M0,0 L0,4 L4,2 z" fill={color} />
         </marker>
       </defs>
-      <circle r="12" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+      <circle
+        r="12"
+        fill="none"
+        stroke="rgba(255,255,255,0.12)"
+        strokeWidth="1"
+      />
       <line
-        x1="0" y1="0" x2={ex} y2={ey}
+        x1="0"
+        y1="0"
+        x2={ex}
+        y2={ey}
         stroke={color}
         strokeWidth="1.5"
         markerEnd={`url(#${markerId})`}
@@ -1040,7 +1244,12 @@ function RefPointsPanel({
   gs: GS | null
   zones: { x: number; y: number }[][]
 }) {
-  if (!gs) return <div className={styles.statePanel}><div className={styles.statePanelHeader}>Ref Points</div></div>
+  if (!gs)
+    return (
+      <div className={styles.statePanel}>
+        <div className={styles.statePanelHeader}>Ref Points</div>
+      </div>
+    )
 
   const { rp0, rp1, rp2, zp0, zp1, zp2 } = gs
   const getCoord = (idx: number, zp: number) => zones[zp]?.[idx]
@@ -1059,21 +1268,25 @@ function RefPointsPanel({
           const pt = getCoord(idx, zp)
           return (
             <div key={name} className={styles.rpRow}>
-              <span className={styles.rpName} style={{ color }}>{name}</span>
-              <span className={styles.rpIndex}>z{zp} pt#{idx}</span>
-              {pt ? (
+              <span className={styles.rpName} style={{ color }}>
+                {name}
+              </span>
+              <span className={styles.rpIndex}>
+                z{zp} pt#{idx}
+              </span>
+              {pt ?
                 <span className={styles.rpCoords}>
                   ({pt.x.toFixed(1)}, {pt.y.toFixed(1)})
                 </span>
-              ) : (
-                <span className={styles.emptyNote}>—</span>
-              )}
+              : <span className={styles.emptyNote}>—</span>}
             </div>
           )
         })}
         <div className={styles.rpZoneRow}>
           <span className={styles.rpZoneLabel}>zp0/1/2</span>
-          <span className={styles.rpZoneVal}>{zp0} / {zp1} / {zp2}</span>
+          <span className={styles.rpZoneVal}>
+            {zp0} / {zp1} / {zp2}
+          </span>
         </div>
       </div>
     </div>
@@ -1084,7 +1297,13 @@ function RefPointsPanel({
 // CVT panel
 // ---------------------------------------------------------------------------
 
-function CvtPanel({ cvt, initialCvt }: { cvt: number[]; initialCvt: number[] }) {
+function CvtPanel({
+  cvt,
+  initialCvt,
+}: {
+  cvt: number[]
+  initialCvt: number[]
+}) {
   const entries: { idx: number; val: number; changed: boolean }[] = []
   const len = Math.max(cvt.length, initialCvt.length)
   for (let i = 0; i < len; i++) {
@@ -1099,24 +1318,26 @@ function CvtPanel({ cvt, initialCvt }: { cvt: number[]; initialCvt: number[] }) 
     <div className={styles.statePanel}>
       <div className={styles.statePanelHeader}>
         CVT
-        {entries.some(e => e.changed) && (
+        {entries.some((e) => e.changed) && (
           <span className={styles.statePanelCount}>
-            {entries.filter(e => e.changed).length} changed
+            {entries.filter((e) => e.changed).length} changed
           </span>
         )}
       </div>
       <div className={styles.statePanelBody}>
-        {entries.length === 0 ? (
+        {entries.length === 0 ?
           <span className={styles.emptyNote}>all zero</span>
-        ) : (
-          entries.map(({ idx, val, changed }) => (
-            <div key={idx} className={`${styles.cvtRow} ${changed ? styles.cvtRowChanged : ''}`}>
+        : entries.map(({ idx, val, changed }) => (
+            <div
+              key={idx}
+              className={`${styles.cvtRow} ${changed ? styles.cvtRowChanged : ''}`}
+            >
               <span className={styles.cvtIdx}>[{idx}]</span>
               <span className={styles.cvtVal}>{val.toFixed(2)}</span>
               {changed && <span className={styles.cvtChangedDot}>●</span>}
             </div>
           ))
-        )}
+        }
       </div>
     </div>
   )

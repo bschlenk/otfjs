@@ -28,7 +28,10 @@ export function getGlyphIndex(font: FontHandle, codePoint: number): number {
   }
 
   const glyphArrayIndex =
-    s.idRangeOffsets[i] / 2 + (codePoint - s.startCodes[i]) + i - s.endCodes.length
+    s.idRangeOffsets[i] / 2 +
+    (codePoint - s.startCodes[i]) +
+    i -
+    s.endCodes.length
   const glyphId = s.glyphIdArray[glyphArrayIndex]
   if (glyphId === 0) return 0
   return (glyphId + s.idDeltas[i]) & 0xffff

@@ -98,10 +98,18 @@ export class VirtualMachine {
   setFontSize(px: number) {
     this.fontSize = px
     const scale = px / this.upem
-    this.cvt = [...(this.font.getTableOrNull('cvt ') ?? [])].map(v => v * scale)
+    this.cvt = [...(this.font.getTableOrNull('cvt ') ?? [])].map(
+      (v) => v * scale,
+    )
   }
 
-  setGlyph(glyph: GlyphSimple | null, advanceWidth = 0, lsb = 0, phaseX = 0, phaseY = 0) {
+  setGlyph(
+    glyph: GlyphSimple | null,
+    advanceWidth = 0,
+    lsb = 0,
+    phaseX = 0,
+    phaseY = 0,
+  ) {
     // reset each time a new glyph is set
     // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM02/Chap2.html#graphics_state
     this.gs = makeGraphicsState()
@@ -129,7 +137,7 @@ export class VirtualMachine {
       pp(0, 0), // pp4–pp7: private zeros
     ]
 
-    const shiftedPoints = glyph.points.map(p => ({
+    const shiftedPoints = glyph.points.map((p) => ({
       ...p,
       x: p.x + phaseX,
       y: p.y + phaseY,
@@ -146,7 +154,10 @@ export class VirtualMachine {
   getGlyph() {
     const points = this.zones[1].slice(0, this.glyph.points.length)
     if (!points.length) return { ...this.glyph, points }
-    let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity
+    let xMin = Infinity,
+      xMax = -Infinity,
+      yMin = Infinity,
+      yMax = -Infinity
     for (const p of points) {
       if (p.x < xMin) xMin = p.x
       if (p.x > xMax) xMax = p.x

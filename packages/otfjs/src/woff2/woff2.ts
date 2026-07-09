@@ -72,7 +72,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
   let locaEncountered = false
   let offset = 0
   const tables: Record<string, Uint8Array> = {}
-  
+
   // Store metadata needed for hmtx reconstruction
   let xMins: number[] = []
   let numGlyphs = 0
@@ -100,7 +100,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
         const { glyphs, indexFormat } = decodeGlyfTransform0(buff)
         tables[table.tag] = writeGlyfTable(glyphs, loca)
         tables.loca = writeLocaTable(loca, indexFormat)
-        
+
         // Extract x_mins for hmtx reconstruction
         numGlyphs = glyphs.length
         xMins = glyphs.map((g) => g.xMin)
@@ -136,19 +136,24 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
   if (loca.length && !locaEncountered) {
     error('Expected entry for loca table after glyf table')
   }
-  
+
   // Now process hmtx if it was encountered
   if (hmtxTransformBuff !== null) {
     // We need numHMetrics from hhea table
     if (!tables.hhea) {
       error('hhea table required for hmtx reconstruction')
     }
-    
+
     // Read numHMetrics from hhea table (at offset 34)
     const hheaView = asDataView(tables.hhea)
     const numHMetrics = hheaView.getUint16(34)
-    
-    tables.hmtx = decodeHmtxTransform1(hmtxTransformBuff, numGlyphs, numHMetrics, xMins)
+
+    tables.hmtx = decodeHmtxTransform1(
+      hmtxTransformBuff,
+      numGlyphs,
+      numHMetrics,
+      xMins,
+    )
   }
 
   return buildFont({ sfntVersion: flavor, tables })

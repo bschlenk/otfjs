@@ -4,12 +4,12 @@ import { error } from '../utils/utils.js'
 
 /**
  * Decode WOFF2 hmtx transform 1.
- * 
+ *
  * The hmtx transform stores horizontal metrics in a more compact format:
  * - A flags byte indicating which data is present
  * - An array of advance widths for the first numHMetrics glyphs
  * - An array of left side bearings (either explicit or derived from x_mins)
- * 
+ *
  * @see https://www.w3.org/TR/WOFF2/#hmtx_table_format
  */
 export function decodeHmtxTransform1(
@@ -86,7 +86,7 @@ export function decodeHmtxTransform1(
 
 /**
  * Write hmtx table in standard OpenType format.
- * 
+ *
  * Format:
  * - For first numHMetrics glyphs: uint16 advanceWidth, int16 lsb
  * - For remaining glyphs: int16 lsb only (advance width is repeated from last)

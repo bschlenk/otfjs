@@ -1,4 +1,10 @@
-import { Font, GlyphEnriched, GlyphSimple, renderGlyphToCanvas,VirtualMachine } from 'otfjs'
+import {
+  Font,
+  GlyphEnriched,
+  GlyphSimple,
+  renderGlyphToCanvas,
+  VirtualMachine,
+} from 'otfjs'
 
 export function scaleGlyph(glyph: GlyphSimple, scale: number): GlyphSimple {
   return {

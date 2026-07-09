@@ -52,7 +52,9 @@
   letter-spacing: 0.02em;
 }
 
-.phaseTab:hover { color: var(--color-text); }
+.phaseTab:hover {
+  color: var(--color-text);
+}
 
 .phaseTabActive {
   background: var(--color-bg-selected);
@@ -82,7 +84,9 @@
   border-radius: 3px;
 }
 
-.navBtn:hover { background: var(--color-bg-selected); }
+.navBtn:hover {
+  background: var(--color-bg-selected);
+}
 
 .glyphInfo {
   display: flex;
@@ -115,8 +119,12 @@
   font-family: inherit;
 }
 
-.charInput:focus { outline: 1px solid var(--color-border-selected); }
-.charInput::placeholder { color: var(--color-text-tertiary); }
+.charInput:focus {
+  outline: 1px solid var(--color-border-selected);
+}
+.charInput::placeholder {
+  color: var(--color-text-tertiary);
+}
 
 /* Font size slider */
 
@@ -176,8 +184,14 @@
   white-space: nowrap;
 }
 
-.dbgBtn:hover:not(:disabled) { background: var(--color-bg-selected); color: var(--color-text); }
-.dbgBtn:disabled { opacity: 0.35; cursor: default; }
+.dbgBtn:hover:not(:disabled) {
+  background: var(--color-bg-selected);
+  color: var(--color-text);
+}
+.dbgBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
 
 .dbgBtnRun {
   border-color: rgba(80, 160, 255, 0.5);
@@ -197,11 +211,21 @@
   white-space: nowrap;
 }
 
-.statusError { color: #e05555; }
-.statusWarn  { color: #d4a520; }
-.statusDone  { color: #888; }
-.statusPc    { color: var(--color-text-secondary); }
-.statusPc code { color: #9be; }
+.statusError {
+  color: #e05555;
+}
+.statusWarn {
+  color: #d4a520;
+}
+.statusDone {
+  color: #888;
+}
+.statusPc {
+  color: var(--color-text-secondary);
+}
+.statusPc code {
+  color: #9be;
+}
 
 /* Toggles */
 
@@ -221,7 +245,9 @@
   user-select: none;
 }
 
-.toggle input { cursor: pointer; }
+.toggle input {
+  cursor: pointer;
+}
 
 /* ── Body ── */
 
@@ -269,8 +295,12 @@
   border-left: 2px solid transparent;
 }
 
-.instrRow:hover { background: rgba(255, 255, 255, 0.04); }
-.instrRow:hover .runHereBtn { opacity: 1; }
+.instrRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.instrRow:hover .runHereBtn {
+  opacity: 1;
+}
 
 .instrRowActive {
   background: rgba(255, 200, 80, 0.12);
@@ -297,7 +327,9 @@
   height: 18px;
 }
 
-.instrRow:hover .instrGutter { color: rgba(224, 85, 85, 0.35); }
+.instrRow:hover .instrGutter {
+  color: rgba(224, 85, 85, 0.35);
+}
 
 .bpDot {
   color: #e05555;
@@ -357,7 +389,9 @@
   transition: opacity 0.1s;
 }
 
-.runHereBtn:hover { color: rgba(80, 160, 255, 1); }
+.runHereBtn:hover {
+  color: rgba(80, 160, 255, 1);
+}
 
 /* ── Right panel ── */
 

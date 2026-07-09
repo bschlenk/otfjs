@@ -44,7 +44,9 @@ export function readCmapTable(view: Reader): CmapTable {
 export function writeCmapTable(table: CmapTable): Uint8Array {
   const headerSize = 4 + table.encodingRecords.length * 8
 
-  const subtableSizes = table.encodingRecords.map((r) => getSubtableSize(r.subtable))
+  const subtableSizes = table.encodingRecords.map((r) =>
+    getSubtableSize(r.subtable),
+  )
   const subtableOffsets: number[] = []
   let offset = headerSize
   for (const size of subtableSizes) {
@@ -121,7 +123,15 @@ function readCmapSubtable(view: Reader): CmapSubtable {
       const glyphIdCount = (length - 16 - segs * 8) / 2
       const glyphIdArray = view.array(glyphIdCount, () => view.u16())
 
-      return { format, language, endCodes, startCodes, idDeltas, idRangeOffsets, glyphIdArray }
+      return {
+        format,
+        language,
+        endCodes,
+        startCodes,
+        idDeltas,
+        idRangeOffsets,
+        glyphIdArray,
+      }
     }
 
     case 0: // Byte encoding table

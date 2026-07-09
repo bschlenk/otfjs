@@ -98,11 +98,13 @@ export interface OS2TableV1 extends OS2TableTier0, OS2TableTier1 {
   version: 1
 }
 
-export interface OS2TableV2 extends OS2TableTier0, OS2TableTier1, OS2TableTier2 {
+export interface OS2TableV2
+  extends OS2TableTier0, OS2TableTier1, OS2TableTier2 {
   version: 2 | 3 | 4
 }
 
-export interface OS2TableV5 extends OS2TableTier0, OS2TableTier1, OS2TableTier2, OS2TableTier5 {
+export interface OS2TableV5
+  extends OS2TableTier0, OS2TableTier1, OS2TableTier2, OS2TableTier5 {
   version: 5
 }
 

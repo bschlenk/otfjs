@@ -3,7 +3,19 @@ import path from 'node:path'
 
 import { glob } from 'tinyglobby'
 
-import type { AdditiveDef, AdditiveTier, ArrayDef, BytesDef, FieldDef, FlagsDef, PrimitiveDef, PrimitiveType, StructDef, VersionedDef, VersionedVariant } from './schema.js'
+import type {
+  AdditiveDef,
+  AdditiveTier,
+  ArrayDef,
+  BytesDef,
+  FieldDef,
+  FlagsDef,
+  PrimitiveDef,
+  PrimitiveType,
+  StructDef,
+  VersionedDef,
+  VersionedVariant,
+} from './schema.js'
 
 function generatedHeader(sourceFile: string) {
   return `// This file is auto-generated from ${sourceFile}.\n// Run \`pnpm generate\` to regenerate. Do not edit manually.\n`
@@ -62,16 +74,31 @@ async function processFile(filePath: string, outDir?: string) {
     }
   }
 
-  if (flagsDefs.length === 0 && structDefs.length === 0 && versionedDefs.length === 0 && additiveDefs.length === 0) return
+  if (
+    flagsDefs.length === 0 &&
+    structDefs.length === 0 &&
+    versionedDefs.length === 0 &&
+    additiveDefs.length === 0
+  ) {
+    return
+  }
 
   const blocks: string[] = []
 
   for (const def of flagsDefs) {
-    blocks.push(genFlagsInterface(def), genFlagsReader(def), genFlagsWriter(def))
+    blocks.push(
+      genFlagsInterface(def),
+      genFlagsReader(def),
+      genFlagsWriter(def),
+    )
   }
 
   for (const def of structDefs) {
-    blocks.push(genStructInterface(def), genStructReader(def), genStructWriter(def))
+    blocks.push(
+      genStructInterface(def),
+      genStructReader(def),
+      genStructWriter(def),
+    )
   }
 
   for (const def of versionedDefs) {
@@ -90,11 +117,10 @@ async function processFile(filePath: string, outDir?: string) {
     `\n`
 
   const baseName = path.basename(filePath).replace(/\.ts$/, '.gen.ts')
-  const outPath = outDir
-    ? path.join(outDir, baseName)
-    : filePath.replace(/\.ts$/, '.gen.ts')
+  const outPath =
+    outDir ? path.join(outDir, baseName) : filePath.replace(/\.ts$/, '.gen.ts')
 
-  const existing = await fs.readFile(outPath, 'utf-8').catch(() => null)
+  const existing = await fs.readFile(outPath, 'utf8').catch(() => null)
   if (existing !== generated) {
     await fs.writeFile(outPath, generated)
     console.log(`generated ${path.relative(process.cwd(), outPath)}`)
@@ -103,7 +129,9 @@ async function processFile(filePath: string, outDir?: string) {
 
 // ---- Type guards ------------------------------------------------------------
 
-function isSchemaValue(v: unknown): v is StructDef | FlagsDef | VersionedDef | AdditiveDef {
+function isSchemaValue(
+  v: unknown,
+): v is StructDef | FlagsDef | VersionedDef | AdditiveDef {
   return (
     typeof v === 'object' &&
     v !== null &&
@@ -166,13 +194,22 @@ function validateArrayFields(def: StructDef) {
     if (field.kind !== 'array') continue
     const countIdx = fieldNames.indexOf(field.countField)
     const arrayIdx = fieldNames.indexOf(name)
-    if (countIdx === -1)
-      throw new Error(`${def.name}.${name}: count field '${field.countField}' not found`)
-    if (countIdx >= arrayIdx)
-      throw new Error(`${def.name}.${name}: count field '${field.countField}' must come before the array`)
+    if (countIdx === -1) {
+      throw new Error(
+        `${def.name}.${name}: count field '${field.countField}' not found`,
+      )
+    }
+    if (countIdx >= arrayIdx) {
+      throw new Error(
+        `${def.name}.${name}: count field '${field.countField}' must come before the array`,
+      )
+    }
     const countFieldDef = def.fields[field.countField]
-    if (countFieldDef.kind !== 'primitive')
-      throw new Error(`${def.name}.${name}: count field '${field.countField}' must be a primitive`)
+    if (countFieldDef.kind !== 'primitive') {
+      throw new Error(
+        `${def.name}.${name}: count field '${field.countField}' must be a primitive`,
+      )
+    }
   }
 }
 
@@ -180,7 +217,12 @@ function genStructInterface(def: StructDef) {
   validateArrayFields(def)
   const countFields = getCountFields(def.fields)
   const fields = Object.entries(def.fields)
-    .filter(([name, field]) => field.kind !== 'reserved' && field.kind !== 'fixed' && !countFields.has(name))
+    .filter(
+      ([name, field]) =>
+        field.kind !== 'reserved' &&
+        field.kind !== 'fixed' &&
+        !countFields.has(name),
+    )
     .map(([name, field]) => {
       const doc = 'doc' in field && field.doc ? `  /** ${field.doc} */\n` : ''
       return `${doc}  ${name}: ${fieldToTs(field)}`
@@ -197,15 +239,24 @@ function genStructReader(def: StructDef) {
       const val = formatValue(field.value)
       return `  if (r.${typeToFn(field.type)}() !== ${val}) throw new Error('${name}: expected ${val}')`
     }
-    if (field.kind === 'bytes') return `  const ${name} = r.u8Array(${field.count})`
-    if (field.kind === 'array') return `  const ${name} = r.array(${field.countField}, ${genArrayElementReader(field)})`
+    if (field.kind === 'bytes') {
+      return `  const ${name} = r.u8Array(${field.count})`
+    }
+    if (field.kind === 'array') {
+      return `  const ${name} = r.array(${field.countField}, ${genArrayElementReader(field)})`
+    }
     if (field.kind === 'flags') return `  const ${name} = read${field.name}(r)`
     if (field.kind === 'struct') return `  const ${name} = read${field.name}(r)`
     return `  const ${name} = r.${typeToFn(field.type)}()`
   })
 
   const returnFields = Object.entries(def.fields)
-    .filter(([name, field]) => field.kind !== 'reserved' && field.kind !== 'fixed' && !countFields.has(name))
+    .filter(
+      ([name, field]) =>
+        field.kind !== 'reserved' &&
+        field.kind !== 'fixed' &&
+        !countFields.has(name),
+    )
     .map(([name]) => `    ${name},`)
     .join('\n')
 
@@ -221,7 +272,9 @@ ${returnFields}
 
 function genArrayElementReader(field: ArrayDef): string {
   const { element } = field
-  if (element.kind === 'primitive') return `(r) => r.${typeToFn(element.type)}()`
+  if (element.kind === 'primitive') {
+    return `(r) => r.${typeToFn(element.type)}()`
+  }
   if (element.kind === 'flags') return `read${element.name}`
   return `read${element.name}`
 }
@@ -233,11 +286,19 @@ function genStructWriter(def: StructDef) {
   const lines = Object.entries(def.fields).map(([name, field]) => {
     if (field.kind === 'reserved') return `  w.skip(${field.bytes})`
     if (field.kind === 'bytes') return `  w.buffer(d.${name})`
-    if (field.kind === 'fixed') return `  w.${typeToFn(field.type)}(${formatValue(field.value)})`
-    if (field.kind === 'array') return `  for (const item of d.${name}) {\n    ${genArrayElementWriter(field)}\n  }`
-    if (field.kind === 'flags') return `  w.${typeToFn(field.type)}(write${field.name}(d.${name}))`
+    if (field.kind === 'fixed') {
+      return `  w.${typeToFn(field.type)}(${formatValue(field.value)})`
+    }
+    if (field.kind === 'array') {
+      return `  for (const item of d.${name}) {\n    ${genArrayElementWriter(field)}\n  }`
+    }
+    if (field.kind === 'flags') {
+      return `  w.${typeToFn(field.type)}(write${field.name}(d.${name}))`
+    }
     if (field.kind === 'struct') return `  write${field.name}(w, d.${name})`
-    if (countFields.has(name)) return `  w.${typeToFn((field as { type: PrimitiveType }).type)}(d.${getArrayForCountField(name, def.fields)}.length)`
+    if (countFields.has(name)) {
+      return `  w.${typeToFn((field as { type: PrimitiveType }).type)}(d.${getArrayForCountField(name, def.fields)}.length)`
+    }
     return `  w.${typeToFn(field.type)}(d.${name})`
   })
 
@@ -252,9 +313,14 @@ ${lines.join('\n')}
 }`
 }
 
-function getArrayForCountField(countFieldName: string, fields: Record<string, FieldDef>): string {
+function getArrayForCountField(
+  countFieldName: string,
+  fields: Record<string, FieldDef>,
+): string {
   for (const [name, field] of Object.entries(fields)) {
-    if (field.kind === 'array' && field.countField === countFieldName) return name
+    if (field.kind === 'array' && field.countField === countFieldName) {
+      return name
+    }
   }
   throw new Error(`No array field found for count field '${countFieldName}'`)
 }
@@ -262,25 +328,37 @@ function getArrayForCountField(countFieldName: string, fields: Record<string, Fi
 function genArrayElementWriter(field: ArrayDef): string {
   const { element } = field
   if (element.kind === 'primitive') return `w.${typeToFn(element.type)}(item)`
-  if (element.kind === 'flags') return `w.${typeToFn(element.type)}(write${element.name}(item))`
+  if (element.kind === 'flags') {
+    return `w.${typeToFn(element.type)}(write${element.name}(item))`
+  }
   return `write${element.name}(w, item)`
 }
 
 // ---- Versioned generation ---------------------------------------------------
 
 function genVersionedCode(def: VersionedDef) {
-  const interfaces = def.variants.map((v) => genVariantInterface(v, def.versionType))
+  const interfaces = def.variants.map((v) =>
+    genVariantInterface(v, def.versionType),
+  )
   const unionType = `export type ${def.name} = ${def.variants.map((v) => v.struct.name).join(' | ')}`
   const reader = genVersionedReader(def)
   const writer = genVersionedWriter(def)
   return [...interfaces, unionType, reader, writer].join('\n\n')
 }
 
-function genVariantInterface(variant: VersionedVariant, versionType: PrimitiveType) {
+function genVariantInterface(
+  variant: VersionedVariant,
+  versionType: PrimitiveType,
+) {
   const versionHex = formatVersionHex(variant.version, versionType)
   const countFields = getCountFields(variant.struct.fields)
   const fields = Object.entries(variant.struct.fields)
-    .filter(([name, field]) => field.kind !== 'reserved' && field.kind !== 'fixed' && !countFields.has(name))
+    .filter(
+      ([name, field]) =>
+        field.kind !== 'reserved' &&
+        field.kind !== 'fixed' &&
+        !countFields.has(name),
+    )
     .map(([name, field]) => {
       const doc = 'doc' in field && field.doc ? `  /** ${field.doc} */\n` : ''
       return `${doc}  ${name}: ${fieldToTs(field)}`
@@ -298,15 +376,28 @@ function genVersionedReader(def: VersionedDef) {
         const val = formatValue(field.value)
         return `      if (r.${typeToFn(field.type)}() !== ${val}) throw new Error('${name}: expected ${val}')`
       }
-      if (field.kind === 'bytes') return `      const ${name} = r.u8Array(${field.count})`
-      if (field.kind === 'flags') return `      const ${name} = read${field.name}(r)`
-      if (field.kind === 'struct') return `      const ${name} = read${field.name}(r)`
-      if (field.kind === 'array') return `      const ${name} = r.array(${field.countField}, ${genArrayElementReader(field)})`
+      if (field.kind === 'bytes') {
+        return `      const ${name} = r.u8Array(${field.count})`
+      }
+      if (field.kind === 'flags') {
+        return `      const ${name} = read${field.name}(r)`
+      }
+      if (field.kind === 'struct') {
+        return `      const ${name} = read${field.name}(r)`
+      }
+      if (field.kind === 'array') {
+        return `      const ${name} = r.array(${field.countField}, ${genArrayElementReader(field)})`
+      }
       return `      const ${name} = r.${typeToFn(field.type)}()`
     })
     const countFields = getCountFields(v.struct.fields)
     const returnFields = Object.entries(v.struct.fields)
-      .filter(([name, field]) => field.kind !== 'reserved' && field.kind !== 'fixed' && !countFields.has(name))
+      .filter(
+        ([name, field]) =>
+          field.kind !== 'reserved' &&
+          field.kind !== 'fixed' &&
+          !countFields.has(name),
+      )
       .map(([name]) => `        ${name},`)
       .join('\n')
     return `    case ${versionHex}: {\n${lines.join('\n')}\n      return {\n        version,\n${returnFields}\n      }\n    }`
@@ -327,15 +418,28 @@ function genVersionedWriter(def: VersionedDef) {
   const cases = def.variants.map((v) => {
     const versionHex = formatVersionHex(v.version, def.versionType)
     const countFields = getCountFields(v.struct.fields)
-    const size = computeWriterSize(v.struct.fields, primitiveSize(def.versionType))
+    const size = computeWriterSize(
+      v.struct.fields,
+      primitiveSize(def.versionType),
+    )
     const lines = Object.entries(v.struct.fields).map(([name, field]) => {
       if (field.kind === 'reserved') return `      w.skip(${field.bytes})`
       if (field.kind === 'bytes') return `      w.buffer(d.${name})`
-      if (field.kind === 'fixed') return `      w.${typeToFn(field.type)}(${formatValue(field.value)})`
-      if (field.kind === 'flags') return `      w.${typeToFn(field.type)}(write${field.name}(d.${name}))`
-      if (field.kind === 'struct') return `      write${field.name}(w, d.${name})`
-      if (field.kind === 'array') return `      for (const item of d.${name}) {\n        ${genArrayElementWriter(field)}\n      }`
-      if (countFields.has(name)) return `      w.${typeToFn((field as { type: PrimitiveType }).type)}(d.${getArrayForCountField(name, v.struct.fields)}.length)`
+      if (field.kind === 'fixed') {
+        return `      w.${typeToFn(field.type)}(${formatValue(field.value)})`
+      }
+      if (field.kind === 'flags') {
+        return `      w.${typeToFn(field.type)}(write${field.name}(d.${name}))`
+      }
+      if (field.kind === 'struct') {
+        return `      write${field.name}(w, d.${name})`
+      }
+      if (field.kind === 'array') {
+        return `      for (const item of d.${name}) {\n        ${genArrayElementWriter(field)}\n      }`
+      }
+      if (countFields.has(name)) {
+        return `      w.${typeToFn((field as { type: PrimitiveType }).type)}(d.${getArrayForCountField(name, v.struct.fields)}.length)`
+      }
       return `      w.${typeToFn(field.type)}(d.${name})`
     })
     const writerInit = size === null ? `new Writer()` : `new Writer(${size})`
@@ -360,7 +464,11 @@ function formatVersionHex(value: number, type: PrimitiveType): string {
 // ---- Additive generation ----------------------------------------------------
 
 function genAdditiveCode(def: AdditiveDef) {
-  return [genAdditiveInterface(def), genAdditiveReader(def), genAdditiveWriter(def)].join('\n\n')
+  return [
+    genAdditiveInterface(def),
+    genAdditiveReader(def),
+    genAdditiveWriter(def),
+  ].join('\n\n')
 }
 
 function genAdditiveInterface(def: AdditiveDef) {
@@ -383,8 +491,13 @@ function genAdditiveInterface(def: AdditiveDef) {
     const tier = def.tiers[i]
     const nextTier = def.tiers[i + 1]
     const versionType = genVersionType(tier.minVersion, nextTier?.minVersion)
-    const extendsClause = def.tiers.slice(0, i + 1).map((t) => `${def.name}Tier${t.minVersion}`).join(', ')
-    blocks.push(`export interface ${def.name}V${tier.minVersion} extends ${extendsClause} {\n  version: ${versionType}\n}`)
+    const extendsClause = def.tiers
+      .slice(0, i + 1)
+      .map((t) => `${def.name}Tier${t.minVersion}`)
+      .join(', ')
+    blocks.push(
+      `export interface ${def.name}V${tier.minVersion} extends ${extendsClause} {\n  version: ${versionType}\n}`,
+    )
   }
 
   // Union type
@@ -395,7 +508,9 @@ function genAdditiveInterface(def: AdditiveDef) {
 }
 
 function genVersionType(minVersion: number, nextMinVersion?: number): string {
-  if (nextMinVersion === undefined || nextMinVersion === minVersion + 1) return String(minVersion)
+  if (nextMinVersion === undefined || nextMinVersion === minVersion + 1) {
+    return String(minVersion)
+  }
   const versions: number[] = []
   for (let v = minVersion; v < nextMinVersion; v++) versions.push(v)
   return versions.join(' | ')
@@ -417,7 +532,7 @@ function genAdditiveReader(def: AdditiveDef) {
   const nullInits = laterTiers.flatMap((tier) =>
     Object.entries(tier.fields)
       .filter(([, f]) => f.kind !== 'reserved' && f.kind !== 'fixed')
-      .map(([name, field]) => `  let ${name}: ${fieldToTs(field)} | undefined`)
+      .map(([name, field]) => `  let ${name}: ${fieldToTs(field)} | undefined`),
   )
 
   const nestedIfs = genAdditiveReaderTiers(laterTiers, '  ')
@@ -427,7 +542,7 @@ function genAdditiveReader(def: AdditiveDef) {
     ...def.tiers.flatMap((tier) =>
       Object.entries(tier.fields)
         .filter(([, f]) => f.kind !== 'reserved' && f.kind !== 'fixed')
-        .map(([name]) => name)
+        .map(([name]) => name),
     ),
   ]
   const returnFields = allReturnFields.map((n) => `    ${n},`).join('\n')
@@ -464,7 +579,9 @@ function genFieldReadExpr(field: FieldDef, _name: string): string {
   if (field.kind === 'bytes') return `r.u8Array(${field.count})`
   if (field.kind === 'flags') return `read${field.name}(r)`
   if (field.kind === 'struct') return `read${field.name}(r)`
-  if (field.kind === 'array') return `r.array(${field.countField}, ${genArrayElementReader(field)})`
+  if (field.kind === 'array') {
+    return `r.array(${field.countField}, ${genArrayElementReader(field)})`
+  }
   if (field.kind === 'primitive') return `r.${typeToFn(field.type)}()`
   return `r.${typeToFn((field as { type: PrimitiveType }).type)}()`
 }
@@ -473,16 +590,20 @@ function genAdditiveWriter(def: AdditiveDef) {
   const baseTier = def.tiers[0]
   const laterTiers = def.tiers.slice(1)
 
-  const baseSize = primitiveSize(def.versionType) +
+  const baseSize =
+    primitiveSize(def.versionType) +
     Object.values(baseTier.fields).reduce((s, f) => s + fieldSize(f), 0)
   const sizeLines = [`  let size = ${baseSize}`]
   for (const tier of laterTiers) {
-    const tierSize = Object.values(tier.fields).reduce((s, f) => s + fieldSize(f), 0)
+    const tierSize = Object.values(tier.fields).reduce(
+      (s, f) => s + fieldSize(f),
+      0,
+    )
     sizeLines.push(`  if (d.version >= ${tier.minVersion}) size += ${tierSize}`)
   }
 
-  const baseWrites = Object.entries(baseTier.fields).map(([name, field]) =>
-    `  ${genFieldWriteExpr(field, name)}`
+  const baseWrites = Object.entries(baseTier.fields).map(
+    ([name, field]) => `  ${genFieldWriteExpr(field, name)}`,
   )
 
   const nestedIfs = genAdditiveWriterTiers(laterTiers, '  ', def.name)
@@ -498,27 +619,43 @@ ${nestedIfs}
 }`
 }
 
-function genAdditiveWriterTiers(tiers: AdditiveTier[], indent: string, defName: string): string {
+function genAdditiveWriterTiers(
+  tiers: AdditiveTier[],
+  indent: string,
+  defName: string,
+): string {
   if (tiers.length === 0) return ''
   const [tier, ...rest] = tiers
   const varName = `d${tier.minVersion}`
   const castLine = `${indent}  const ${varName} = d as ${defName}V${tier.minVersion}`
-  const fieldLines = Object.entries(tier.fields).map(([name, field]) =>
-    `${indent}  ${genFieldWriteExpr(field, name, false, varName)}`
+  const fieldLines = Object.entries(tier.fields).map(
+    ([name, field]) =>
+      `${indent}  ${genFieldWriteExpr(field, name, false, varName)}`,
   )
   const inner = genAdditiveWriterTiers(rest, indent + '  ', defName)
   const body = [castLine, ...fieldLines, ...(inner ? [inner] : [])].join('\n')
   return `${indent}if (d.version >= ${tier.minVersion}) {\n${body}\n${indent}}`
 }
 
-function genFieldWriteExpr(field: FieldDef, name: string, nonNull = false, varName = 'd'): string {
+function genFieldWriteExpr(
+  field: FieldDef,
+  name: string,
+  nonNull = false,
+  varName = 'd',
+): string {
   const ref = nonNull ? `${varName}.${name}!` : `${varName}.${name}`
   if (field.kind === 'reserved') return `w.skip(${field.bytes})`
   if (field.kind === 'bytes') return `w.buffer(${ref})`
-  if (field.kind === 'fixed') return `w.${typeToFn(field.type)}(${formatValue(field.value)})`
-  if (field.kind === 'flags') return `w.${typeToFn(field.type)}(write${field.name}(${ref}))`
+  if (field.kind === 'fixed') {
+    return `w.${typeToFn(field.type)}(${formatValue(field.value)})`
+  }
+  if (field.kind === 'flags') {
+    return `w.${typeToFn(field.type)}(write${field.name}(${ref}))`
+  }
   if (field.kind === 'struct') return `write${field.name}(w, ${ref})`
-  if (field.kind === 'array') return `for (const item of ${ref}) {\n  ${genArrayElementWriter(field)}\n}`
+  if (field.kind === 'array') {
+    return `for (const item of ${ref}) {\n  ${genArrayElementWriter(field)}\n}`
+  }
   return `w.${typeToFn(field.type)}(${ref})`
 }
 
@@ -535,17 +672,23 @@ function fieldToTs(field: FieldDef): string {
 
 function primitiveToTs(type: PrimitiveType): string {
   switch (type) {
-    case 'i64': return 'bigint'
-    case 'tag': return 'string'
-    case 'Date': return 'Date'
-    default: return 'number'
+    case 'i64':
+      return 'bigint'
+    case 'tag':
+      return 'string'
+    case 'Date':
+      return 'Date'
+    default:
+      return 'number'
   }
 }
 
 function typeToFn(type: PrimitiveType): string {
   switch (type) {
-    case 'Date': return 'date'
-    default: return type
+    case 'Date':
+      return 'date'
+    default:
+      return type
   }
 }
 
@@ -555,8 +698,12 @@ function elementSize(el: PrimitiveDef | FlagsDef | StructDef): number {
 }
 
 /** Returns a writer size: a number string if fully static, an expression string if dynamic, or null if unknown. */
-function computeWriterSize(fields: Record<string, FieldDef>, baseSize: number): string | null {
-  const fixedSize = baseSize + Object.values(fields).reduce((sum, f) => sum + fieldSize(f), 0)
+function computeWriterSize(
+  fields: Record<string, FieldDef>,
+  baseSize: number,
+): string | null {
+  const fixedSize =
+    baseSize + Object.values(fields).reduce((sum, f) => sum + fieldSize(f), 0)
   const arrayTerms: string[] = []
 
   for (const [name, field] of Object.entries(fields)) {
@@ -589,11 +736,24 @@ function formatValue(value: number | bigint | string): string {
 
 function primitiveSize(type: PrimitiveType): number {
   switch (type) {
-    case 'u8': case 'i8': return 1
-    case 'u16': case 'i16': case 'f2dot14': return 2
-    case 'u24': return 3
-    case 'u32': case 'i32': case 'f16dot16': case 'tag': return 4
-    case 'i64': case 'Date': return 8
-    default: return 0
+    case 'u8':
+    case 'i8':
+      return 1
+    case 'u16':
+    case 'i16':
+    case 'f2dot14':
+      return 2
+    case 'u24':
+      return 3
+    case 'u32':
+    case 'i32':
+    case 'f16dot16':
+    case 'tag':
+      return 4
+    case 'i64':
+    case 'Date':
+      return 8
+    default:
+      return 0
   }
 }

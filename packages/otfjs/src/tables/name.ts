@@ -90,7 +90,8 @@ export function writeNameTable(table: NameTable | NameTableV1): Uint8Array {
   }
 
   // storageOffset = header (6) + nameRecords (count * 12) + v1 lang tag section
-  const langTagSectionSize = table.version === 1 ? 2 + langTagRecords.length * 4 : 0
+  const langTagSectionSize =
+    table.version === 1 ? 2 + langTagRecords.length * 4 : 0
   const storageOffset = 6 + table.nameRecords.length * 12 + langTagSectionSize
 
   const w = new Writer(storageOffset + totalStringBytes)

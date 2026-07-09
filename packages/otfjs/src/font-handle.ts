@@ -40,7 +40,8 @@ export interface TableMap {
   prep: Uint8Array
 }
 
-type TableType<T extends string> = T extends keyof TableMap ? TableMap[T] : unknown
+type TableType<T extends string> =
+  T extends keyof TableMap ? TableMap[T] : unknown
 
 export class FontHandle {
   #data: Uint8Array
@@ -100,7 +101,9 @@ export class FontHandle {
     const table = this.#tables[tag]
     if (!table) return null
 
-    const view = new Reader(asUint8Array(this.#data, table.offset, table.length))
+    const view = new Reader(
+      asUint8Array(this.#data, table.offset, table.length),
+    )
 
     switch (table.tag) {
       case 'CFF ':
@@ -116,7 +119,9 @@ export class FontHandle {
       case 'fpgm':
         return readTableAsU8Array(view)
       case 'glyf':
-        throw new Error('call getGlyph instead of reading the glyf table directly')
+        throw new Error(
+          'call getGlyph instead of reading the glyf table directly',
+        )
       case 'GPOS':
         return readGposTable(view)
       case 'head':

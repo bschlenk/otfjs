@@ -1,14 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  Font,
-  getGlyphIndex,
-  GlyphSimple,
-} from 'otfjs'
+import { Font, getGlyphIndex, GlyphSimple } from 'otfjs'
 
 import { renderGlyphToOffscreen, runHintingVM } from './hinting-utils'
 
 import styles from './hinting-view.module.css'
-
 
 export interface HintingViewProps {
   font: Font
@@ -16,7 +11,11 @@ export interface HintingViewProps {
   onGlyphChange: (id: number) => void
 }
 
-export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) {
+export function HintingView({
+  font,
+  glyphId,
+  onGlyphChange,
+}: HintingViewProps) {
   const [fontSize, setFontSize] = useState(16)
   const [charInput, setCharInput] = useState('')
   const [antiAlias, setAntiAlias] = useState(false)
@@ -28,7 +27,7 @@ export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) 
   // Resolve the glyph, skip composites (no points)
   const glyph = useMemo(() => {
     const g = font.getGlyph(glyphId)
-    return 'points' in g ? (g) : null
+    return 'points' in g ? g : null
   }, [font, glyphId])
 
   // Navigate to a glyph by character input
@@ -65,13 +64,19 @@ export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) 
   const parityY = ((Math.floor(gridOffset.y) % 2) + 2) % 2
 
   const unhintedPixels = useMemo(
-    () => (glyph ? renderGlyphToOffscreen(glyph, scale, antiAlias, subPixelX, subPixelY) : null),
+    () =>
+      glyph ?
+        renderGlyphToOffscreen(glyph, scale, antiAlias, subPixelX, subPixelY)
+      : null,
     [glyph, scale, antiAlias, subPixelX, subPixelY],
   )
 
   // VM run — phase-aware, re-runs when phase or font/glyph/size changes
   const hintedGlyphResult = useMemo(
-    () => (glyph ? runHintingVM(font, glyph, fontSize, upem, subPixelX, subPixelY) : null),
+    () =>
+      glyph ?
+        runHintingVM(font, glyph, fontSize, upem, subPixelX, subPixelY)
+      : null,
     [font, glyph, fontSize, upem, subPixelX, subPixelY],
   )
 
@@ -83,7 +88,7 @@ export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) 
   }, [hintedGlyphResult, antiAlias])
 
   const handleDrag = useCallback((dx: number, dy: number) => {
-    setGridOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }))
+    setGridOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }))
   }, [])
 
   const hasHinting = glyph ? glyph.instructions.length > 0 : false
@@ -161,7 +166,7 @@ export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) 
         )}
       </div>
 
-      {glyph ? (
+      {glyph ?
         <div className={styles.compare}>
           <GlyphPanel
             label="Without hinting"
@@ -186,9 +191,8 @@ export function HintingView({ font, glyphId, onGlyphChange }: HintingViewProps) 
             onDrag={handleDrag}
           />
         </div>
-      ) : (
-        <div className={styles.empty}>Composite glyph — no outline to hint</div>
-      )}
+      : <div className={styles.empty}>Composite glyph — no outline to hint</div>
+      }
     </div>
   )
 }
@@ -209,7 +213,17 @@ interface GlyphPanelProps {
   onDrag: (dx: number, dy: number) => void
 }
 
-function GlyphPanel({ label, glyph, pixels, scale, subPixelX, subPixelY, parityX, parityY, onDrag }: GlyphPanelProps) {
+function GlyphPanel({
+  label,
+  glyph,
+  pixels,
+  scale,
+  subPixelX,
+  subPixelY,
+  parityX,
+  parityY,
+  onDrag,
+}: GlyphPanelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const actualRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -254,7 +268,8 @@ function GlyphPanel({ label, glyph, pixels, scale, subPixelX, subPixelY, parityX
     ctx.fillStyle = 'rgba(255,255,255,0.03)'
     for (let r = 0; r <= pixels.height; r++) {
       for (let c = 0; c <= pixels.width; c++) {
-        if (((c + parityX) + (r + parityY)) % 2 === 0) ctx.fillRect(c * sq, r * sq, sq, sq)
+        if ((c + parityX + (r + parityY)) % 2 === 0)
+          ctx.fillRect(c * sq, r * sq, sq, sq)
       }
     }
 
@@ -320,13 +335,16 @@ function GlyphPanel({ label, glyph, pixels, scale, subPixelX, subPixelY, parityX
     e.preventDefault()
   }, [])
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragRef.current) return
-    const dx = e.clientX - dragRef.current.x
-    const dy = e.clientY - dragRef.current.y
-    dragRef.current = { x: e.clientX, y: e.clientY }
-    onDrag(-dx / zoomRef.current, -dy / zoomRef.current)
-  }, [onDrag])
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!dragRef.current) return
+      const dx = e.clientX - dragRef.current.x
+      const dy = e.clientY - dragRef.current.y
+      dragRef.current = { x: e.clientX, y: e.clientY }
+      onDrag(-dx / zoomRef.current, -dy / zoomRef.current)
+    },
+    [onDrag],
+  )
 
   const handleMouseUp = useCallback(() => {
     dragRef.current = null
@@ -419,7 +437,12 @@ function drawOutline(
     const lastPt = pts[end]
     const firstPt = pts[start]
     if (!lastPt.onCurve) {
-      ctx.quadraticCurveTo(tx(lastPt.x), ty(lastPt.y), tx(firstPt.x), ty(firstPt.y))
+      ctx.quadraticCurveTo(
+        tx(lastPt.x),
+        ty(lastPt.y),
+        tx(firstPt.x),
+        ty(firstPt.y),
+      )
     }
     ctx.closePath()
     ptIdx = end + 1
@@ -428,5 +451,3 @@ function drawOutline(
   ctx.stroke()
   ctx.restore()
 }
-
-

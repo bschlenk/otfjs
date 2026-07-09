@@ -17,7 +17,10 @@ export class Font extends FontHandle {
     return this.getTable('maxp').numGlyphs
   }
 
-  public getName(nameId: NameId, platformId: PlatformId = PlatformId.Windows): string | null {
+  public getName(
+    nameId: NameId,
+    platformId: PlatformId = PlatformId.Windows,
+  ): string | null {
     return getName(this, nameId, platformId)
   }
 

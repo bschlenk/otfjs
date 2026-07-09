@@ -10,7 +10,7 @@ import { registerShortcuts } from './shortcuts/shortcuts'
 import './styles/colors.css'
 import './main.css'
 
-const router = createRouter({ 
+const router = createRouter({
   routeTree,
   scrollRestoration: true,
 })

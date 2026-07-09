@@ -17,9 +17,12 @@ export function getGlyph(font: FontHandle, id: number): GlyphEnriched {
   const length = loca[id + 1] - offset
 
   const { advanceWidth } =
-    hmtx.longHorMetrics[id] ?? hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
+    hmtx.longHorMetrics[id] ??
+    hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
 
-  const view = new Reader(asUint8Array(font.data, glyfRecord.offset + offset, length))
+  const view = new Reader(
+    asUint8Array(font.data, glyfRecord.offset + offset, length),
+  )
   const glyph = readGlyf(view)
 
   if (glyph.type === 'simple') return { ...glyph, id, advanceWidth }

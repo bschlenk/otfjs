@@ -55,12 +55,13 @@ export type CountedArray<T, CountField extends string = string> = T[]
  *   }
  *   type _ = t.ValidateSchema<HmtxTable>  // type error if any count field is wrong
  */
-export type ValidateSchema<T> = {
-  [K in keyof T]: T[K] extends CountedArray<any, infer CountField>
-    ? CountField extends keyof T
-      ? T[K]
+export type ValidateSchema<T> =
+  {
+    [K in keyof T]: T[K] extends CountedArray<any, infer CountField> ?
+      CountField extends keyof T ?
+        T[K]
       : `Error: '${string & CountField}' referenced in CountedArray<T, CountField> is not a field of this interface`
     : T[K]
-} extends T
-  ? T
+  } extends T ?
+    T
   : never

@@ -86,7 +86,9 @@ export function readMaxpTable(r: Reader): MaxpTable {
       }
     }
     default:
-      throw new Error(`Unknown MaxpTable version: 0x${version.toString(16).toUpperCase()}`)
+      throw new Error(
+        `Unknown MaxpTable version: 0x${version.toString(16).toUpperCase()}`,
+      )
   }
 }
 

@@ -31,15 +31,15 @@ export function readHeadFlags(r: Reader): HeadFlags {
 
 export function writeHeadFlags(d: HeadFlags): number {
   return (
-    (d.baselineAtY0 ? (1 << 0) : 0) |
-    (d.leftSidebearingAtX0 ? (1 << 1) : 0) |
-    (d.instructionsMayDependOnPointSize ? (1 << 2) : 0) |
-    (d.forcePpemToIntegers ? (1 << 3) : 0) |
-    (d.instructionsMayAlterAdvanceWidth ? (1 << 4) : 0) |
-    (d.lossless ? (1 << 11) : 0) |
-    (d.converted ? (1 << 12) : 0) |
-    (d.clearTypeOptimized ? (1 << 13) : 0) |
-    (d.lastResortFont ? (1 << 14) : 0)
+    (d.baselineAtY0 ? 1 << 0 : 0) |
+    (d.leftSidebearingAtX0 ? 1 << 1 : 0) |
+    (d.instructionsMayDependOnPointSize ? 1 << 2 : 0) |
+    (d.forcePpemToIntegers ? 1 << 3 : 0) |
+    (d.instructionsMayAlterAdvanceWidth ? 1 << 4 : 0) |
+    (d.lossless ? 1 << 11 : 0) |
+    (d.converted ? 1 << 12 : 0) |
+    (d.clearTypeOptimized ? 1 << 13 : 0) |
+    (d.lastResortFont ? 1 << 14 : 0)
   )
 }
 
@@ -68,13 +68,13 @@ export function readMacStyle(r: Reader): MacStyle {
 
 export function writeMacStyle(d: MacStyle): number {
   return (
-    (d.bold ? (1 << 0) : 0) |
-    (d.italic ? (1 << 1) : 0) |
-    (d.underline ? (1 << 2) : 0) |
-    (d.outline ? (1 << 3) : 0) |
-    (d.shadow ? (1 << 4) : 0) |
-    (d.condensed ? (1 << 5) : 0) |
-    (d.extended ? (1 << 6) : 0)
+    (d.bold ? 1 << 0 : 0) |
+    (d.italic ? 1 << 1 : 0) |
+    (d.underline ? 1 << 2 : 0) |
+    (d.outline ? 1 << 3 : 0) |
+    (d.shadow ? 1 << 4 : 0) |
+    (d.condensed ? 1 << 5 : 0) |
+    (d.extended ? 1 << 6 : 0)
   )
 }
 
@@ -110,7 +110,8 @@ export function readHeadTable(r: Reader): HeadTable {
   if (r.u16() !== 0) throw new Error('minorVersion: expected 0')
   const fontRevision = r.u32()
   const checksumAdjustment = r.u32()
-  if (r.u32() !== 0x5F0F3CF5) throw new Error('magicNumber: expected 0x5F0F3CF5')
+  if (r.u32() !== 0x5f0f3cf5)
+    throw new Error('magicNumber: expected 0x5F0F3CF5')
   const flags = readHeadFlags(r)
   const unitsPerEm = r.u16()
   const created = r.date()
@@ -149,7 +150,7 @@ export function writeHeadTable(d: HeadTable): Uint8Array {
   w.u16(0)
   w.u32(d.fontRevision)
   w.u32(d.checksumAdjustment)
-  w.u32(0x5F0F3CF5)
+  w.u32(0x5f0f3cf5)
   w.u16(writeHeadFlags(d.flags))
   w.u16(d.unitsPerEm)
   w.date(d.created)

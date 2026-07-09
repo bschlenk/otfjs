@@ -28,7 +28,8 @@ export function readHmtxTable(
 }
 
 export function writeHmtxTable(table: HmtxTable): Uint8Array {
-  const size = table.longHorMetrics.length * 4 + table.leftSideBearings.length * 2
+  const size =
+    table.longHorMetrics.length * 4 + table.leftSideBearings.length * 2
   const w = new Writer(size)
 
   for (const { advanceWidth, leftSideBearing } of table.longHorMetrics) {

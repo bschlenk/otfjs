@@ -61,18 +61,27 @@ function makeVM(opts: Parameters<typeof makeFont>[0] = {}): VirtualMachine {
 }
 
 /** Run a sequence of raw bytes as instructions, return the VM. */
-function run(bytes: number[], opts: Parameters<typeof makeFont>[0] = {}): VirtualMachine {
+function run(
+  bytes: number[],
+  opts: Parameters<typeof makeFont>[0] = {},
+): VirtualMachine {
   const vm = makeVM(opts)
   vm.run(new Uint8Array(bytes))
   return vm
 }
 
 /** Make a minimal GlyphSimple mock for testing. */
-function makeGlyph(points: { x: number; y: number; onCurve: boolean }[], contours?: number[]) {
+function makeGlyph(
+  points: { x: number; y: number; onCurve: boolean }[],
+  contours?: number[],
+) {
   const endPts = contours ?? [points.length - 1]
   return {
     type: 'simple' as const,
-    xMin: 0, yMin: 0, xMax: 0, yMax: 0,
+    xMin: 0,
+    yMin: 0,
+    xMax: 0,
+    yMax: 0,
     endPtsOfContours: endPts,
     instructions: new Uint8Array(),
     points,
@@ -227,10 +236,10 @@ describe('RS / WS', () => {
     // WS pops: value (top), index (below) → store[index] = value
     // Push index first (deeper), then value (top)
     const vm = run([
-      ...npushb(5),  // index (pushed first = deeper)
+      ...npushb(5), // index (pushed first = deeper)
       ...npushb(42), // value (pushed second = top)
       Opcode.WS,
-      ...npushb(5),  // index
+      ...npushb(5), // index
       Opcode.RS,
     ])
     expect(stackTop(vm, 1)).toEqual([42])
@@ -246,10 +255,10 @@ describe('WCVTP / RCVT', () => {
     // WCVTP pops: value (top, F26.6), index (below)
     // Push index first (deeper), then value (top)
     const vm = run([
-      ...npushb(0),         // CVT index 0 (deeper)
-      ...npushw(f26(2.5)),  // 2.5 in 26.6 (top)
+      ...npushb(0), // CVT index 0 (deeper)
+      ...npushw(f26(2.5)), // 2.5 in 26.6 (top)
       Opcode.WCVTP,
-      ...npushb(0),         // CVT index 0
+      ...npushb(0), // CVT index 0
       Opcode.RCVT,
     ])
     // RCVT pushes as 26.6, so value should be 2.5 * 64 = 160
@@ -314,8 +323,8 @@ describe('GPV / GFV', () => {
   it('GPV pushes projection vector components as 2.14 (x then y, y on top)', () => {
     const vm = run([Opcode.SPVTCA0, Opcode.GPV])
     // PV = (0, 1); GPV pushes x=0 then y=1 → y is on top
-    const y = vm.stack.pop2dot14()  // top = y component
-    const x = vm.stack.pop2dot14()  // next = x component
+    const y = vm.stack.pop2dot14() // top = y component
+    const x = vm.stack.pop2dot14() // next = x component
     expect(x).toBeCloseTo(0, 5)
     expect(y).toBeCloseTo(1, 5)
   })
@@ -335,7 +344,14 @@ describe('GPV / GFV', () => {
 
 describe('SRP0 / SRP1 / SRP2', () => {
   it('sets reference points', () => {
-    const vm = run([...npushb(5), Opcode.SRP0, ...npushb(3), Opcode.SRP1, ...npushb(7), Opcode.SRP2])
+    const vm = run([
+      ...npushb(5),
+      Opcode.SRP0,
+      ...npushb(3),
+      Opcode.SRP1,
+      ...npushb(7),
+      Opcode.SRP2,
+    ])
     expect(vm.gs.rp0).toBe(5)
     expect(vm.gs.rp1).toBe(3)
     expect(vm.gs.rp2).toBe(7)
@@ -344,7 +360,14 @@ describe('SRP0 / SRP1 / SRP2', () => {
 
 describe('SZP0 / SZP1 / SZP2 / SZPS', () => {
   it('sets zone pointers', () => {
-    const vm = run([...npushb(0), Opcode.SZP0, ...npushb(1), Opcode.SZP1, ...npushb(0), Opcode.SZP2])
+    const vm = run([
+      ...npushb(0),
+      Opcode.SZP0,
+      ...npushb(1),
+      Opcode.SZP1,
+      ...npushb(0),
+      Opcode.SZP2,
+    ])
     expect(vm.gs.zp0).toBe(0)
     expect(vm.gs.zp1).toBe(1)
     expect(vm.gs.zp2).toBe(0)
@@ -510,11 +533,11 @@ describe('ODD / EVEN', () => {
 describe('IF / ELSE / EIF', () => {
   it('takes true branch', () => {
     const vm = run([
-      ...npushb(1),      // condition = true
+      ...npushb(1), // condition = true
       Opcode.IF,
-      ...npushb(10),     // true branch
+      ...npushb(10), // true branch
       Opcode.ELSE,
-      ...npushb(20),     // false branch
+      ...npushb(20), // false branch
       Opcode.EIF,
     ])
     expect(stackTop(vm, 1)).toEqual([10])
@@ -522,11 +545,11 @@ describe('IF / ELSE / EIF', () => {
 
   it('takes false branch', () => {
     const vm = run([
-      ...npushb(0),      // condition = false
+      ...npushb(0), // condition = false
       Opcode.IF,
-      ...npushb(10),     // true branch
+      ...npushb(10), // true branch
       Opcode.ELSE,
-      ...npushb(20),     // false branch
+      ...npushb(20), // false branch
       Opcode.EIF,
     ])
     expect(stackTop(vm, 1)).toEqual([20])
@@ -534,14 +557,14 @@ describe('IF / ELSE / EIF', () => {
 
   it('handles nested IFs correctly', () => {
     const vm = run([
-      ...npushb(0),      // outer condition = false
+      ...npushb(0), // outer condition = false
       Opcode.IF,
-      ...npushb(1),      // inner condition
+      ...npushb(1), // inner condition
       Opcode.IF,
       ...npushb(100),
       Opcode.EIF,
       Opcode.ELSE,
-      ...npushb(200),    // this branch is taken
+      ...npushb(200), // this branch is taken
       Opcode.EIF,
     ])
     expect(stackTop(vm, 1)).toEqual([200])
@@ -553,11 +576,13 @@ describe('JMPR', () => {
     // JMPR offset is from the start of the JMPR instruction, so offset=3 skips 2 bytes
     // (PUSHB0 opcode + its data byte 99) and lands at PUSHB0 42.
     const vm = run([
-      ...npushb(2),          // push value 2 (left on stack after jump)
-      ...npushb(3),          // push offset = 3 (skips 2 bytes: PUSHB0 + 99)
+      ...npushb(2), // push value 2 (left on stack after jump)
+      ...npushb(3), // push offset = 3 (skips 2 bytes: PUSHB0 + 99)
       Opcode.JMPR,
-      Opcode.PUSHB0, 99,     // skipped
-      Opcode.PUSHB0, 42,     // reached
+      Opcode.PUSHB0,
+      99, // skipped
+      Opcode.PUSHB0,
+      42, // reached
     ])
     expect(stackTop(vm, 1)).toEqual([42])
   })
@@ -568,22 +593,26 @@ describe('JROT / JROF', () => {
     // push offset=3, condition=1, JROT
     // if true, jump 3 bytes (skipping a PUSHB0 99)
     const vm = run([
-      ...npushb(3),          // offset
-      ...npushb(1),          // condition = true
-      Opcode.JROT,           // jumps 3-1=2 bytes forward
-      Opcode.PUSHB0, 99,     // 2 bytes, skipped
-      Opcode.PUSHB0, 42,     // reached
+      ...npushb(3), // offset
+      ...npushb(1), // condition = true
+      Opcode.JROT, // jumps 3-1=2 bytes forward
+      Opcode.PUSHB0,
+      99, // 2 bytes, skipped
+      Opcode.PUSHB0,
+      42, // reached
     ])
     expect(stackTop(vm, 1)).toEqual([42])
   })
 
   it('JROF jumps when condition is false', () => {
     const vm = run([
-      ...npushb(3),          // offset
-      ...npushb(0),          // condition = false
-      Opcode.JROF,           // jumps
-      Opcode.PUSHB0, 99,     // skipped
-      Opcode.PUSHB0, 42,     // reached
+      ...npushb(3), // offset
+      ...npushb(0), // condition = false
+      Opcode.JROF, // jumps
+      Opcode.PUSHB0,
+      99, // skipped
+      Opcode.PUSHB0,
+      42, // reached
     ])
     expect(stackTop(vm, 1)).toEqual([42])
   })
@@ -591,10 +620,12 @@ describe('JROT / JROF', () => {
   it('JROT does not jump when condition is false', () => {
     const vm = run([
       ...npushb(3),
-      ...npushb(0),          // condition = false
+      ...npushb(0), // condition = false
       Opcode.JROT,
-      Opcode.PUSHB0, 99,     // NOT skipped
-      Opcode.PUSHB0, 42,
+      Opcode.PUSHB0,
+      99, // NOT skipped
+      Opcode.PUSHB0,
+      42,
     ])
     expect(stackTop(vm, 1)).toEqual([42])
     const second = stackTop(vm, 1)
@@ -611,17 +642,22 @@ describe('FDEF / CALL', () => {
     // Define function 0: pushes 99
     // Then call function 0
     const fpgm = new Uint8Array([
-      Opcode.PUSHB0, 0,   // function number 0
+      Opcode.PUSHB0,
+      0, // function number 0
       Opcode.FDEF,
-      Opcode.PUSHB0, 99,  // function body: push 99
+      Opcode.PUSHB0,
+      99, // function body: push 99
       Opcode.ENDF,
     ])
     const vm = makeVM()
     vm.run(fpgm)
-    vm.run(new Uint8Array([
-      Opcode.PUSHB0, 0,  // function 0
-      Opcode.CALL,
-    ]))
+    vm.run(
+      new Uint8Array([
+        Opcode.PUSHB0,
+        0, // function 0
+        Opcode.CALL,
+      ]),
+    )
     expect(stackTop(vm, 1)).toEqual([99])
   })
 })
@@ -629,20 +665,26 @@ describe('FDEF / CALL', () => {
 describe('LOOPCALL', () => {
   it('calls function N times', () => {
     const fpgm = new Uint8Array([
-      Opcode.PUSHB0, 0,
+      Opcode.PUSHB0,
+      0,
       Opcode.FDEF,
-      Opcode.PUSHB0, 1,  // push 1
+      Opcode.PUSHB0,
+      1, // push 1
       Opcode.ENDF,
     ])
     const vm = makeVM()
     vm.run(fpgm)
     // LOOPCALL pops: f (top = function index), count (below)
     // Push count first (deeper), then f on top
-    vm.run(new Uint8Array([
-      Opcode.PUSHB0, 3,  // count (pushed first = deeper)
-      Opcode.PUSHB0, 0,  // function index f (pushed second = top)
-      Opcode.LOOPCALL,
-    ]))
+    vm.run(
+      new Uint8Array([
+        Opcode.PUSHB0,
+        3, // count (pushed first = deeper)
+        Opcode.PUSHB0,
+        0, // function index f (pushed second = top)
+        Opcode.LOOPCALL,
+      ]),
+    )
     expect(vm.stack.depth()).toBe(3)
     expect(stackTop(vm, 3)).toEqual([1, 1, 1])
   })
@@ -654,30 +696,18 @@ describe('LOOPCALL', () => {
 
 describe('ROUND', () => {
   it('rounds to grid (RTG) via ROUND0', () => {
-    const vm = run([
-      Opcode.RTG,
-      ...npushw(f26(2.7)),
-      Opcode.ROUND0,
-    ])
+    const vm = run([Opcode.RTG, ...npushw(f26(2.7)), Opcode.ROUND0])
     expect(stackTop26dot6(vm)).toBeCloseTo(3.0, 5)
   })
 
   it('rounds to half-grid (RTHG) via ROUND0', () => {
-    const vm = run([
-      Opcode.RTHG,
-      ...npushw(f26(2.7)),
-      Opcode.ROUND0,
-    ])
+    const vm = run([Opcode.RTHG, ...npushw(f26(2.7)), Opcode.ROUND0])
     expect(stackTop26dot6(vm)).toBeCloseTo(2.5, 5)
   })
 
   it('ROFF: no rounding (value passes through as-is)', () => {
     // 2.7 * 64 = 172.8, rounded to 173 in 26.6 → 173/64 ≈ 2.703125
-    const vm = run([
-      Opcode.ROFF,
-      ...npushw(f26(2.7)),
-      Opcode.ROUND0,
-    ])
+    const vm = run([Opcode.ROFF, ...npushw(f26(2.7)), Opcode.ROUND0])
     // ROFF returns value unchanged; compare in 26.6 raw integers
     expect(stackTop(vm, 1)).toEqual([f26(2.7)])
   })
@@ -748,11 +778,13 @@ describe('GC', () => {
     const vm = makeVM({ maxStackElements: 128 })
     vm.setGlyph(makeGlyph([{ x: 100, y: 200, onCurve: true }]) as any)
 
-    vm.run(new Uint8Array([
-      Opcode.SVTCA1,    // projection = x axis
-      ...npushb(0),     // point 0
-      Opcode.GC0,
-    ]))
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA1, // projection = x axis
+        ...npushb(0), // point 0
+        Opcode.GC0,
+      ]),
+    )
     // Projection of (100, 200) onto x-axis = 100
     expect(stackTop26dot6(vm)).toBeCloseTo(100, 3)
   })
@@ -761,11 +793,13 @@ describe('GC', () => {
     const vm = makeVM({ maxStackElements: 128 })
     vm.setGlyph(makeGlyph([{ x: 100, y: 200, onCurve: true }]) as any)
 
-    vm.run(new Uint8Array([
-      Opcode.SVTCA0,    // projection = y axis
-      ...npushb(0),
-      Opcode.GC0,
-    ]))
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA0, // projection = y axis
+        ...npushb(0),
+        Opcode.GC0,
+      ]),
+    )
     expect(stackTop26dot6(vm)).toBeCloseTo(200, 3)
   })
 })
@@ -779,20 +813,25 @@ describe('SCFS', () => {
     const vm = makeVM({ maxStackElements: 128 })
     vm.setGlyph({
       type: 'simple',
-      xMin: 0, yMin: 0, xMax: 100, yMax: 200,
+      xMin: 0,
+      yMin: 0,
+      xMax: 100,
+      yMax: 200,
       endPtsOfContours: [0],
       instructions: new Uint8Array(),
       points: [{ x: 100, y: 200, onCurve: true }],
       contoursOverlap: false,
     } as any)
 
-    vm.run(new Uint8Array([
-      Opcode.SVTCA1,        // both vectors = x axis
-      // SCFS pops: value (top), p (below) → push p first, then value
-      ...npushb(0),         // point p=0 (pushed first = deeper)
-      ...npushw(f26(150)),  // target coordinate = 150 (pushed second = top)
-      Opcode.SCFS,
-    ]))
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA1, // both vectors = x axis
+        // SCFS pops: value (top), p (below) → push p first, then value
+        ...npushb(0), // point p=0 (pushed first = deeper)
+        ...npushw(f26(150)), // target coordinate = 150 (pushed second = top)
+        Opcode.SCFS,
+      ]),
+    )
 
     const pt = vm.getGlyph().points[0]
     expect(pt.x).toBeCloseTo(150, 3)
@@ -807,21 +846,25 @@ describe('SCFS', () => {
 describe('MD', () => {
   it('MD0 measures distance between two hinted points along projection vector', () => {
     const vm = makeVM({ maxStackElements: 128 })
-    vm.setGlyph(makeGlyph([
-      { x: 100, y: 0, onCurve: true },
-      { x: 400, y: 0, onCurve: true },
-    ]) as any)
+    vm.setGlyph(
+      makeGlyph([
+        { x: 100, y: 0, onCurve: true },
+        { x: 400, y: 0, onCurve: true },
+      ]) as any,
+    )
 
     // MD pops: p2 (top, zp1), p1 (below, zp0)
     // Distance = dot(zones[zp0][p1] - zones[zp1][p2], projVec)
     // For +300: p1 → zp0 → point 1 (x=400), p2 → zp1 → point 0 (x=100)
     // Push p1=1 first (deeper), p2=0 second (top)
-    vm.run(new Uint8Array([
-      Opcode.SVTCA1,    // projection = x axis
-      ...npushb(1),     // p2 = point 1 is wrong naming; p1 goes deeper
-      ...npushb(0),     // p2 = point 0 on top (zp1)
-      Opcode.MD0,
-    ]))
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA1, // projection = x axis
+        ...npushb(1), // p2 = point 1 is wrong naming; p1 goes deeper
+        ...npushb(0), // p2 = point 0 on top (zp1)
+        Opcode.MD0,
+      ]),
+    )
     // p2=0 (top, zp1, x=100), p1=1 (below, zp0, x=400): distance = 400-100 = 300
     expect(stackTop26dot6(vm)).toBeCloseTo(300, 3)
   })
@@ -836,11 +879,13 @@ describe('MDAP', () => {
     const vm = makeVM({ maxStackElements: 128 })
     vm.setGlyph(makeGlyph([{ x: 100, y: 0, onCurve: true }]) as any)
 
-    vm.run(new Uint8Array([
-      Opcode.SVTCA1,
-      ...npushb(0),  // point 0
-      Opcode.MDAP0,
-    ]))
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA1,
+        ...npushb(0), // point 0
+        Opcode.MDAP0,
+      ]),
+    )
 
     expect(vm.getGlyph().points[0].x).toBeCloseTo(100, 3)
     expect(vm.gs.rp0).toBe(0)
@@ -851,12 +896,14 @@ describe('MDAP', () => {
     const vm = makeVM({ maxStackElements: 128 })
     vm.setGlyph(makeGlyph([{ x: 100.7, y: 0, onCurve: true }]) as any)
 
-    vm.run(new Uint8Array([
-      Opcode.SVTCA1, // projection = x-axis
-      Opcode.RTG,
-      ...npushb(0),  // point 0
-      Opcode.MDAP1,
-    ]))
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA1, // projection = x-axis
+        Opcode.RTG,
+        ...npushb(0), // point 0
+        Opcode.MDAP1,
+      ]),
+    )
 
     // 100.7 should round to 101
     expect(vm.getGlyph().points[0].x).toBeCloseTo(101, 0)
@@ -870,18 +917,22 @@ describe('MDAP', () => {
 describe('ALIGNRP', () => {
   it('aligns a point with rp0 along the projection vector', () => {
     const vm = makeVM({ maxStackElements: 128 })
-    vm.setGlyph(makeGlyph([
-      { x: 100, y: 50, onCurve: true },
-      { x: 200, y: 80, onCurve: true },
-    ]) as any)
+    vm.setGlyph(
+      makeGlyph([
+        { x: 100, y: 50, onCurve: true },
+        { x: 200, y: 80, onCurve: true },
+      ]) as any,
+    )
 
-    vm.run(new Uint8Array([
-      Opcode.SVTCA1,    // both vectors = x axis
-      ...npushb(0),     // rp0 = point 0
-      Opcode.SRP0,
-      ...npushb(1),     // point to align = 1
-      Opcode.ALIGNRP,
-    ]))
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA1, // both vectors = x axis
+        ...npushb(0), // rp0 = point 0
+        Opcode.SRP0,
+        ...npushb(1), // point to align = 1
+        Opcode.ALIGNRP,
+      ]),
+    )
 
     // Point 1's x should equal point 0's x = 100
     const pts = vm.getGlyph().points
@@ -897,19 +948,23 @@ describe('ALIGNRP', () => {
 describe('ALIGNPTS', () => {
   it('aligns two points by halving the distance', () => {
     const vm = makeVM({ maxStackElements: 128 })
-    vm.setGlyph(makeGlyph([
-      { x: 100, y: 0, onCurve: true },
-      { x: 200, y: 0, onCurve: true },
-    ]) as any)
+    vm.setGlyph(
+      makeGlyph([
+        { x: 100, y: 0, onCurve: true },
+        { x: 200, y: 0, onCurve: true },
+      ]) as any,
+    )
 
     // ALIGNPTS pops: p1 (top, zp1), p2 (below, zp0)
     // Push p2 first (deeper), then p1 (top)
-    vm.run(new Uint8Array([
-      Opcode.SVTCA1,  // both vectors = x axis
-      ...npushb(1),   // p2=1 from zp0 (pushed first = deeper)
-      ...npushb(0),   // p1=0 from zp1 (pushed second = top)
-      Opcode.ALIGNPTS,
-    ]))
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA1, // both vectors = x axis
+        ...npushb(1), // p2=1 from zp0 (pushed first = deeper)
+        ...npushb(0), // p1=0 from zp1 (pushed second = top)
+        Opcode.ALIGNPTS,
+      ]),
+    )
 
     // Both points should meet in the middle around 150
     const pts = vm.getGlyph().points
@@ -942,20 +997,24 @@ describe('ISECT', () => {
     // Line B: vertical x=60, points 2=(60,0) and 3=(60,100) in zp0
     // Intersection: (60, 50), moved to point 4
     const vm = makeVM({ maxStackElements: 128 })
-    vm.setGlyph(makeGlyph([
-      { x: 0, y: 50, onCurve: true },    // 0: a0 (in zp1)
-      { x: 100, y: 50, onCurve: true },  // 1: a1 (in zp1)
-      { x: 60, y: 0, onCurve: true },    // 2: b0 (in zp0)
-      { x: 60, y: 100, onCurve: true },  // 3: b1 (in zp0)
-      { x: 0, y: 0, onCurve: true },     // 4: p
-    ]) as any)
+    vm.setGlyph(
+      makeGlyph([
+        { x: 0, y: 50, onCurve: true }, // 0: a0 (in zp1)
+        { x: 100, y: 50, onCurve: true }, // 1: a1 (in zp1)
+        { x: 60, y: 0, onCurve: true }, // 2: b0 (in zp0)
+        { x: 60, y: 100, onCurve: true }, // 3: b1 (in zp0)
+        { x: 0, y: 0, onCurve: true }, // 4: p
+      ]) as any,
+    )
 
     // ISECT pops: b1, b0, a1, a0, p (top to bottom)
     // So push in REVERSE order: p first (deepest), then a0, a1, b0, b1 (top)
-    vm.run(new Uint8Array([
-      ...npushb(4, 0, 1, 2, 3),  // p=4(deep), a0=0, a1=1, b0=2, b1=3(top)
-      Opcode.ISECT,
-    ]))
+    vm.run(
+      new Uint8Array([
+        ...npushb(4, 0, 1, 2, 3), // p=4(deep), a0=0, a1=1, b0=2, b1=3(top)
+        Opcode.ISECT,
+      ]),
+    )
 
     const pts = vm.getGlyph().points
     expect(pts[4].x).toBeCloseTo(60, 1)
@@ -973,26 +1032,35 @@ describe('IP', () => {
     // rp1 at 0 (x=0), rp2 at 2 (x=100)
     // point 1 at original x=50, rp1 moves to x=10, rp2 moves to x=110
     // So point 1 should interpolate to x = 10 + (50/100)*(110-10) = 60
-    vm.setGlyph(makeGlyph([
-      { x: 0, y: 0, onCurve: true },    // 0: rp1
-      { x: 50, y: 0, onCurve: true },   // 1: interpolated point
-      { x: 100, y: 0, onCurve: true },  // 2: rp2
-    ]) as any)
+    vm.setGlyph(
+      makeGlyph([
+        { x: 0, y: 0, onCurve: true }, // 0: rp1
+        { x: 50, y: 0, onCurve: true }, // 1: interpolated point
+        { x: 100, y: 0, onCurve: true }, // 2: rp2
+      ]) as any,
+    )
 
-    vm.run(new Uint8Array([
-      Opcode.SVTCA1,  // x-axis
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA1, // x-axis
 
-      ...npushb(0), Opcode.SRP1,
-      ...npushb(2), Opcode.SRP2,
+        ...npushb(0),
+        Opcode.SRP1,
+        ...npushb(2),
+        Opcode.SRP2,
 
-      // SCFS: push p first (deeper), value (top)
-      ...npushb(0), ...npushw(f26(10)),  // p=0, value=10
-      Opcode.SCFS,
-      ...npushb(2), ...npushw(f26(110)), // p=2, value=110
-      Opcode.SCFS,
+        // SCFS: push p first (deeper), value (top)
+        ...npushb(0),
+        ...npushw(f26(10)), // p=0, value=10
+        Opcode.SCFS,
+        ...npushb(2),
+        ...npushw(f26(110)), // p=2, value=110
+        Opcode.SCFS,
 
-      ...npushb(1), Opcode.IP,
-    ]))
+        ...npushb(1),
+        Opcode.IP,
+      ]),
+    )
 
     const pts = vm.getGlyph().points
     expect(pts[1].x).toBeCloseTo(60, 0)
@@ -1009,23 +1077,29 @@ describe('IUP', () => {
     // Contour: 3 points. Touch 0 and 2, interpolate 1.
     // Original: (0,0), (50,0), (100,0). Move 0→x=10, 2→x=90.
     // Point 1 should interpolate to x = 10 + (50/100)*(90-10) = 50
-    vm.setGlyph(makeGlyph([
-      { x: 0, y: 0, onCurve: true },
-      { x: 50, y: 0, onCurve: true },
-      { x: 100, y: 0, onCurve: true },
-    ]) as any)
+    vm.setGlyph(
+      makeGlyph([
+        { x: 0, y: 0, onCurve: true },
+        { x: 50, y: 0, onCurve: true },
+        { x: 100, y: 0, onCurve: true },
+      ]) as any,
+    )
 
-    vm.run(new Uint8Array([
-      Opcode.SVTCA1,  // both vectors = x-axis
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA1, // both vectors = x-axis
 
-      // SCFS: p first (deeper), value (top)
-      ...npushb(0), ...npushw(f26(10)),  // p=0, value=10
-      Opcode.SCFS,
-      ...npushb(2), ...npushw(f26(90)),  // p=2, value=90
-      Opcode.SCFS,
+        // SCFS: p first (deeper), value (top)
+        ...npushb(0),
+        ...npushw(f26(10)), // p=0, value=10
+        Opcode.SCFS,
+        ...npushb(2),
+        ...npushw(f26(90)), // p=2, value=90
+        Opcode.SCFS,
 
-      Opcode.IUP1,
-    ]))
+        Opcode.IUP1,
+      ]),
+    )
 
     const pts = vm.getGlyph().points
     expect(pts[0].x).toBeCloseTo(10, 1)
@@ -1042,22 +1116,29 @@ describe('MDRP', () => {
   it('MDRP10 moves point maintaining original distance from rp0', () => {
     // MDRP10 = 0xd0: bit4=1 (set rp0), bit3=0 (no min dist), bit2=0 (no round), de=0
     const vm = makeVM({ maxStackElements: 128 })
-    vm.setGlyph(makeGlyph([
-      { x: 0, y: 0, onCurve: true },
-      { x: 100, y: 0, onCurve: true },
-    ]) as any)
+    vm.setGlyph(
+      makeGlyph([
+        { x: 0, y: 0, onCurve: true },
+        { x: 100, y: 0, onCurve: true },
+      ]) as any,
+    )
 
-    vm.run(new Uint8Array([
-      Opcode.SVTCA1,              // both vectors = x-axis
-      ...npushb(0), Opcode.SRP0, // rp0 = point 0
+    vm.run(
+      new Uint8Array([
+        Opcode.SVTCA1, // both vectors = x-axis
+        ...npushb(0),
+        Opcode.SRP0, // rp0 = point 0
 
-      // SCFS: p first (deeper), value (top)
-      ...npushb(0), ...npushw(f26(10)), // move point 0 to x=10
-      Opcode.SCFS,
+        // SCFS: p first (deeper), value (top)
+        ...npushb(0),
+        ...npushw(f26(10)), // move point 0 to x=10
+        Opcode.SCFS,
 
-      // MDRP10 on point 1: should maintain original distance of 100 from rp0
-      ...npushb(1), Opcode.MDRP10,
-    ]))
+        // MDRP10 on point 1: should maintain original distance of 100 from rp0
+        ...npushb(1),
+        Opcode.MDRP10,
+      ]),
+    )
 
     const pts = vm.getGlyph().points
     // rp0 now at x=10; original dist was 100; point 1 should be at x=10+100=110

@@ -135,7 +135,9 @@ export function readPostTable(r: Reader): PostTable {
       }
     }
     default:
-      throw new Error(`Unknown PostTable version: 0x${version.toString(16).toUpperCase()}`)
+      throw new Error(
+        `Unknown PostTable version: 0x${version.toString(16).toUpperCase()}`,
+      )
   }
 }
 

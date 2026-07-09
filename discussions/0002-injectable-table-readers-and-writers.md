@@ -29,8 +29,14 @@ interface TableWriter<T> {
 Two factory functions — `readerFor` and `writerFor` — are the one consistent way to define readers and writers across the codebase. They take the tag as the first argument, eliminating the need to write it twice:
 
 ```ts
-function readerFor<T>(tag: string, read: (view: Reader, font: FontHandle) => T): TableReader<T>
-function writerFor<T>(tag: string, write: (data: T) => Uint8Array): TableWriter<T>
+function readerFor<T>(
+  tag: string,
+  read: (view: Reader, font: FontHandle) => T,
+): TableReader<T>
+function writerFor<T>(
+  tag: string,
+  write: (data: T) => Uint8Array,
+): TableWriter<T>
 ```
 
 ### Per-table objects
@@ -59,11 +65,11 @@ Importing only `HmtxTableReader` tree-shakes out the writer, and vice versa. `Hm
 
 ```ts
 class FontHandle {
-  readTable<T>(reader: TableReader<T>): T        // throws if tag not in font
+  readTable<T>(reader: TableReader<T>): T // throws if tag not in font
   readTableOrNull<T>(reader: TableReader<T>): T | null
   writeTable<T>(writer: TableWriter<T>, data: T): Uint8Array
 
-  getTable(tag: string): unknown                 // string convenience; not tree-shakeable
+  getTable(tag: string): unknown // string convenience; not tree-shakeable
 }
 ```
 
