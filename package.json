@@ -10,6 +10,7 @@
     "build:gh": "pnpm -r build:gh",
     "lint": "pnpm -r --parallel lint",
     "lint:fix": "pnpm -r --parallel lint:fix",
+    "test": "pnpm -r --if-present --parallel test",
     "prettier": "prettier --write ."
   },
   "devDependencies": {

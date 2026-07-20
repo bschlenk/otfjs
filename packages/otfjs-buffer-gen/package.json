@@ -17,7 +17,7 @@
     "build:gh": "pnpm build",
     "lint": "eslint . --color",
     "lint:fix": "pnpm lint --fix",
-    "test": "vitest"
+    "test": "vitest --passWithNoTests"
   },
   "dependencies": {
     "tinyglobby": "^0.2.15"
