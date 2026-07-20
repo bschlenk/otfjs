@@ -18,7 +18,7 @@ export function parseSvg(html: string): ChildNode[] {
   parser.write(html)
   parser.end()
 
-  if (err) throw err
+  if (err) throw err as Error
 
   return dom!
 }

@@ -4,7 +4,6 @@ import * as vec from '@bschlenk/vec'
 import { rgbaToCss } from './color.js'
 import { Extend } from './enums.js'
 import type { Font } from './font.js'
-import type { GlyphEnriched } from './types.js'
 import { walkGlyphPath } from './glyph-utils.js'
 import { SvgPathBuilder } from './path-builder.js'
 import {
@@ -12,7 +11,7 @@ import {
   ColorRecordType,
   CompositeMode,
 } from './tables/colr.js'
-import type { Glyph } from './types.js'
+import type { Glyph, GlyphEnriched } from './types.js'
 
 // The gradient coords of a color glyph are always relative to the em square
 const gradientUnits = 'userSpaceOnUse'

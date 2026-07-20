@@ -1,6 +1,6 @@
 import * as mat from '@bschlenk/mat'
-
 import type { Reader } from '@otfjs/buffer'
+
 import { createFlagReader } from './flags.js'
 import { PathBuilder } from './path-builder.js'
 import type { Glyph, GlyphCompositeComponent, Point } from './types.js'
@@ -144,7 +144,7 @@ export function walkGlyphPath(glyph: Glyph, path: PathBuilder) {
       }
 
       const next = glyph.points[i]
-      let end = next
+      let end: Point
 
       if (i > endIndex) {
         // the last point

@@ -1,7 +1,7 @@
 export {
+  type HeadFlags,
+  type HeadTable,
+  type MacStyle,
   readHeadTable,
   writeHeadTable,
-  type HeadTable,
-  type HeadFlags,
-  type MacStyle,
 } from './head.gen.js'

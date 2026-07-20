@@ -201,7 +201,7 @@ function SvgGlyph({
   }
 
   const defs: any[] = []
-  let path: any[] = []
+  let path: any[]
 
   const tree = colr?.colorGlyph(glyph.id)
 

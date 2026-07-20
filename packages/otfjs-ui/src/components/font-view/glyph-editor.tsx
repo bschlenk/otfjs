@@ -155,8 +155,8 @@ function centeredGlyph(glyph: GlyphSimple, size: vec.Vector, upem: number) {
   const sy = sh / height
   const s = Math.min(sx, sy)
 
-  let x = 0
-  let y = 0
+  let x: number
+  let y: number
 
   if (sy > sx) {
     x = MARGIN

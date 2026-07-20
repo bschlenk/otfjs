@@ -111,7 +111,7 @@ export function writeNameTable(table: NameTable | NameTableV1): Uint8Array {
 
   if (table.version === 1) {
     w.u16(langTagRecords.length)
-    langTagRecords.forEach((r, i) => {
+    langTagRecords.forEach((_r, i) => {
       const idx = table.nameRecords.length + i
       w.u16(lengths[idx])
       w.u16(offsets[idx])

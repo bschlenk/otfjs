@@ -1,1 +1,1 @@
-export { readMathTable, writeMathTable, type MathTable } from './math.gen.js'
+export { type MathTable, readMathTable, writeMathTable } from './math.gen.js'

@@ -1,6 +1,6 @@
 import * as vec from '@bschlenk/vec'
-
 import { Writer } from '@otfjs/buffer'
+
 import { GlyphFlags, glyphFlags } from '../glyph-utils.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
 import { assert } from '../utils/utils.js'
@@ -93,7 +93,7 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
   for (const flags of flagsArray) {
     const lastGroup = flagGroups[flagGroups.length - 1]
 
-    if (lastGroup && lastGroup.flags.value === flags.value) {
+    if (lastGroup?.flags.value === flags.value) {
       lastGroup.repeat++
     } else {
       flagGroups.push({ flags, repeat: 0 })

@@ -7,7 +7,6 @@ import type {
   AdditiveDef,
   AdditiveTier,
   ArrayDef,
-  BytesDef,
   FieldDef,
   FlagsDef,
   PrimitiveDef,
@@ -18,7 +17,10 @@ import type {
 } from './schema.js'
 
 function generatedHeader(sourceFile: string) {
-  return `// This file is auto-generated from ${sourceFile}.\n// Run \`pnpm generate\` to regenerate. Do not edit manually.\n`
+  return `\
+// This file is auto-generated from ${sourceFile}.
+// Run \`pnpm generate\` to regenerate. Do not edit manually.
+`
 }
 
 run().catch((err) => {
@@ -43,7 +45,7 @@ async function run() {
 }
 
 async function processFile(filePath: string, outDir?: string) {
-  const module = await import(path.resolve(filePath))
+  const module = await loadFile(filePath)
 
   const flagsDefs: FlagsDef[] = []
   const structDefs: StructDef[] = []
@@ -125,6 +127,10 @@ async function processFile(filePath: string, outDir?: string) {
     await fs.writeFile(outPath, generated)
     console.log(`generated ${path.relative(process.cwd(), outPath)}`)
   }
+}
+
+function loadFile(filePath: string): Promise<Record<string, unknown>> {
+  return import(path.resolve(filePath))
 }
 
 // ---- Type guards ------------------------------------------------------------

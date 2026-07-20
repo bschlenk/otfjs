@@ -782,7 +782,7 @@ function StepperCanvas({
       x1 = Math.ceil(evx + evw)
     const y0 = Math.floor(evy),
       y1 = Math.ceil(evy + evh)
-    for (let x = x0; x <= x1; x++)
+    for (let x = x0; x <= x1; x++) {
       lines.push(
         <line
           key={`v${x}`}
@@ -795,7 +795,8 @@ function StepperCanvas({
           vectorEffect="non-scaling-stroke"
         />,
       )
-    for (let y = y0; y <= y1; y++)
+    }
+    for (let y = y0; y <= y1; y++) {
       lines.push(
         <line
           key={`h${y}`}
@@ -808,6 +809,7 @@ function StepperCanvas({
           vectorEffect="non-scaling-stroke"
         />,
       )
+    }
     return lines
   }, [showGrid, evx, evy, evw, evh])
 
@@ -1244,12 +1246,13 @@ function RefPointsPanel({
   gs: GS | null
   zones: { x: number; y: number }[][]
 }) {
-  if (!gs)
+  if (!gs) {
     return (
       <div className={styles.statePanel}>
         <div className={styles.statePanelHeader}>Ref Points</div>
       </div>
     )
+  }
 
   const { rp0, rp1, rp2, zp0, zp1, zp2 } = gs
   const getCoord = (idx: number, zp: number) => zones[zp]?.[idx]
@@ -1348,12 +1351,13 @@ function CvtPanel({
 // ---------------------------------------------------------------------------
 
 function GsPanel({ gs }: { gs: GS | null }) {
-  if (!gs)
+  if (!gs) {
     return (
       <div className={styles.statePanel}>
         <div className={styles.statePanelHeader}>Graphics State</div>
       </div>
     )
+  }
 
   const roundName = ROUND_NAMES[gs.roundState] ?? `custom(${gs.roundState})`
 

@@ -26,7 +26,7 @@ function makeFont(
   } = opts
 
   return {
-    getTable: (tag: string) => {
+    getTable(tag: string) {
       if (tag === 'maxp') {
         return {
           version: 0x00010000 as const,
@@ -48,7 +48,7 @@ function makeFont(
       }
       throw new Error(`Table ${tag} not found`)
     },
-    getTableOrNull: (tag: string) => {
+    getTableOrNull(tag: string) {
       if (tag === 'cvt ') return cvt.length ? cvt : null
       return null
     },
@@ -776,7 +776,7 @@ describe('SDB / SDS', () => {
 describe('GC', () => {
   it('GC0 projects current point onto projection vector (X axis)', () => {
     const vm = makeVM({ maxStackElements: 128 })
-    vm.setGlyph(makeGlyph([{ x: 100, y: 200, onCurve: true }]) as any)
+    vm.setGlyph(makeGlyph([{ x: 100, y: 200, onCurve: true }]))
 
     vm.run(
       new Uint8Array([
@@ -791,7 +791,7 @@ describe('GC', () => {
 
   it('GC0 projects current point onto projection vector (Y axis)', () => {
     const vm = makeVM({ maxStackElements: 128 })
-    vm.setGlyph(makeGlyph([{ x: 100, y: 200, onCurve: true }]) as any)
+    vm.setGlyph(makeGlyph([{ x: 100, y: 200, onCurve: true }]))
 
     vm.run(
       new Uint8Array([
@@ -821,7 +821,7 @@ describe('SCFS', () => {
       instructions: new Uint8Array(),
       points: [{ x: 100, y: 200, onCurve: true }],
       contoursOverlap: false,
-    } as any)
+    })
 
     vm.run(
       new Uint8Array([
@@ -850,7 +850,7 @@ describe('MD', () => {
       makeGlyph([
         { x: 100, y: 0, onCurve: true },
         { x: 400, y: 0, onCurve: true },
-      ]) as any,
+      ]),
     )
 
     // MD pops: p2 (top, zp1), p1 (below, zp0)
@@ -877,7 +877,7 @@ describe('MD', () => {
 describe('MDAP', () => {
   it('MDAP0 (no round) touches the point without moving it', () => {
     const vm = makeVM({ maxStackElements: 128 })
-    vm.setGlyph(makeGlyph([{ x: 100, y: 0, onCurve: true }]) as any)
+    vm.setGlyph(makeGlyph([{ x: 100, y: 0, onCurve: true }]))
 
     vm.run(
       new Uint8Array([
@@ -894,7 +894,7 @@ describe('MDAP', () => {
 
   it('MDAP1 (round) snaps point to grid', () => {
     const vm = makeVM({ maxStackElements: 128 })
-    vm.setGlyph(makeGlyph([{ x: 100.7, y: 0, onCurve: true }]) as any)
+    vm.setGlyph(makeGlyph([{ x: 100.7, y: 0, onCurve: true }]))
 
     vm.run(
       new Uint8Array([
@@ -921,7 +921,7 @@ describe('ALIGNRP', () => {
       makeGlyph([
         { x: 100, y: 50, onCurve: true },
         { x: 200, y: 80, onCurve: true },
-      ]) as any,
+      ]),
     )
 
     vm.run(
@@ -952,7 +952,7 @@ describe('ALIGNPTS', () => {
       makeGlyph([
         { x: 100, y: 0, onCurve: true },
         { x: 200, y: 0, onCurve: true },
-      ]) as any,
+      ]),
     )
 
     // ALIGNPTS pops: p1 (top, zp1), p2 (below, zp0)
@@ -980,7 +980,7 @@ describe('ALIGNPTS', () => {
 describe('FLIPPT', () => {
   it('flips on-curve flag of a point', () => {
     const vm = makeVM({ maxStackElements: 128 })
-    vm.setGlyph(makeGlyph([{ x: 0, y: 0, onCurve: true }]) as any)
+    vm.setGlyph(makeGlyph([{ x: 0, y: 0, onCurve: true }]))
 
     vm.run(new Uint8Array([...npushb(0), Opcode.FLIPPT]))
     expect(vm.getGlyph().points[0].onCurve).toBe(false)
@@ -1004,7 +1004,7 @@ describe('ISECT', () => {
         { x: 60, y: 0, onCurve: true }, // 2: b0 (in zp0)
         { x: 60, y: 100, onCurve: true }, // 3: b1 (in zp0)
         { x: 0, y: 0, onCurve: true }, // 4: p
-      ]) as any,
+      ]),
     )
 
     // ISECT pops: b1, b0, a1, a0, p (top to bottom)
@@ -1037,7 +1037,7 @@ describe('IP', () => {
         { x: 0, y: 0, onCurve: true }, // 0: rp1
         { x: 50, y: 0, onCurve: true }, // 1: interpolated point
         { x: 100, y: 0, onCurve: true }, // 2: rp2
-      ]) as any,
+      ]),
     )
 
     vm.run(
@@ -1082,7 +1082,7 @@ describe('IUP', () => {
         { x: 0, y: 0, onCurve: true },
         { x: 50, y: 0, onCurve: true },
         { x: 100, y: 0, onCurve: true },
-      ]) as any,
+      ]),
     )
 
     vm.run(
@@ -1120,7 +1120,7 @@ describe('MDRP', () => {
       makeGlyph([
         { x: 0, y: 0, onCurve: true },
         { x: 100, y: 0, onCurve: true },
-      ]) as any,
+      ]),
     )
 
     vm.run(

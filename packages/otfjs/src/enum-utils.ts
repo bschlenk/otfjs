@@ -8,7 +8,7 @@ export function asSfntVersion(val: number): SfntVersion {
     case SfntVersion.OPEN_TYPE:
     case SfntVersion.APPLE_TRUE_TYPE:
     case SfntVersion.POST_SCRIPT:
-      return val as SfntVersion
+      return val
     default:
       throw new Error(`Unknown sfnt version: ${val.toString(16)}`)
   }

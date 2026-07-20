@@ -1,6 +1,6 @@
+import { Reader } from '@otfjs/buffer'
 import decompress from 'brotli/decompress.js'
 
-import { Reader } from '@otfjs/buffer'
 import { asDataView, asUint8Array } from '../buffer/utils.js'
 import { asSfntVersion } from '../enum-utils.js'
 import { buildFont } from '../font-builder.js'
@@ -60,7 +60,6 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
   const data = decompress(
     // Can't change the type of the library, which expects a Buffer. Uint8Array
     // shares the same interface as Buffer, so we can safely cast it.
-    // eslint-disable-next-line no-restricted-globals
     asUint8Array(buffer, view.offset, totalCompressedSize) as Buffer,
   )
   assert(

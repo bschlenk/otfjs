@@ -31,7 +31,7 @@ export function readCmapTable(view: Reader): CmapTable {
   const numTables = view.u16()
 
   const encodingRecords = view.array(numTables, () => {
-    const platformId = view.u16() as PlatformId
+    const platformId = view.u16()
     const encodingId = view.u16()
     const offset = view.u32()
     const subtable = readCmapSubtable(view.subtable(offset))

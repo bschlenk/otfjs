@@ -1,4 +1,5 @@
 import { Reader } from '@otfjs/buffer'
+
 import { RGBA } from '../types.js'
 
 export class CpalTable {

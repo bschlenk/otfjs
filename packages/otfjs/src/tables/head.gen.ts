@@ -110,8 +110,9 @@ export function readHeadTable(r: Reader): HeadTable {
   if (r.u16() !== 0) throw new Error('minorVersion: expected 0')
   const fontRevision = r.u32()
   const checksumAdjustment = r.u32()
-  if (r.u32() !== 0x5f0f3cf5)
+  if (r.u32() !== 0x5f0f3cf5) {
     throw new Error('magicNumber: expected 0x5F0F3CF5')
+  }
   const flags = readHeadFlags(r)
   const unitsPerEm = r.u16()
   const created = r.date()

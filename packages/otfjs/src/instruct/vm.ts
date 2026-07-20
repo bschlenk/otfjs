@@ -414,10 +414,11 @@ export class VirtualMachine {
 
       case Opcode.SRP0: {
         const value = this.stack.popU32()
-        if (this._traceGlyph || this._tracePrep)
+        if (this._traceGlyph || this._tracePrep) {
           console.log(
             `[${this._tracePrep ? 'prep' : 'vm'}] SRP0 → rp0=${value}`,
           )
+        }
         this.gs.rp0 = value
         break
       }
@@ -876,8 +877,9 @@ export class VirtualMachine {
         }
 
         this.movePoint(this.gs.zp0, p, delta)
-        if (this._traceGlyph)
+        if (this._traceGlyph) {
           console.log(`[vm] MDAP${round ? 1 : 0} p=${p} → rp0=rp1=${p}`)
+        }
         this.gs.rp0 = this.gs.rp1 = p
 
         break
@@ -907,10 +909,11 @@ export class VirtualMachine {
           currentProj = pv.x * pt.x + pv.y * pt.y
         }
 
-        if (this._traceGlyph || this._tracePrep)
+        if (this._traceGlyph || this._tracePrep) {
           console.log(
             `[${this._tracePrep ? 'prep' : 'vm'}] MIAP${round ? 1 : 0} p=${p} cvt[${n}]=${cvtValue.toFixed(3)} zp0=${this.gs.zp0} → rp0=rp1=${p}`,
           )
+        }
         this.gs.rp0 = p
         this.gs.rp1 = p
 
@@ -1413,10 +1416,11 @@ export class VirtualMachine {
 
       case Opcode.IF: {
         const e = this.stack.popU32()
-        if (this._tracePrep)
+        if (this._tracePrep) {
           console.log(
             `[prep] IF(${e}) → ${e !== 0 ? 'enter' : 'skip'} pc=${this.pc}`,
           )
+        }
 
         // continue into the block
         if (e !== 0) break
@@ -1672,28 +1676,32 @@ export class VirtualMachine {
 
       case Opcode.CALL: {
         const f = this.stack.pop()
-        if (this._tracePrep)
+        if (this._tracePrep) {
           console.log(`[prep] CALL fn${f} stack_depth=${this.stack.depth()}`)
-        if (this._traceGlyph)
+        }
+        if (this._traceGlyph) {
           console.log(`[vm] CALL fn${f} stack_depth=${this.stack.depth()}`)
+        }
         const fn = this.fns[f]
         // Apple: silently ignore calls to undefined functions (matching the
         // original C interpreter's "quietly returned if not yet defined" behaviour).
         if (fn) this.run(fn.inst, fn.pc)
-        if (this._traceGlyph)
+        if (this._traceGlyph) {
           console.log(
             `[vm] CALL fn${f} returned, stack_depth=${this.stack.depth()}`,
           )
+        }
         break
       }
 
       case Opcode.LOOPCALL: {
         const f = this.stack.pop()
         const count = this.stack.pop()
-        if (this._tracePrep)
+        if (this._tracePrep) {
           console.log(
             `[prep] LOOPCALL fn=${f} count=${count} stack_depth=${this.stack.depth()}`,
           )
+        }
         const fn = this.fns[f]
         // Same leniency as CALL.
         if (fn) {

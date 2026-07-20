@@ -1,6 +1,6 @@
 import * as vec from '@bschlenk/vec'
-
 import { Reader } from '@otfjs/buffer'
+
 import { readCompositeGlyphComponent } from '../glyph-utils.js'
 import { emptyGlyph } from '../tables/glyf.js'
 import type { Glyph, GlyphCompositeComponent, Point } from '../types.js'

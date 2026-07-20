@@ -1,1 +1,1 @@
-export { readHheaTable, writeHheaTable, type HheaTable } from './hhea.gen.js'
+export { type HheaTable, readHheaTable, writeHheaTable } from './hhea.gen.js'

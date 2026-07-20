@@ -12,4 +12,13 @@ export default [
   },
 
   ...bschlenk.configs.typescript,
+
+  {
+    rules: {
+      'unicorn/filename-case': [
+        'error',
+        { case: 'kebabCase', ignore: [/^__tests__$/] },
+      ],
+    },
+  },
 ]

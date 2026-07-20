@@ -1,4 +1,5 @@
 import { Reader } from '@otfjs/buffer'
+
 import { asSfntVersion } from '../enum-utils.js'
 
 export interface Header {

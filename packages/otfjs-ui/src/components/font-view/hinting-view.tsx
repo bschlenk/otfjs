@@ -268,8 +268,9 @@ function GlyphPanel({
     ctx.fillStyle = 'rgba(255,255,255,0.03)'
     for (let r = 0; r <= pixels.height; r++) {
       for (let c = 0; c <= pixels.width; c++) {
-        if ((c + parityX + (r + parityY)) % 2 === 0)
+        if ((c + parityX + (r + parityY)) % 2 === 0) {
           ctx.fillRect(c * sq, r * sq, sq, sq)
+        }
       }
     }
 

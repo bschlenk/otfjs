@@ -114,7 +114,7 @@ export function customRoundState(
   }
 
   const thresholdEnum = value & 0b1111
-  let threshold = 0
+  let threshold: number
   switch (thresholdEnum) {
     case 0:
       threshold = period - 1

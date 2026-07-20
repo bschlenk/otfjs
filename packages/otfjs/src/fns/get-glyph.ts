@@ -1,5 +1,4 @@
 import * as mat from '@bschlenk/mat'
-
 import { Reader } from '@otfjs/buffer'
 
 import { asUint8Array } from '../buffer/utils.js'

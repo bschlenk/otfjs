@@ -6,7 +6,6 @@ export function getGlyphIndex(font: FontHandle, codePoint: number): number {
   const encodingId = codePoint > 0xffff ? 10 : 1
 
   const record = table.encodingRecords.find(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
     (r) => r.platformId === PlatformId.Windows && r.encodingId === encodingId,
   )
 
