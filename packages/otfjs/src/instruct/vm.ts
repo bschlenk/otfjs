@@ -16,6 +16,7 @@ import { Opcode } from './opcode.js'
 import { Stack } from './stack.js'
 import {
   asDistanceType,
+  clampToMinimumDistance,
   customRoundState,
   deltaValue,
   DistanceType,
@@ -31,22 +32,6 @@ const enum Touched {
   X,
   Y,
   BOTH,
-}
-
-/**
- * If `distance` is within [-minimumDistance, +minimumDistance], snap it to the
- * boundary (negative boundary if biasNegative, positive otherwise).
- */
-function clampToMinimumDistance(
-  minimumDistance: number,
-  distance: number,
-  biasNegative: boolean,
-): number {
-  const absMin = Math.abs(minimumDistance)
-  if (distance >= -absMin && distance <= absMin) {
-    return biasNegative ? -absMin : absMin
-  }
-  return distance
 }
 
 interface Fdef {
@@ -190,14 +175,12 @@ export class VirtualMachine {
       this.run(inst)
     }
   }
-  _tracePrep = false
 
   runGlyph() {
     const inst = this.glyph.instructions
     this.stack.clear()
     this.run(inst)
   }
-  _traceGlyph = false
 
   run(inst: Uint8Array, pc?: number) {
     if (pc != null) {
@@ -414,53 +397,42 @@ export class VirtualMachine {
 
       case Opcode.SRP0: {
         const value = this.stack.popU32()
-        if (this._traceGlyph || this._tracePrep) {
-          console.log(
-            `[${this._tracePrep ? 'prep' : 'vm'}] SRP0 → rp0=${value}`,
-          )
-        }
         this.gs.rp0 = value
         break
       }
 
       case Opcode.SRP1: {
         const value = this.stack.popU32()
-        if (this._traceGlyph) console.log(`[vm] SRP1 → rp1=${value}`)
         this.gs.rp1 = value
         break
       }
 
       case Opcode.SRP2: {
         const value = this.stack.popU32()
-        if (this._traceGlyph) console.log(`[vm] SRP2 → rp2=${value}`)
         this.gs.rp2 = value
         break
       }
 
       case Opcode.SZP0: {
         const value = this.stack.popU32()
-        if (this._tracePrep) console.log(`[prep] SZP0 → zp0=${value}`)
         this.gs.zp0 = value
         break
       }
 
       case Opcode.SZP1: {
         const value = this.stack.popU32()
-        if (this._tracePrep) console.log(`[prep] SZP1 → zp1=${value}`)
         this.gs.zp1 = value
         break
       }
 
       case Opcode.SZP2: {
         const value = this.stack.popU32()
-        if (this._tracePrep) console.log(`[prep] SZP2 → zp2=${value}`)
         this.gs.zp2 = value
         break
       }
 
       case Opcode.SZPS: {
         const value = this.stack.popU32()
-        if (this._tracePrep) console.log(`[prep] SZPS → zp0=zp1=zp2=${value}`)
         this.gs.zp0 = this.gs.zp1 = this.gs.zp2 = value
         break
       }
@@ -719,11 +691,6 @@ export class VirtualMachine {
         const dist = pv.x * (refm.x - refo.x) + pv.y * (refm.y - refo.y)
 
         const points = this.loop()
-        if (Math.abs(dist) > 1) {
-          console.log(
-            `[vm] SHP${a} rp=${rp} z=${z} dist=${dist.toFixed(3)} pts=${JSON.stringify(points)}`,
-          )
-        }
         for (const p of points) {
           this.movePoint(this.gs.zp2, p, dist)
         }
@@ -845,11 +812,6 @@ export class VirtualMachine {
         const currentDist =
           pv.x * (pt.x - refHinted.x) + pv.y * (pt.y - refHinted.y)
         const msirpDelta = distanceValue - currentDist
-        if (Math.abs(msirpDelta) > 1) {
-          console.log(
-            `[vm] MSIRP pt=${pointToModify} rp0=${rp0} zp0=${this.gs.zp0} zp1=${this.gs.zp1} rp0y=${refHinted.y.toFixed(3)} pty=${pt.y.toFixed(3)} dist=${distanceValue.toFixed(3)} cur=${currentDist.toFixed(3)} delta=${msirpDelta.toFixed(3)}`,
-          )
-        }
         this.movePoint(this.gs.zp1, pointToModify, msirpDelta)
 
         this.gs.rp1 = rp0
@@ -877,9 +839,6 @@ export class VirtualMachine {
         }
 
         this.movePoint(this.gs.zp0, p, delta)
-        if (this._traceGlyph) {
-          console.log(`[vm] MDAP${round ? 1 : 0} p=${p} → rp0=rp1=${p}`)
-        }
         this.gs.rp0 = this.gs.rp1 = p
 
         break
@@ -909,11 +868,6 @@ export class VirtualMachine {
           currentProj = pv.x * pt.x + pv.y * pt.y
         }
 
-        if (this._traceGlyph || this._tracePrep) {
-          console.log(
-            `[${this._tracePrep ? 'prep' : 'vm'}] MIAP${round ? 1 : 0} p=${p} cvt[${n}]=${cvtValue.toFixed(3)} zp0=${this.gs.zp0} → rp0=rp1=${p}`,
-          )
-        }
         this.gs.rp0 = p
         this.gs.rp1 = p
 
@@ -922,11 +876,6 @@ export class VirtualMachine {
           newProj = this.roundAndCutIn(cvtValue, currentProj)
         }
 
-        if (Math.abs(newProj - currentProj) > 1) {
-          console.log(
-            `[vm] MIAP p=${p} cvt[${n}]=${cvtValue.toFixed(3)} cur=${currentProj.toFixed(3)} new=${newProj.toFixed(3)} delta=${(newProj - currentProj).toFixed(3)} round=${round}`,
-          )
-        }
         this.movePoint(this.gs.zp0, p, newProj - currentProj)
         break
       }
@@ -1003,11 +952,6 @@ export class VirtualMachine {
           pv.y * (pt1Hinted.y - pt0Hinted.y)
 
         const mdrpDelta = distanceToMove - currentDist
-        if (Math.abs(mdrpDelta) > 1) {
-          console.log(
-            `[vm] MDRP pt=${pt1Index} rp0=${pt0Index} orig_dist=${distanceToMove.toFixed(3)} cur=${currentDist.toFixed(3)} delta=${mdrpDelta.toFixed(3)}`,
-          )
-        }
         this.movePoint(this.gs.zp1, pt1Index, mdrpDelta)
 
         this.gs.rp1 = pt0Index
@@ -1110,11 +1054,6 @@ export class VirtualMachine {
         const currentDist =
           pv.x * (pt.x - rpHinted.x) + pv.y * (pt.y - rpHinted.y)
         const mirpDelta = distanceToMove - currentDist
-        if (Math.abs(mirpDelta) > 1) {
-          console.log(
-            `[vm] MIRP pt=${pointIndex} cvt=${cvtIndex}(${(this.cvt[cvtIndex] ?? 0).toFixed(3)}) rp0=${rp0} rp0y=${rpHinted.y.toFixed(3)} pty=${pt.y.toFixed(3)} dist=${currentDist.toFixed(3)} target=${distanceToMove.toFixed(3)} delta=${mirpDelta.toFixed(3)}`,
-          )
-        }
         this.movePoint(this.gs.zp1, pointIndex, mirpDelta)
 
         this.gs.rp1 = rp0
@@ -1416,11 +1355,6 @@ export class VirtualMachine {
 
       case Opcode.IF: {
         const e = this.stack.popU32()
-        if (this._tracePrep) {
-          console.log(
-            `[prep] IF(${e}) → ${e !== 0 ? 'enter' : 'skip'} pc=${this.pc}`,
-          )
-        }
 
         // continue into the block
         if (e !== 0) break
@@ -1676,32 +1610,16 @@ export class VirtualMachine {
 
       case Opcode.CALL: {
         const f = this.stack.pop()
-        if (this._tracePrep) {
-          console.log(`[prep] CALL fn${f} stack_depth=${this.stack.depth()}`)
-        }
-        if (this._traceGlyph) {
-          console.log(`[vm] CALL fn${f} stack_depth=${this.stack.depth()}`)
-        }
         const fn = this.fns[f]
         // Apple: silently ignore calls to undefined functions (matching the
         // original C interpreter's "quietly returned if not yet defined" behaviour).
         if (fn) this.run(fn.inst, fn.pc)
-        if (this._traceGlyph) {
-          console.log(
-            `[vm] CALL fn${f} returned, stack_depth=${this.stack.depth()}`,
-          )
-        }
         break
       }
 
       case Opcode.LOOPCALL: {
         const f = this.stack.pop()
         const count = this.stack.pop()
-        if (this._tracePrep) {
-          console.log(
-            `[prep] LOOPCALL fn=${f} count=${count} stack_depth=${this.stack.depth()}`,
-          )
-        }
         const fn = this.fns[f]
         // Same leniency as CALL.
         if (fn) {
@@ -1912,16 +1830,6 @@ export class VirtualMachine {
 
     const pt = this.zones[zoneIdx][pointIdx]
     const dy = (delta * fv.y) / pDotF
-    if (Math.abs(dy) > 0.05 && this._tracePrep) {
-      console.log(
-        `[prep] movePoint z=${zoneIdx} p=${pointIdx} dy=${dy.toFixed(3)} pty_before=${pt.y.toFixed(3)}`,
-      )
-    }
-    if (Math.abs(dy) > 1 && zoneIdx === 1 && !this._tracePrep) {
-      console.log(
-        `[vm] movePoint z=${zoneIdx} p=${pointIdx} delta=${delta.toFixed(3)} dy=${dy.toFixed(3)} fv=(${fv.x.toFixed(2)},${fv.y.toFixed(2)}) pDotF=${pDotF.toFixed(3)}`,
-      )
-    }
     pt.x += (delta * fv.x) / pDotF
     pt.y += dy
 

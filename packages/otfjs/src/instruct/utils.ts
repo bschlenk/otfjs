@@ -25,6 +25,22 @@ export const getinfoFlags = createFlagReader({
   greyscale: 5,
 })
 
+/**
+ * If `distance` is within [-minimumDistance, +minimumDistance], snap it to the
+ * boundary (negative boundary if biasNegative, positive otherwise).
+ */
+export function clampToMinimumDistance(
+  minimumDistance: number,
+  distance: number,
+  biasNegative: boolean,
+): number {
+  const absMin = Math.abs(minimumDistance)
+  if (distance >= -absMin && distance <= absMin) {
+    return biasNegative ? -absMin : absMin
+  }
+  return distance
+}
+
 export function opcodeLength(inst: Uint8Array, pc: number) {
   const opcode: Opcode = inst[pc]
 
