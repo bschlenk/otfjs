@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { Font, NameId } from 'otfjs'
 
@@ -19,25 +19,11 @@ export function FontView({ font }: FontViewProps) {
   return (
     <FontContext value={font}>
       <div className={styles.root}>
-        <Sidebar tab={tab} setTab={setTab} />
+        <Head />
+        <Tabs tab={tab} setTab={setTab} />
         <View tab={tab} />
       </div>
     </FontContext>
-  )
-}
-
-function Sidebar({
-  tab,
-  setTab,
-}: {
-  tab: string
-  setTab: React.Dispatch<React.SetStateAction<string>>
-}) {
-  return (
-    <div className={styles.sidebar}>
-      <Head className="mb-2" />
-      <Tabs tab={tab} setTab={setTab} />
-    </div>
   )
 }
 
@@ -45,7 +31,7 @@ function Tabs({ tab, setTab }: { tab: string; setTab: (tab: string) => void }) {
   const font = useFont()
 
   return (
-    <div className={styles.tabs}>
+    <div className={`${styles.tabs} pt-2`}>
       <ul>
         <li>
           <button
@@ -78,11 +64,19 @@ function Overview() {
   const font = useFont()
   const fontFamily = font.getName(NameId.FontFamilyName)
 
+  const value = `${fontFamily}\n\nThe quick brown fox jumps over the lazy dog.\n0123456789\n\n`
+
+  const ref = useCallback((el: HTMLTextAreaElement | null) => {
+    if (!el) return
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length)
+  }, [])
+
   return (
     <div className={styles.tableView}>
       <textarea
-        autoFocus
-        defaultValue={fontFamily!}
+        ref={ref}
+        defaultValue={value}
         style={{ fontFamily: `"${fontFamily}"` }}
         className="block h-full w-full resize-none bg-[var(--color-bg)] p-2 text-2xl"
       />

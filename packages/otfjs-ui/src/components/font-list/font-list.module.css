@@ -1,4 +1,6 @@
 .root {
+  --gap: 26px;
+
   position: relative;
   display: grid;
   padding-top: 20px;
