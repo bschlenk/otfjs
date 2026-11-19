@@ -1,6 +1,7 @@
 import { Reader } from '@otfjs/buffer'
 
-import { asSfntVersion } from '../enum-utils.js'
+import { isSfntVersion } from '../enum-utils.js'
+import { NotAFontError } from '../errors.js'
 
 export interface Header {
   sfntVersion: number
@@ -23,7 +24,11 @@ export interface TableRecord {
 }
 
 export function readHeader(view: Reader): Header {
-  const sfntVersion = asSfntVersion(view.u32())
+  if (view.length < 4) throw new NotAFontError()
+
+  const sfntVersion = view.u32()
+  if (!isSfntVersion(sfntVersion)) throw new NotAFontError()
+
   const numTables = view.u16()
   const searchRange = view.u16()
   const entrySelector = view.u16()

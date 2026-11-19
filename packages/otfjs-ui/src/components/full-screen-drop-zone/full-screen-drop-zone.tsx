@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { NotAFontError } from 'otfjs'
 
 import { HasChildren } from '../../types/has-children'
-import { preventDefault } from '../../utils/event'
 import { readAndCacheFont } from '../../utils/fetch-font'
 
 export function FullScreenDropZone({ children }: HasChildren) {
@@ -13,13 +13,16 @@ export function FullScreenDropZone({ children }: HasChildren) {
   return (
     <div
       className="relative h-full"
-      onDragOver={preventDefault}
-      onDragEnter={() => {
-        ++enterCount.current
-        setDragover(true)
+      onDragEnter={(e) => {
+        if (enterCount.current++ !== 0) return
+        setDragover(mightBeFontDrag(e.dataTransfer))
       }}
       onDragLeave={() => {
         if (--enterCount.current === 0) setDragover(false)
+      }}
+      onDragOver={(e) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = dragover ? 'copy' : 'none'
       }}
       onDrop={(e) => {
         e.preventDefault()
@@ -27,10 +30,21 @@ export function FullScreenDropZone({ children }: HasChildren) {
         enterCount.current = 0
         setDragover(false)
 
-        void e.dataTransfer.files[0]
+        const file = e.dataTransfer.files[0]
+        if (!file) {
+          console.warn('No file dropped')
+          return
+        }
+
+        void file
           .bytes()
           .then(readAndCacheFont)
           .then((fontId) => navigate({ to: '/', state: { fontId } }))
+          .catch((err: unknown) => {
+            // Rethrow parse errors in real fonts so they surface for debugging.
+            if (!(err instanceof NotAFontError)) throw err
+            console.error(`${file.name} is not a font file`)
+          })
       }}
     >
       {children}
@@ -42,5 +56,27 @@ export function FullScreenDropZone({ children }: HasChildren) {
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Checks whether a drag might be carrying a font file. During a drag, browsers
+ * only expose each item's kind and MIME type, not its name or contents. Font
+ * MIME types vary by OS and browser and are often empty, so an empty or generic
+ * type counts as a possible font. Only drags that are clearly not fonts (text,
+ * links, images, etc.) return false.
+ */
+function mightBeFontDrag(dataTransfer: DataTransfer) {
+  const items = Array.from(dataTransfer.items)
+  return items.some((item) => item.kind === 'file' && isFontLikeType(item.type))
+}
+
+function isFontLikeType(type: string) {
+  return (
+    type === '' ||
+    type === 'application/octet-stream' ||
+    type === 'application/vnd.ms-opentype' ||
+    // Covers font/*, application/font-woff, application/x-font-ttf, etc.
+    type.includes('font')
   )
 }
