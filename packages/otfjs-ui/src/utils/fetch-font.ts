@@ -3,7 +3,8 @@ import { Font, isWoff2, NameId } from 'otfjs'
 import { GOOGLE_FONT_DOMAIN } from '../constants'
 import fonts from '../fonts.json'
 
-let nextFontId = 0
+// Start at 1 so a font id is never falsy.
+let nextFontId = 1
 
 const FONT_BY_URL_CACHE = new Map<string, Promise<Font>>()
 const FONT_BY_ID_CACHE = new Map<number, Font>()
