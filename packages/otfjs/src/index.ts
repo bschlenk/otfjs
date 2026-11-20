@@ -1,6 +1,7 @@
 export * from './canvas.js'
 export { computeChecksum } from './checksum.js'
 export * from './enums.js'
+export { NotAFontError } from './errors.js'
 export * from './fns/index.js'
 export * from './font.js'
 export { FontHandle, type TableMap } from './font-handle.js'
