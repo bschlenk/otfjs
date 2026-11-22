@@ -11,7 +11,7 @@ import type { FontHandle } from './font-handle.js'
  */
 export interface TableReader<T> {
   readonly tag: string
-  read(view: Reader, font: FontHandle): T
+  read: (view: Reader, font: FontHandle) => T
 }
 
 export function readerFor<T>(

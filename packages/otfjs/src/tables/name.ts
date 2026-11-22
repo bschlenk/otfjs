@@ -3,6 +3,8 @@
 import { Reader, Writer } from '@otfjs/buffer'
 
 import { NameId, PlatformId } from '../enums.js'
+import { readerFor } from '../table-reader.js'
+import { writerFor } from '../table-writer.js'
 
 export interface NameRecord {
   platformId: number
@@ -12,7 +14,7 @@ export interface NameRecord {
   value: string
 }
 
-export interface NameTable {
+export interface NameTableV0 {
   version: 0
   nameRecords: NameRecord[]
 }
@@ -23,7 +25,9 @@ export interface NameTableV1 {
   langTagRecords: NameRecord[]
 }
 
-export function readNameTable(view: Reader): NameTable | NameTableV1 {
+export type NameTable = NameTableV0 | NameTableV1
+
+export function readNameTable(view: Reader): NameTable {
   const version = view.u16()
   const count = view.u16()
   const storageOffset = view.u16()
@@ -76,7 +80,7 @@ export function readNameTable(view: Reader): NameTable | NameTableV1 {
   return { version: 0, nameRecords }
 }
 
-export function writeNameTable(table: NameTable | NameTableV1): Uint8Array {
+export function writeNameTable(table: NameTable): Uint8Array {
   const langTagRecords = table.version === 1 ? table.langTagRecords : []
   const allRecords = [...table.nameRecords, ...langTagRecords]
 
@@ -126,3 +130,11 @@ export function writeNameTable(table: NameTable | NameTableV1): Uint8Array {
 }
 
 const DECODER = new TextDecoder('utf-16be')
+
+export const NameTag = 'name'
+
+export const NameTableReader = readerFor<NameTable>(NameTag, readNameTable)
+
+export const NameTableWriter = writerFor<NameTable>(NameTag, writeNameTable)
+
+export const NameTable = { ...NameTableReader, ...NameTableWriter }

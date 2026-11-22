@@ -1,5 +1,6 @@
 import { type Reader } from '@otfjs/buffer'
 
+import { readerFor } from '../table-reader.js'
 import { highNibble, lowNibble } from '../utils/bit.js'
 import { assert, error } from '../utils/utils.js'
 
@@ -194,3 +195,7 @@ function readRealNumber(view: Reader) {
 }
 
 const DECODER = new TextDecoder()
+
+export const CffTag = 'CFF '
+
+export const CffTableReader = readerFor<CffTable>(CffTag, readCffTable)

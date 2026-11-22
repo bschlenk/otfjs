@@ -2,6 +2,8 @@
 import { Reader, Writer } from '@otfjs/buffer'
 
 import { PlatformId } from '../enums.js'
+import { readerFor } from '../table-reader.js'
+import { writerFor } from '../table-writer.js'
 
 export interface CmapTable {
   version: number
@@ -148,3 +150,11 @@ function readCmapSubtable(view: Reader): CmapSubtable {
       throw new Error(`unknown cmap subtable format ${format}`)
   }
 }
+
+export const CmapTag = 'cmap'
+
+export const CmapTableReader = readerFor<CmapTable>(CmapTag, readCmapTable)
+
+export const CmapTableWriter = writerFor<CmapTable>(CmapTag, writeCmapTable)
+
+export const CmapTable = { ...CmapTableReader, ...CmapTableWriter }

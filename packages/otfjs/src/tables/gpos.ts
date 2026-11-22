@@ -1,6 +1,7 @@
 import { Reader } from '@otfjs/buffer'
 
 import { createFlagReader } from '../flags.js'
+import { readerFor } from '../table-reader.js'
 import { assert } from '../utils/utils.js'
 
 enum GposLookupType {
@@ -409,3 +410,7 @@ function readClassDefTable(view: Reader) {
       assert(false, `unsupported class format ${classFormat}`)
   }
 }
+
+export const GposTag = 'GPOS'
+
+export const GposTableReader = readerFor<GposTable>(GposTag, readGposTable)

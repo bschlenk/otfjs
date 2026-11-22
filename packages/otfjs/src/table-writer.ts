@@ -3,7 +3,7 @@
  */
 export interface TableWriter<T> {
   readonly tag: string
-  write(data: T): Uint8Array
+  write: (data: T) => Uint8Array
 }
 
 export function writerFor<T>(
