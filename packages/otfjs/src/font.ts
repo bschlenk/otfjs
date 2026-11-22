@@ -6,15 +6,62 @@ import { getName } from './fns/get-name.js'
 import { glyphs } from './fns/glyphs.js'
 import { validate } from './fns/validate.js'
 import { FontHandle } from './font-handle.js'
+import type { TableReader } from './table-reader.js'
+import { defaultReaders, type TableMap } from './tables/default-readers.js'
+import { GlyfTag } from './tables/glyf.js'
+import { HeadTableReader } from './tables/head.js'
+import { MaxpTableReader } from './tables/maxp.js'
 import type { GlyphEnriched } from './types.js'
 
+export type TableType<T extends string> =
+  T extends keyof TableMap ? TableMap[T] : unknown
+
+/**
+ * A `FontHandle` with ergonomic methods for common operations, plus
+ * string-based table access via the built-in readers. Each method
+ * delegates to a free function in `fns/`; import those directly (with a
+ * plain `FontHandle`) to keep bundles small.
+ */
 export class Font extends FontHandle {
   public get unitsPerEm(): number {
-    return this.getTable('head').unitsPerEm
+    return this.readTable(HeadTableReader).unitsPerEm
   }
 
   public get numGlyphs(): number {
-    return this.getTable('maxp').numGlyphs
+    return this.readTable(MaxpTableReader).numGlyphs
+  }
+
+  /**
+   * Read a table by tag using its built-in reader. Throws if the font
+   * doesn't contain the table or there's no built-in reader for it.
+   *
+   * This pulls in every built-in reader. Prefer `readTable` with a
+   * specific reader in code that cares about bundle size.
+   */
+  public getTable<T extends string>(tag: T): TableType<T> {
+    const table = this.getTableOrNull(tag)
+    if (table === null) throw new Error(`"${tag}" table not found`)
+    return table
+  }
+
+  /**
+   * Like `getTable`, but returns null if the font doesn't contain the
+   * table.
+   */
+  public getTableOrNull<T extends string>(tag: T): TableType<T> | null {
+    if (!this.hasTable(tag)) return null
+
+    if (!Object.hasOwn(defaultReaders, tag)) {
+      if (tag === GlyfTag) {
+        throw new Error(
+          'call getGlyph instead of reading the glyf table directly',
+        )
+      }
+      throw new Error(`no built-in reader for the "${tag}" table`)
+    }
+
+    const reader = defaultReaders[tag as keyof TableMap] as TableReader<unknown>
+    return this.readTable(reader) as TableType<T>
   }
 
   public getName(
