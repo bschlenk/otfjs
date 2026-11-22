@@ -6,6 +6,7 @@
   "keywords": [],
   "license": "MIT",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./dist/index.js",
     "./woff2": "./dist/woff2/woff2.js",
