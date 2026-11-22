@@ -1,8 +1,12 @@
 import * as vec from '@bschlenk/vec'
 
-import type { Font } from '../font.js'
+import type { FontHandle } from '../font-handle.js'
+import { CvtTableReader } from '../tables/cvt.js'
+import { FpgmTableReader } from '../tables/fpgm.js'
 import { emptyGlyph } from '../tables/glyf.js'
-import { MaxpTable10 } from '../tables/maxp.js'
+import { HeadTableReader } from '../tables/head.js'
+import { MaxpTable10, MaxpTableReader } from '../tables/maxp.js'
+import { PrepTableReader } from '../tables/prep.js'
 import type { GlyphSimple, Point } from '../types.js'
 import { symmetricCeil, symmetricFloor, symmetricRound } from '../utils/math.js'
 import { assert, debug, error, range, toHex } from '../utils/utils.js'
@@ -62,8 +66,8 @@ export class VirtualMachine {
   private pcStack: number[] = []
   private maxp: MaxpTable10
 
-  constructor(private font: Font) {
-    const maxp = font.getTable('maxp')
+  constructor(private font: FontHandle) {
+    const maxp = font.readTable(MaxpTableReader)
 
     assert(
       maxp.version === 0x00010000,
@@ -71,8 +75,8 @@ export class VirtualMachine {
     )
 
     this.maxp = maxp
-    this.upem = font.unitsPerEm
-    this.cvt = [...(font.getTableOrNull('cvt ') ?? [])]
+    this.upem = font.readTable(HeadTableReader).unitsPerEm
+    this.cvt = [...(font.readTableOrNull(CvtTableReader) ?? [])]
     this.store = makeStore(maxp.maxStorage)
     this.stack = new Stack(maxp.maxStackElements)
     this.gs = makeGraphicsState()
@@ -83,7 +87,7 @@ export class VirtualMachine {
   setFontSize(px: number) {
     this.fontSize = px
     const scale = px / this.upem
-    this.cvt = [...(this.font.getTableOrNull('cvt ') ?? [])].map(
+    this.cvt = [...(this.font.readTableOrNull(CvtTableReader) ?? [])].map(
       (v) => v * scale,
     )
   }
@@ -161,7 +165,7 @@ export class VirtualMachine {
   }
 
   runFpgm() {
-    const inst = this.font.getTableOrNull('fpgm')
+    const inst = this.font.readTableOrNull(FpgmTableReader)
     if (inst) {
       this.stack.clear()
       this.run(inst)
@@ -169,7 +173,7 @@ export class VirtualMachine {
   }
 
   runPrep() {
-    const inst = this.font.getTableOrNull('prep')
+    const inst = this.font.readTableOrNull(PrepTableReader)
     if (inst) {
       this.stack.clear()
       this.run(inst)

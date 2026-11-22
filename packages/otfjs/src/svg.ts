@@ -3,7 +3,8 @@ import * as vec from '@bschlenk/vec'
 
 import { rgbaToCss } from './color.js'
 import { Extend } from './enums.js'
-import type { Font } from './font.js'
+import { getGlyph } from './fns/get-glyph.js'
+import type { FontHandle } from './font-handle.js'
 import { walkGlyphPath } from './glyph-utils.js'
 import { SvgPathBuilder } from './path-builder.js'
 import {
@@ -11,6 +12,9 @@ import {
   ColorRecordType,
   CompositeMode,
 } from './tables/colr.js'
+import { ColrTableReader } from './tables/colr.js'
+import { CpalTableReader } from './tables/cpal.js'
+import { HeadTableReader } from './tables/head.js'
 import type { Glyph, GlyphEnriched } from './types.js'
 
 // The gradient coords of a color glyph are always relative to the em square
@@ -40,10 +44,10 @@ export interface Node {
  */
 export function glyphToColorSvg(
   glyph: GlyphEnriched,
-  font: Font,
+  font: FontHandle,
   paletteIdx: number,
 ): { paths: Node[]; defs: Node[] } {
-  const colr = font.getTableOrNull('COLR')
+  const colr = font.readTableOrNull(ColrTableReader)
   const tree = colr?.colorGlyph(glyph.id)
   const defs: Node[] = []
 
@@ -53,9 +57,9 @@ export function glyphToColorSvg(
   }
 
   const width = glyph.advanceWidth
-  const height = font.unitsPerEm
+  const height = font.readTable(HeadTableReader).unitsPerEm
 
-  const palette = font.getTable('CPAL').getPalette(paletteIdx)
+  const palette = font.readTable(CpalTableReader).getPalette(paletteIdx)
   const stack: Node[] = [node('')]
   let latest = stack[0]
   let matrix: mat.Matrix | null = null
@@ -181,7 +185,7 @@ export function glyphToColorSvg(
 
       case ColorRecordType.GLYPH: {
         const { glyphId } = layer.props
-        const g = font.getGlyph(glyphId)
+        const g = getGlyph(font, glyphId)
         const d = glyphToSvgPath(g)
         let hasMatrix = false
 

@@ -1,8 +1,9 @@
 import { PlatformId } from '../enums.js'
 import type { FontHandle } from '../font-handle.js'
+import { CmapTableReader } from '../tables/cmap.js'
 
 export function getGlyphIndex(font: FontHandle, codePoint: number): number {
-  const table = font.getTable('cmap')
+  const table = font.readTable(CmapTableReader)
   const encodingId = codePoint > 0xffff ? 10 : 1
 
   const record = table.encodingRecords.find(

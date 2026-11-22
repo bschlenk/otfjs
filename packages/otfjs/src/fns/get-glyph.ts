@@ -1,15 +1,17 @@
 import * as mat from '@bschlenk/mat'
-import { asUint8Array, Reader } from '@otfjs/buffer'
 
 import type { FontHandle } from '../font-handle.js'
 import { compositeGlyphComponentMatrix } from '../glyph-utils.js'
-import { readGlyf } from '../tables/glyf.js'
+import { GlyfTag, readGlyf } from '../tables/glyf.js'
+import { HmtxTableReader } from '../tables/hmtx.js'
+import { LocaTableReader } from '../tables/loca.js'
 import type { GlyphEnriched } from '../types.js'
 
 export function getGlyph(font: FontHandle, id: number): GlyphEnriched {
-  const loca = font.getTable('loca')
-  const hmtx = font.getTable('hmtx')
-  const glyfRecord = font.getTableRecord('glyf')!
+  const loca = font.readTable(LocaTableReader)
+  const hmtx = font.readTable(HmtxTableReader)
+  const glyf = font.getTableView(GlyfTag)
+  if (!glyf) throw new Error('"glyf" table not found')
 
   const offset = loca[id]
   const length = loca[id + 1] - offset
@@ -18,10 +20,7 @@ export function getGlyph(font: FontHandle, id: number): GlyphEnriched {
     hmtx.longHorMetrics[id] ??
     hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
 
-  const view = new Reader(
-    asUint8Array(font.data, glyfRecord.offset + offset, length),
-  )
-  const glyph = readGlyf(view)
+  const glyph = readGlyf(glyf.subtable(offset, length))
 
   if (glyph.type === 'simple') return { ...glyph, id, advanceWidth }
 
