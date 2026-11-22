@@ -37,7 +37,7 @@ export function asDataView(
       new DataView(
         data.buffer,
         data.byteOffset + offset,
-        length ?? data.byteLength,
+        length ?? data.byteLength - offset,
       )
     : new DataView(data, offset, length)
 }
@@ -51,7 +51,7 @@ export function asUint8Array(
       new Uint8Array(
         data.buffer,
         data.byteOffset + offset,
-        length ?? data.byteLength,
+        length ?? data.byteLength - offset,
       )
     : new Uint8Array(data, offset, length)
 }

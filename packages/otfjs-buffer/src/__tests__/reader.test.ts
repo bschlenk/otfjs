@@ -28,5 +28,13 @@ describe('reader.ts', () => {
         expect(reader.f2dot14()).toBeCloseTo(expected, 6)
       }
     })
+
+    it('subtable without a length extends to the end of the data', () => {
+      const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7])
+      const reader = new Reader(data.subarray(2))
+      const sub = reader.subtable(4)
+      expect(sub.length).toBe(2)
+      expect([...sub.u8Array(2)]).toEqual([6, 7])
+    })
   })
 })
