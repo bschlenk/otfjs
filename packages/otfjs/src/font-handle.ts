@@ -1,6 +1,8 @@
 import { asUint8Array, Reader } from '@otfjs/buffer'
 
 import { Cache, createCache } from './cache.js'
+import type { TableReader } from './table-reader.js'
+import type { TableWriter } from './table-writer.js'
 import { CffTable, readCffTable } from './tables/cff.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'
 import { ColrTable, readColrTable } from './tables/colr.js'
@@ -47,12 +49,13 @@ export class FontHandle {
   #header: Header
   #tables: Record<string, TableRecord>
   #tableCache: Cache<TableType<any>>
+  #readCache = new Map<TableReader<unknown>, unknown>()
 
   constructor(data: Uint8Array) {
     this.#data = data
     this.#header = readHeader(new Reader(data))
     this.#tables = toObject(this.#header.tables, (table) => table.tag)
-    this.#tableCache = createCache((tag: string) => this.readTable(tag))
+    this.#tableCache = createCache((tag: string) => this.#readTableByTag(tag))
   }
 
   public get data() {
@@ -79,6 +82,47 @@ export class FontHandle {
     return tag in this.#tables
   }
 
+  /**
+   * Read a table using the given reader, throwing if the font doesn't
+   * contain the reader's table. Results are cached per reader.
+   */
+  public readTable<T>(reader: TableReader<T>): T {
+    if (!this.hasTable(reader.tag)) {
+      throw new Error(`"${reader.tag}" table not found`)
+    }
+    return this.readTableOrNull(reader)!
+  }
+
+  /**
+   * Read a table using the given reader, returning null if the font
+   * doesn't contain the reader's table. Results are cached per reader.
+   */
+  public readTableOrNull<T>(reader: TableReader<T>): T | null {
+    if (this.#readCache.has(reader)) {
+      return this.#readCache.get(reader) as T | null
+    }
+
+    const view = this.getTableView(reader.tag)
+    const value = view ? reader.read(view, this) : null
+    this.#readCache.set(reader, value)
+    return value
+  }
+
+  public writeTable<T>(writer: TableWriter<T>, data: T): Uint8Array {
+    return writer.write(data)
+  }
+
+  /**
+   * Get a reader over the raw bytes of a table, or null if the font
+   * doesn't contain it. Useful for tables that are read lazily, like
+   * `glyf`.
+   */
+  public getTableView(tag: string): Reader | null {
+    const table = this.#tables[tag]
+    if (!table) return null
+    return new Reader(asUint8Array(this.#data, table.offset, table.length))
+  }
+
   public getTable<T extends string>(tag: T): TableType<T> {
     const table = this.getTableOrNull(tag)
     if (!table) {
@@ -96,7 +140,7 @@ export class FontHandle {
     return this.#tables[tag]
   }
 
-  private readTable(tag: string) {
+  #readTableByTag(tag: string) {
     const table = this.#tables[tag]
     if (!table) return null
 

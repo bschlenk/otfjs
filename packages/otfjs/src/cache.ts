@@ -7,13 +7,10 @@ export function createCache<T>(getter: (key: string) => T) {
 
   return {
     get(key: string): T {
-      let value = values.get(key)
+      if (values.has(key)) return values.get(key) as T
 
-      if (!value) {
-        value = getter(key)
-        values.set(key, value)
-      }
-
+      const value = getter(key)
+      values.set(key, value)
       return value
     },
   }
