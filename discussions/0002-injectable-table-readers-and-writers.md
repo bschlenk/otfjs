@@ -61,6 +61,12 @@ export const HmtxTable = { ...HmtxTableReader, ...HmtxTableWriter }
 
 Importing only `HmtxTableReader` tree-shakes out the writer, and vice versa. `HmtxTable` is the "full" concept for consumers who don't need to split them. The exported `HmtxTag` constant can also be used with the string-based `getTable` convenience.
 
+The combined object is only exported for tables that have both a reader and a writer. Read-only tables (`CFF `, `COLR`, `CPAL`, `GPOS`, `loca`, …) export just `XTag` and `XTableReader`. This also sidesteps a name clash for tables whose parsed type is still a class (`ColrTable`, `CpalTable`): a class can't share its name with a `const`, but an interface can.
+
+`glyf` and `loca` don't get `TableWriter`s. Their writers need extra context (`writeGlyfTable(glyphs, loca)`, `writeLocaTable(offsets, indexFormat)`), so they don't fit `write(data: T)`. They stay plain functions in `writers/`.
+
+The generated tables (`head`, `hhea`, `maxp`, `OS/2`, `post`, `MATH`) define their reader/writer objects in the hand-written wrapper module (`tables/head.ts`) that re-exports the generated code, rather than in the generated file itself. `@otfjs/buffer-gen` is a generic binary codegen and shouldn't know about `FontHandle` or `readerFor`.
+
 ### FontHandle API
 
 ```ts
@@ -69,13 +75,26 @@ class FontHandle {
   readTableOrNull<T>(reader: TableReader<T>): T | null
   writeTable<T>(writer: TableWriter<T>, data: T): Uint8Array
 
-  getTable(tag: string): unknown // string convenience; not tree-shakeable
+  hasTable(tag: string): boolean
+  getTableRecord(tag: string): TableRecord | undefined
+  getTableView(tag: string): Reader | null // raw bytes for tables read lazily, like glyf
 }
 ```
 
-`readTable` and `writeTable` are the primary API — explicitly verbed, reader/writer objects carry the tag. `getTable(tag)` stays as a convenience for REPLs and devtools where tree-shaking doesn't matter because nothing is sent over the wire.
+`readTable` and `writeTable` are the primary API — explicitly verbed, reader/writer objects carry the tag. `FontHandle` imports no table readers at all.
 
-The cache key is `reader.tag`. Cross-table dependencies are expressed naturally: the reader calls `font.readTable(hheaTableReader)` internally, so only the tables actually needed are parsed.
+The cache is keyed by **reader identity**, not by `reader.tag`. Keying by tag would let a custom reader for, say, `cmap` and the built-in `CmapTableReader` share a cache slot and hand back each other's results. Cross-table dependencies are expressed naturally: the reader calls `font.readTable(HheaTableReader)` internally, so only the tables actually needed are parsed.
+
+### String-based convenience on `Font`
+
+```ts
+class Font extends FontHandle {
+  getTable<T extends string>(tag: T): TableType<T> // throws if not present or no reader
+  getTableOrNull<T extends string>(tag: T): TableType<T> | null
+}
+```
+
+`getTable(tag)` is a convenience for REPLs, devtools, and the UI, where tree-shaking doesn't matter. It lives on `Font`, not `FontHandle`: putting it on the handle would require the handle to import every reader again, which is exactly the problem this discussion solves. `Font` looks the tag up in `tables/default-readers.ts` (tag → built-in reader) and calls `readTable`, so it shares the cache with the typed path. `Font` is already the "batteries included" class — it imports every free function — so pulling in every reader there is consistent.
 
 ### Free functions
 
@@ -103,12 +122,10 @@ A namespace object (`Hmtx.Tag`, `Hmtx.Reader`) would give both, but importing th
 
 If tag discoverability becomes a real need, a `tables/tags.ts` barrel that re-exports all tag constants solves it without changing the naming scheme.
 
-## Open questions
+## `TableMap` type
 
-**`TableMap` type**
+Kept, as the return type of `Font.getTable(tag)`. The typed path (`readTable(reader)`) infers its return type from the reader and doesn't need it, but dropping it would make `getTable` return `unknown` and break every untyped-but-convenient call site (`font.getTable('head').unitsPerEm`). It's types-only, so it has no runtime or bundle cost.
 
-The `TableMap` interface (mapping tag strings to parsed types) becomes unnecessary once the return type is inferred from the reader. It may still be useful as documentation or for `getTable`'s return type, but the typed path no longer needs it.
+## Current state
 
-## Current state (as of 0002)
-
-Not yet implemented. `FontHandle` still owns a switch-based `readTable()` that imports all table readers. The proposal above describes the target architecture.
+In progress on the `bschlenk/injectable-table-readers` branch.
