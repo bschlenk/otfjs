@@ -8,6 +8,7 @@ export { disassemble } from './instruct/disassemble.js'
 export { VirtualMachine } from './instruct/vm.js'
 export * from './svg.js'
 export { readerFor, type TableReader } from './table-reader.js'
+export { tableFor, type TableReaderWriter } from './table-reader-writer.js'
 export { type TableWriter, writerFor } from './table-writer.js'
 export { type CffTable, CffTableReader, CffTag } from './tables/cff.js'
 export {

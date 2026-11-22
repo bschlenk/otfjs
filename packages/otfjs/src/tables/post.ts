@@ -1,4 +1,5 @@
 import { readerFor } from '../table-reader.js'
+import { tableFor } from '../table-reader-writer.js'
 import { writerFor } from '../table-writer.js'
 import {
   type PostTable as PostTableType,
@@ -18,8 +19,17 @@ export type PostTable = PostTableType
 
 export const PostTag = 'post'
 
-export const PostTableReader = readerFor<PostTable>(PostTag, readPostTable)
+export const PostTableReader = /* @__PURE__ */ readerFor<PostTable>(
+  PostTag,
+  readPostTable,
+)
 
-export const PostTableWriter = writerFor<PostTable>(PostTag, writePostTable)
+export const PostTableWriter = /* @__PURE__ */ writerFor<PostTable>(
+  PostTag,
+  writePostTable,
+)
 
-export const PostTable = { ...PostTableReader, ...PostTableWriter }
+export const PostTable = /* @__PURE__ */ tableFor(
+  PostTableReader,
+  PostTableWriter,
+)

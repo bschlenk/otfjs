@@ -198,4 +198,7 @@ const DECODER = new TextDecoder()
 
 export const CffTag = 'CFF '
 
-export const CffTableReader = readerFor<CffTable>(CffTag, readCffTable)
+export const CffTableReader = /* @__PURE__ */ readerFor<CffTable>(
+  CffTag,
+  readCffTable,
+)

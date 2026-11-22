@@ -1,6 +1,7 @@
 import { Reader, Writer } from '@otfjs/buffer'
 
 import { readerFor } from '../table-reader.js'
+import { tableFor } from '../table-reader-writer.js'
 import { writerFor } from '../table-writer.js'
 import { HheaTableReader } from './hhea.js'
 import { MaxpTableReader } from './maxp.js'
@@ -49,12 +50,21 @@ export function writeHmtxTable(table: HmtxTable): Uint8Array {
 
 export const HmtxTag = 'hmtx'
 
-export const HmtxTableReader = readerFor<HmtxTable>(HmtxTag, (view, font) => {
-  const { numberOfHMetrics } = font.readTable(HheaTableReader)
-  const { numGlyphs } = font.readTable(MaxpTableReader)
-  return readHmtxTable(view, numberOfHMetrics, numGlyphs)
-})
+export const HmtxTableReader = /* @__PURE__ */ readerFor<HmtxTable>(
+  HmtxTag,
+  (view, font) => {
+    const { numberOfHMetrics } = font.readTable(HheaTableReader)
+    const { numGlyphs } = font.readTable(MaxpTableReader)
+    return readHmtxTable(view, numberOfHMetrics, numGlyphs)
+  },
+)
 
-export const HmtxTableWriter = writerFor<HmtxTable>(HmtxTag, writeHmtxTable)
+export const HmtxTableWriter = /* @__PURE__ */ writerFor<HmtxTable>(
+  HmtxTag,
+  writeHmtxTable,
+)
 
-export const HmtxTable = { ...HmtxTableReader, ...HmtxTableWriter }
+export const HmtxTable = /* @__PURE__ */ tableFor(
+  HmtxTableReader,
+  HmtxTableWriter,
+)

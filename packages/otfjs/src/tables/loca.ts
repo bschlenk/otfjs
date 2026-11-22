@@ -24,8 +24,11 @@ export function readLocaTable(
 
 export const LocaTag = 'loca'
 
-export const LocaTableReader = readerFor<LocaTable>(LocaTag, (view, font) => {
-  const { indexToLocFormat } = font.readTable(HeadTableReader)
-  const { numGlyphs } = font.readTable(MaxpTableReader)
-  return readLocaTable(view, indexToLocFormat, numGlyphs)
-})
+export const LocaTableReader = /* @__PURE__ */ readerFor<LocaTable>(
+  LocaTag,
+  (view, font) => {
+    const { indexToLocFormat } = font.readTable(HeadTableReader)
+    const { numGlyphs } = font.readTable(MaxpTableReader)
+    return readLocaTable(view, indexToLocFormat, numGlyphs)
+  },
+)

@@ -1,4 +1,5 @@
 import { readerFor } from '../table-reader.js'
+import { tableFor } from '../table-reader-writer.js'
 import { writerFor } from '../table-writer.js'
 import {
   type OS2Table as OS2TableType,
@@ -19,8 +20,14 @@ export type OS2Table = OS2TableType
 
 export const OS2Tag = 'OS/2'
 
-export const OS2TableReader = readerFor<OS2Table>(OS2Tag, readOS2Table)
+export const OS2TableReader = /* @__PURE__ */ readerFor<OS2Table>(
+  OS2Tag,
+  readOS2Table,
+)
 
-export const OS2TableWriter = writerFor<OS2Table>(OS2Tag, writeOS2Table)
+export const OS2TableWriter = /* @__PURE__ */ writerFor<OS2Table>(
+  OS2Tag,
+  writeOS2Table,
+)
 
-export const OS2Table = { ...OS2TableReader, ...OS2TableWriter }
+export const OS2Table = /* @__PURE__ */ tableFor(OS2TableReader, OS2TableWriter)

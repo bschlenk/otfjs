@@ -7,4 +7,7 @@ export type FpgmTable = Uint8Array
 
 export const FpgmTag = 'fpgm'
 
-export const FpgmTableReader = readerFor<FpgmTable>(FpgmTag, readTableAsU8Array)
+export const FpgmTableReader = /* @__PURE__ */ readerFor<FpgmTable>(
+  FpgmTag,
+  readTableAsU8Array,
+)

@@ -15,18 +15,22 @@ Invert the dependency: the handle becomes a dumb typed cache; parsing and serial
 ```ts
 interface TableReader<T> {
   readonly tag: string
-  read(view: Reader, font: FontHandle): T
+  read: (view: Reader, font: FontHandle) => T
 }
 
 interface TableWriter<T> {
   readonly tag: string
-  write(data: T): Uint8Array
+  write: (data: T) => Uint8Array
 }
+
+interface TableReaderWriter<T> extends TableReader<T>, TableWriter<T> {}
 ```
+
+`read` and `write` are function-typed properties rather than methods: the objects are plain data, and method syntax trips `@typescript-eslint/unbound-method` wherever `reader.read` is passed around.
 
 ### Factory functions
 
-Two factory functions — `readerFor` and `writerFor` — are the one consistent way to define readers and writers across the codebase. They take the tag as the first argument, eliminating the need to write it twice:
+Three factory functions — `readerFor`, `writerFor`, and `tableFor` — are the one consistent way to define readers, writers, and combined objects across the codebase. `readerFor` and `writerFor` take the tag as the first argument, eliminating the need to write it twice:
 
 ```ts
 function readerFor<T>(
@@ -37,7 +41,13 @@ function writerFor<T>(
   tag: string,
   write: (data: T) => Uint8Array,
 ): TableWriter<T>
+function tableFor<T>(
+  reader: TableReader<T>,
+  writer: TableWriter<T>,
+): TableReaderWriter<T>
 ```
+
+Module-scope calls are annotated `/* @__PURE__ */` so bundlers can drop the ones that aren't imported. The factories are also declared `/* @__NO_SIDE_EFFECTS__ */`, which rollup honors across modules but esbuild (as of 0.25) only honors within the defining module, so the call-site annotation is what makes it work everywhere.
 
 ### Per-table objects
 
@@ -47,17 +57,28 @@ Each table file exports a tag constant plus reader, writer, and optionally a com
 // tables/hmtx.ts
 export const HmtxTag = 'hmtx' as const
 
-export const HmtxTableReader = readerFor<HmtxTable>(HmtxTag, (view, font) => {
-  const { numberOfHMetrics } = font.readTable(HheaTableReader)
-  const { numGlyphs } = font.readTable(MaxpTableReader)
-  return readHmtxTable(view, numberOfHMetrics, numGlyphs)
-})
+export const HmtxTableReader = /* @__PURE__ */ readerFor<HmtxTable>(
+  HmtxTag,
+  (view, font) => {
+    const { numberOfHMetrics } = font.readTable(HheaTableReader)
+    const { numGlyphs } = font.readTable(MaxpTableReader)
+    return readHmtxTable(view, numberOfHMetrics, numGlyphs)
+  },
+)
 
-export const HmtxTableWriter = writerFor<HmtxTable>(HmtxTag, writeHmtxTable)
+export const HmtxTableWriter = /* @__PURE__ */ writerFor<HmtxTable>(
+  HmtxTag,
+  writeHmtxTable,
+)
 
 // Combined export for consumers who need both
-export const HmtxTable = { ...HmtxTableReader, ...HmtxTableWriter }
+export const HmtxTable = /* @__PURE__ */ tableFor(
+  HmtxTableReader,
+  HmtxTableWriter,
+)
 ```
+
+The combined object goes through `tableFor` rather than a `{ ...HmtxTableReader, ...HmtxTableWriter }` literal. Bundlers assume an object spread may run getters, so they can't drop an unused one — and keeping it would keep the writer alive for consumers that only import the reader.
 
 Importing only `HmtxTableReader` tree-shakes out the writer, and vice versa. `HmtxTable` is the "full" concept for consumers who don't need to split them. The exported `HmtxTag` constant can also be used with the string-based `getTable` convenience.
 
@@ -128,4 +149,8 @@ Kept, as the return type of `Font.getTable(tag)`. The typed path (`readTable(rea
 
 ## Current state
 
-In progress on the `bschlenk/injectable-table-readers` branch.
+Implemented. `FontHandle` imports no table modules; every table module exports `XTag` and `XTableReader` (plus `XTableWriter` and `XTable` where a writer exists); `Font.getTable` goes through `tables/default-readers.ts`.
+
+`src/tree-shaking.test.ts` bundles small entry points with esbuild and asserts which readers and writers end up in the output. Bundling only `getGlyphIndex` + `FontHandle` (minified, dependencies external) went from 23.0 KB to 4.2 KB.
+
+Bundlers drop whole unused table modules only if they honor `"sideEffects": false` from `package.json` (esbuild, webpack, and Vite/rollup with node-resolve all do). Without it, the initializers for TypeScript `enum`s in unreachable modules survive, though their readers are still dropped.

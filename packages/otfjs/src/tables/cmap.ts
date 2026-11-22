@@ -3,6 +3,7 @@ import { Reader, Writer } from '@otfjs/buffer'
 
 import { PlatformId } from '../enums.js'
 import { readerFor } from '../table-reader.js'
+import { tableFor } from '../table-reader-writer.js'
 import { writerFor } from '../table-writer.js'
 
 export interface CmapTable {
@@ -153,8 +154,17 @@ function readCmapSubtable(view: Reader): CmapSubtable {
 
 export const CmapTag = 'cmap'
 
-export const CmapTableReader = readerFor<CmapTable>(CmapTag, readCmapTable)
+export const CmapTableReader = /* @__PURE__ */ readerFor<CmapTable>(
+  CmapTag,
+  readCmapTable,
+)
 
-export const CmapTableWriter = writerFor<CmapTable>(CmapTag, writeCmapTable)
+export const CmapTableWriter = /* @__PURE__ */ writerFor<CmapTable>(
+  CmapTag,
+  writeCmapTable,
+)
 
-export const CmapTable = { ...CmapTableReader, ...CmapTableWriter }
+export const CmapTable = /* @__PURE__ */ tableFor(
+  CmapTableReader,
+  CmapTableWriter,
+)

@@ -64,4 +64,7 @@ export function readCpalTable(view: Reader) {
 
 export const CpalTag = 'CPAL'
 
-export const CpalTableReader = readerFor<CpalTable>(CpalTag, readCpalTable)
+export const CpalTableReader = /* @__PURE__ */ readerFor<CpalTable>(
+  CpalTag,
+  readCpalTable,
+)

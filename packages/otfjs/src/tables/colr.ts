@@ -433,4 +433,7 @@ function readColorLine(view: Reader) {
 
 export const ColrTag = 'COLR'
 
-export const ColrTableReader = readerFor<ColrTable>(ColrTag, readColrTable)
+export const ColrTableReader = /* @__PURE__ */ readerFor<ColrTable>(
+  ColrTag,
+  readColrTable,
+)

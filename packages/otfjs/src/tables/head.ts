@@ -1,4 +1,5 @@
 import { readerFor } from '../table-reader.js'
+import { tableFor } from '../table-reader-writer.js'
 import { writerFor } from '../table-writer.js'
 import {
   type HeadTable as HeadTableType,
@@ -17,8 +18,17 @@ export type HeadTable = HeadTableType
 
 export const HeadTag = 'head'
 
-export const HeadTableReader = readerFor<HeadTable>(HeadTag, readHeadTable)
+export const HeadTableReader = /* @__PURE__ */ readerFor<HeadTable>(
+  HeadTag,
+  readHeadTable,
+)
 
-export const HeadTableWriter = writerFor<HeadTable>(HeadTag, writeHeadTable)
+export const HeadTableWriter = /* @__PURE__ */ writerFor<HeadTable>(
+  HeadTag,
+  writeHeadTable,
+)
 
-export const HeadTable = { ...HeadTableReader, ...HeadTableWriter }
+export const HeadTable = /* @__PURE__ */ tableFor(
+  HeadTableReader,
+  HeadTableWriter,
+)

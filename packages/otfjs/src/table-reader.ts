@@ -14,6 +14,10 @@ export interface TableReader<T> {
   read: (view: Reader, font: FontHandle) => T
 }
 
+// Rollup honors this annotation across modules. esbuild only honors it
+// within the defining module, so module-scope calls should also be
+// annotated with /* @__PURE__ */ to be dropped when unused.
+/* @__NO_SIDE_EFFECTS__ */
 export function readerFor<T>(
   tag: string,
   read: (view: Reader, font: FontHandle) => T,

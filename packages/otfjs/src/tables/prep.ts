@@ -7,4 +7,7 @@ export type PrepTable = Uint8Array
 
 export const PrepTag = 'prep'
 
-export const PrepTableReader = readerFor<PrepTable>(PrepTag, readTableAsU8Array)
+export const PrepTableReader = /* @__PURE__ */ readerFor<PrepTable>(
+  PrepTag,
+  readTableAsU8Array,
+)

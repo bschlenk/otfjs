@@ -7,4 +7,7 @@ export type CvtTable = number[]
 
 export const CvtTag = 'cvt '
 
-export const CvtTableReader = readerFor<CvtTable>(CvtTag, readTableAsI16Array)
+export const CvtTableReader = /* @__PURE__ */ readerFor<CvtTable>(
+  CvtTag,
+  readTableAsI16Array,
+)

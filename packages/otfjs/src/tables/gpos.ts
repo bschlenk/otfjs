@@ -413,4 +413,7 @@ function readClassDefTable(view: Reader) {
 
 export const GposTag = 'GPOS'
 
-export const GposTableReader = readerFor<GposTable>(GposTag, readGposTable)
+export const GposTableReader = /* @__PURE__ */ readerFor<GposTable>(
+  GposTag,
+  readGposTable,
+)
