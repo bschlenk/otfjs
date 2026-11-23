@@ -50,10 +50,11 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
 
   let lastPoint = vec.ZERO
 
-  for (const point of glyph.points) {
+  for (const [i, point] of glyph.points.entries()) {
     const flag = glyphFlags(0)
     flag.onCurvePoint = point.onCurve
-    flag.contoursOverlap = glyph.contoursOverlap
+    // The spec says OVERLAP_SIMPLE should only be set on the first flag
+    flag.contoursOverlap = i === 0 && glyph.contoursOverlap
 
     const { x, y } = vec.subtract(point, lastPoint)
 
@@ -122,7 +123,11 @@ function writeCompositeGlyph(writer: Writer, glyph: GlyphComposite) {
   writer.i16(-1)
   writeMinMax(writer, glyph)
 
+  let weHaveInstructions = false
+
   for (const { flags, glyphIndex, arg1, arg2, extra } of glyph.components) {
+    weHaveInstructions ||= flags.weHaveInstructions
+
     writer.u16(flags.value)
     writer.u16(glyphIndex)
 
@@ -161,6 +166,16 @@ function writeCompositeGlyph(writer: Writer, glyph: GlyphComposite) {
     } else {
       assert(extra.length === 0, 'Extra array should be empty')
     }
+  }
+
+  if (weHaveInstructions) {
+    writer.u16(glyph.instructions.length)
+    writer.buffer(glyph.instructions)
+  } else {
+    assert(
+      glyph.instructions.length === 0,
+      'Composite glyph has instructions but no component sets weHaveInstructions',
+    )
   }
 }
 
