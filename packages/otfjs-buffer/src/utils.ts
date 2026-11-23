@@ -2,6 +2,11 @@ export function assert(condition: boolean, msg: string): asserts condition {
   if (!condition) throw new Error(msg)
 }
 
+/** Restrict `val` to the inclusive range `[min, max]`. */
+export function clamp(val: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, val))
+}
+
 export function getAlignPadding(length: number, align: number) {
   return (align - (length % align)) % align
 }

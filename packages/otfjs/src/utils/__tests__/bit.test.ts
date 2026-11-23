@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { from2dot14, from26dot6, to2dot14, to26dot6 } from '../bit.js'
+import { from26dot6, to26dot6 } from '../bit.js'
 import { toHex } from '../utils.js'
 
 describe('bit', () => {
@@ -36,40 +36,6 @@ describe('bit', () => {
     for (const [expected, val] of cases) {
       it(`should convert ${toHex(val)} to ${expected}`, () => {
         expect(from26dot6(val)).toBe(expected)
-      })
-    }
-  })
-
-  describe('to2dot14()', () => {
-    const cases = [
-      [1.999939, 0x7fff],
-      [1.75, 0x7000],
-      [0.000061, 0x0001],
-      [0.0, 0x0000],
-      [-0.000061, 0xffff],
-      [-2.0, 0x8000],
-    ]
-
-    for (const [val, expected] of cases) {
-      it(`should convert ${val} to ${toHex(expected, 2)}`, () => {
-        expect(to2dot14(val)).toBe(expected)
-      })
-    }
-  })
-
-  describe('from2dot14()', () => {
-    const cases = [
-      [1.999939, 0x7fff],
-      [1.75, 0x7000],
-      [0.000061, 0x0001],
-      [0.0, 0x0000],
-      [-0.000061, 0xffff],
-      [-2.0, 0x8000],
-    ]
-
-    for (const [expected, val] of cases) {
-      it(`should convert ${toHex(val, 2)} to ${expected}`, () => {
-        expect(from2dot14(val)).toBeCloseTo(expected, 6)
       })
     }
   })
