@@ -1,8 +1,8 @@
 import { asUint8Array, Reader } from '@otfjs/buffer'
 
 import { type Cache, createCache } from './cache.js'
+import { type Header, readHeader, type TableRecord } from './header.js'
 import type { TableReader } from './table-reader.js'
-import { type Header, readHeader, type TableRecord } from './tables/header.js'
 import { toObject } from './utils/utils.js'
 
 /**

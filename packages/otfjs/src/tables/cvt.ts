@@ -1,7 +1,7 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/cvt
 
 import type { TableReader } from '../table-reader.js'
-import { readTableAsI16Array } from './common.js'
+import { readTableAsI16Array } from '../utils/table-data.js'
 
 export type CvtTable = number[]
 

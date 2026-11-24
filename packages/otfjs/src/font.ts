@@ -5,6 +5,7 @@
  * @module
  */
 
+import { defaultReaders, type TableMap } from './default-readers.js'
 import { NameId, PlatformId } from './enums.js'
 import { getGlyph } from './fns/get-glyph.js'
 import { getGlyphByCodePoint } from './fns/get-glyph-by-code-point.js'
@@ -14,7 +15,6 @@ import { glyphs } from './fns/glyphs.js'
 import { validate } from './fns/validate.js'
 import { FontHandle } from './font-handle.js'
 import type { TableReader } from './table-reader.js'
-import { defaultReaders, type TableMap } from './tables/default-readers.js'
 import { GlyfTag } from './tables/glyf.js'
 import { HeadTableReader } from './tables/head.js'
 import { MaxpTableReader } from './tables/maxp.js'

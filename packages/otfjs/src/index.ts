@@ -1,6 +1,7 @@
 // Only `export *` from modules whose exports are all public API. Tables
 // aren't re-exported here: import them from `otfjs/tables/<name>`.
 export * from './canvas.js'
+export type { TableMap } from './default-readers.js'
 export * from './enums.js'
 export * from './errors.js'
 export * from './fns/index.js'
@@ -11,7 +12,6 @@ export { VirtualMachine } from './instruct/vm.js'
 export * from './svg.js'
 export type * from './table-reader.js'
 export type * from './table-writer.js'
-export type { TableMap } from './tables/default-readers.js'
 export type * from './types.js'
 export { isWoff2 } from './woff2/utils.js'
 export { computeChecksum } from '@otfjs/buffer'

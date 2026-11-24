@@ -1,7 +1,7 @@
 import { Reader } from '@otfjs/buffer'
 
-import { isSfntVersion } from '../enum-utils.js'
-import { NotAFontError } from '../errors.js'
+import { isSfntVersion } from './enum-utils.js'
+import { NotAFontError } from './errors.js'
 
 export interface Header {
   sfntVersion: number
