@@ -27,6 +27,42 @@ export function sum<T>(
   return arr.reduce((acc, item) => acc + fn(item), 0)
 }
 
+/** Keys of `T` whose values are strings. */
+type StringKeys<T> = {
+  [K in keyof T]: T[K] extends string ? K : never
+}[keyof T]
+
+/**
+ * Sort `arr` in place by code unit order, as `Array.prototype.sort` does by
+ * default, and return it. Pass a key or function to sort objects by one of
+ * their strings. Unlike `localeCompare`, this matches the byte order the
+ * OpenType spec uses for sorting tags.
+ */
+export function sortByString(arr: string[]): string[]
+export function sortByString<T>(
+  arr: T[],
+  by: StringKeys<T> | ((item: T) => string),
+): T[]
+export function sortByString<T>(
+  arr: T[],
+  by?: StringKeys<T> | ((item: T) => string),
+): T[] {
+  const key =
+    by === undefined ? (item: T) => item as string
+    : typeof by === 'function' ? by
+    : (item: T) => item[by] as string
+
+  return arr.sort((a, b) => {
+    const ka = key(a)
+    const kb = key(b)
+    return (
+      ka < kb ? -1
+      : ka > kb ? 1
+      : 0
+    )
+  })
+}
+
 /**
  * Create an object from the given array, where the keys
  * are the result of calling `getKey` on each item.

@@ -5,6 +5,7 @@ import { Reader, Writer } from '@otfjs/buffer'
 import { NameId, PlatformId } from '../enums.js'
 import type { TableReader } from '../table-reader.js'
 import type { TableWriter } from '../table-writer.js'
+import { utf16beDecoder } from '../utils/text.js'
 
 export interface NameRecord {
   platformId: number
@@ -52,7 +53,7 @@ export function readNameTable(view: Reader): NameTable {
         return NameId[nameId]
       },
       get value() {
-        return DECODER.decode(
+        return utf16beDecoder.decode(
           view.dataview(storageOffset + stringOffset, length),
         )
       },
@@ -70,7 +71,9 @@ export function readNameTable(view: Reader): NameTable {
         languageId: 0,
         nameId: 0,
         get value() {
-          return DECODER.decode(view.dataview(storageOffset + offset, length))
+          return utf16beDecoder.decode(
+            view.dataview(storageOffset + offset, length),
+          )
         },
       }
     })
@@ -128,8 +131,6 @@ export function writeNameTable(table: NameTable): Uint8Array {
 
   return w.toBuffer()
 }
-
-const DECODER = new TextDecoder('utf-16be')
 
 export const NameTag = 'name'
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { buildFont } from '../font-builder.js'
 import { FontHandle } from '../font-handle.js'
+import { utf8Encoder } from '../utils/text.js'
 import {
   type MetaTable,
   MetaTableReader,
@@ -35,12 +36,12 @@ describe('meta', () => {
   })
 
   it('trims spaces and skips empty tags in language lists', () => {
-    const text = new TextEncoder().encode(' ko, Kore ,,en ')
+    const text = utf8Encoder.encode(' ko, Kore ,,en ')
     const data = new Uint8Array(16 + 12 + text.byteLength)
     const view = new DataView(data.buffer)
     view.setUint32(0, 1) // version
     view.setUint32(12, 1) // dataMapsCount
-    data.set(new TextEncoder().encode('dlng'), 16)
+    data.set(utf8Encoder.encode('dlng'), 16)
     view.setUint32(20, 28) // dataOffset
     view.setUint32(24, text.byteLength) // dataLength
     data.set(text, 28)

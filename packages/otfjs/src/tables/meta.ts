@@ -4,6 +4,8 @@ import { Reader, Writer } from '@otfjs/buffer'
 
 import type { TableReader } from '../table-reader.js'
 import type { TableWriter } from '../table-writer.js'
+import { utf8Decoder, utf8Encoder } from '../utils/text.js'
+import { sortByString } from '../utils/utils.js'
 
 export interface MetaTable {
   version: number
@@ -66,11 +68,7 @@ export function writeMetaTable(table: MetaTable): Uint8Array {
       data: encodeLanguages(table.supportedLanguages),
     })
   }
-  dataMaps.sort((a, b) =>
-    a.tag < b.tag ? -1
-    : a.tag > b.tag ? 1
-    : 0,
-  )
+  sortByString(dataMaps, 'tag')
 
   const headerSize = 16 + dataMaps.length * 12
   const w = new Writer(headerSize)
@@ -107,13 +105,13 @@ export const MetaTableWriter: TableWriter<MetaTable> = {
 
 /** `dlng` and `slng` hold comma-separated tags, optionally with spaces. */
 function parseLanguages(data: Uint8Array): string[] {
-  return new TextDecoder()
+  return utf8Decoder
     .decode(data)
     .split(',')
     .map((tag) => tag.trim())
-    .filter((tag) => tag !== '')
+    .filter(Boolean)
 }
 
 function encodeLanguages(tags: string[]): Uint8Array {
-  return new TextEncoder().encode(tags.join(','))
+  return utf8Encoder.encode(tags.join(','))
 }

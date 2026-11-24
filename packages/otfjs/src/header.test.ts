@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest'
 
 import { NotAFontError } from './errors.js'
 import { readHeader } from './header.js'
+import { utf8Encoder } from './utils/text.js'
 
 describe('readHeader', () => {
   it('throws NotAFontError for data without a font signature', () => {
-    const data = new TextEncoder().encode('definitely not a font file')
+    const data = utf8Encoder.encode('definitely not a font file')
     expect(() => readHeader(new Reader(data))).toThrow(NotAFontError)
   })
 
