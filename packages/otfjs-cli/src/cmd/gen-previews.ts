@@ -86,13 +86,21 @@ function generatePreview(font: Font): string | null {
   const g1s = glyphToColorSvg(g1, font, 0)
   const g2s = glyphToColorSvg(g2, font, 0)
 
-  const min = g1.xMin
-  const max = min + g1.advanceWidth + g2.xMax
+  // Start from the em box (baseline to unitsPerEm) so most fonts render at a
+  // consistent scale, then grow it to fit any ink that reaches outside it,
+  // like deep descenders, tall ascenders, or swashes past the side bearings.
+  const advance = g1.advanceWidth
+  const xMin = Math.min(g1.xMin, advance + g2.xMin)
+  const xMax = Math.max(g1.xMax, advance + g2.xMax)
+  const yMin = Math.min(0, g1.yMin, g2.yMin)
+  const yMax = Math.max(upem, g1.yMax, g2.yMax)
 
   const defs = [...g1s.defs, ...g2s.defs]
 
+  // Glyphs are drawn flipped (font y-up to svg y-down), so font yMax maps to
+  // svg y = upem - yMax.
   const padding = (PADDING / 100) * upem
-  const viewBox = `${min - padding} ${-padding} ${max - min + padding * 2} ${upem + padding * 2}`
+  const viewBox = `${xMin - padding} ${upem - yMax - padding} ${xMax - xMin + padding * 2} ${yMax - yMin + padding * 2}`
 
   return `\
 <svg viewBox="${viewBox}" height="100" fill="black" xmlns="http://www.w3.org/2000/svg">
