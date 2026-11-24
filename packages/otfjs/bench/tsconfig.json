@@ -1,0 +1,6 @@
+{
+  // Type-checks the benchmarks. They're run by `vitest bench`, never built.
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["."]
+}
