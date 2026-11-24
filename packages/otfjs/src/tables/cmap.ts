@@ -16,7 +16,7 @@ interface EncodingRecord {
   subtable: CmapSubtable
 }
 
-export type CmapSubtable = CmapSubtable4 | CmapSubtableRaw
+export type CmapSubtable = CmapSubtable4 | CmapSubtable12 | CmapSubtableRaw
 
 export interface CmapSubtable4 {
   format: 4
@@ -28,6 +28,20 @@ export interface CmapSubtable4 {
   glyphIdArray: number[]
 }
 
+/** Segmented coverage: maps ranges of 32-bit code points to glyphs. */
+export interface CmapSubtable12 {
+  format: 12
+  language: number
+  groups: SequentialMapGroup[]
+}
+
+export interface SequentialMapGroup {
+  startCharCode: number
+  endCharCode: number
+  /** The glyph for `startCharCode`; the rest of the range follows on. */
+  startGlyphId: number
+}
+
 /**
  * A subtable in a format we don't parse yet, kept as its raw bytes so the
  * rest of the table stays readable and writes back unchanged.
@@ -37,7 +51,7 @@ export interface CmapSubtableRaw {
   data: Uint8Array
 }
 
-type RawFormat = 0 | 2 | 6 | 8 | 10 | 12 | 13 | 14
+type RawFormat = 0 | 2 | 6 | 8 | 10 | 13 | 14
 
 export function readCmapTable(view: Reader): CmapTable {
   const version = view.u16()
@@ -84,6 +98,24 @@ export function writeCmapTable(table: CmapTable): Uint8Array {
   return w.toBuffer()
 }
 
+/**
+ * The glyph a subtable maps `codePoint` to, or 0 (`.notdef`) if it doesn't
+ * map it. Subtables in unparsed formats map nothing.
+ */
+export function lookupCmapSubtable(
+  subtable: CmapSubtable,
+  codePoint: number,
+): number {
+  switch (subtable.format) {
+    case 4:
+      return lookupSubtable4(subtable, codePoint)
+    case 12:
+      return lookupSubtable12(subtable, codePoint)
+    default:
+      return 0
+  }
+}
+
 export const CmapTag = 'cmap'
 
 export const CmapTableReader: TableReader<CmapTable> = {
@@ -97,27 +129,38 @@ export const CmapTableWriter: TableWriter<CmapTable> = {
 }
 
 function getSubtableSize(subtable: CmapSubtable): number {
-  if (isRaw(subtable)) return subtable.data.byteLength
-
-  const segs = subtable.endCodes.length
-  return 16 + segs * 8 + subtable.glyphIdArray.length * 2
+  switch (subtable.format) {
+    case 4:
+      return (
+        16 + subtable.endCodes.length * 8 + subtable.glyphIdArray.length * 2
+      )
+    case 12:
+      return 16 + subtable.groups.length * 12
+    default:
+      return subtable.data.byteLength
+  }
 }
 
 function writeSubtable(w: Writer, subtable: CmapSubtable): void {
-  if (isRaw(subtable)) {
-    w.buffer(subtable.data)
-    return
+  switch (subtable.format) {
+    case 4:
+      return writeSubtable4(w, subtable)
+    case 12:
+      return writeSubtable12(w, subtable)
+    default:
+      w.buffer(subtable.data)
   }
+}
 
+function writeSubtable4(w: Writer, subtable: CmapSubtable4): void {
   const segs = subtable.endCodes.length
   const segCountX2 = segs * 2
   const searchRange = 2 * 2 ** Math.floor(Math.log2(segs))
   const entrySelector = Math.log2(searchRange / 2)
   const rangeShift = segCountX2 - searchRange
-  const length = 16 + segs * 8 + subtable.glyphIdArray.length * 2
 
   w.u16(subtable.format)
-  w.u16(length)
+  w.u16(getSubtableSize(subtable))
   w.u16(subtable.language)
   w.u16(segCountX2)
   w.u16(searchRange)
@@ -130,6 +173,20 @@ function writeSubtable(w: Writer, subtable: CmapSubtable): void {
   w.array('i16', subtable.idDeltas)
   w.array('u16', subtable.idRangeOffsets)
   w.array('u16', subtable.glyphIdArray)
+}
+
+function writeSubtable12(w: Writer, subtable: CmapSubtable12): void {
+  w.u16(subtable.format)
+  w.u16(0) // reserved
+  w.u32(getSubtableSize(subtable))
+  w.u32(subtable.language)
+  w.u32(subtable.groups.length)
+
+  for (const group of subtable.groups) {
+    w.u32(group.startCharCode)
+    w.u32(group.endCharCode)
+    w.u32(group.startGlyphId)
+  }
 }
 
 function readCmapSubtable(view: Reader): CmapSubtable {
@@ -166,9 +223,22 @@ function readCmapSubtable(view: Reader): CmapSubtable {
       }
     }
 
+    case 12: {
+      view.skip(2) // reserved
+      view.u32() // length
+      const language = view.u32()
+      const numGroups = view.u32()
+      const groups = view.array(numGroups, () => ({
+        startCharCode: view.u32(),
+        endCharCode: view.u32(),
+        startGlyphId: view.u32(),
+      }))
+      return { format, language, groups }
+    }
+
     // Not parsed yet: 0 (byte encoding), 2 (high-byte mapping), 6 (trimmed
-    // table), 8 (mixed 16/32-bit), 10 (trimmed array), 12 (segmented
-    // coverage), 13 (many-to-one ranges), 14 (variation sequences).
+    // table), 8 (mixed 16/32-bit), 10 (trimmed array), 13 (many-to-one
+    // ranges), 14 (variation sequences).
     case 0:
     case 2:
     case 6: {
@@ -178,7 +248,6 @@ function readCmapSubtable(view: Reader): CmapSubtable {
 
     case 8:
     case 10:
-    case 12:
     case 13: {
       view.skip(2) // reserved
       const length = view.u32()
@@ -195,6 +264,47 @@ function readCmapSubtable(view: Reader): CmapSubtable {
   }
 }
 
-function isRaw(subtable: CmapSubtable): subtable is CmapSubtableRaw {
-  return 'data' in subtable
+function lookupSubtable4(s: CmapSubtable4, codePoint: number): number {
+  if (codePoint > 0xffff) return 0
+
+  const i = firstIndexAtLeast(s.endCodes, codePoint, (end) => end)
+  if (i === s.endCodes.length || s.startCodes[i] > codePoint) return 0
+
+  if (s.idRangeOffsets[i] === 0) {
+    return (codePoint + s.idDeltas[i]) & 0xffff
+  }
+
+  // idRangeOffset is a byte offset from its own entry in idRangeOffsets into
+  // glyphIdArray, which immediately follows it.
+  const glyphArrayIndex =
+    s.idRangeOffsets[i] / 2 +
+    (codePoint - s.startCodes[i]) +
+    i -
+    s.endCodes.length
+  const glyphId = s.glyphIdArray[glyphArrayIndex] ?? 0
+  if (glyphId === 0) return 0
+  return (glyphId + s.idDeltas[i]) & 0xffff
+}
+
+function lookupSubtable12(s: CmapSubtable12, codePoint: number): number {
+  const i = firstIndexAtLeast(s.groups, codePoint, (g) => g.endCharCode)
+  const group = s.groups[i] as SequentialMapGroup | undefined
+  if (!group || group.startCharCode > codePoint) return 0
+  return group.startGlyphId + (codePoint - group.startCharCode)
+}
+
+/** The index of the first item whose key is >= `target`, in sorted `items`. */
+function firstIndexAtLeast<T>(
+  items: T[],
+  target: number,
+  key: (item: T) => number,
+): number {
+  let lo = 0
+  let hi = items.length
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1
+    if (key(items[mid]) < target) lo = mid + 1
+    else hi = mid
+  }
+  return lo
 }
