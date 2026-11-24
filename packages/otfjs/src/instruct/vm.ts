@@ -11,7 +11,7 @@ import type { GlyphSimple, Point } from '../types.js'
 import { symmetricCeil, symmetricFloor, symmetricRound } from '../utils/math.js'
 import { assert, debug, error, range, toHex } from '../utils/utils.js'
 import { disassemble } from './disassemble.js'
-import { decodeGetinfoSelector } from './getinfo.gen.js'
+import { GetinfoSelector } from './getinfo.gen.js'
 import {
   type GraphicsState,
   makeGraphicsState,
@@ -1656,7 +1656,7 @@ export class VirtualMachine {
       }
 
       case Opcode.GETINFO: {
-        const flags = decodeGetinfoSelector(this.stack.pop())
+        const flags = new GetinfoSelector(this.stack.pop())
         let result = 0
 
         if (flags.version) {

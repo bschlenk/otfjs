@@ -4,11 +4,7 @@
 import * as vec from '@bschlenk/vec'
 import { Writer } from '@otfjs/buffer'
 
-import {
-  type GlyphFlags,
-  writeGlyphCompositeFlags,
-  writeGlyphFlags,
-} from '../tables/glyf.gen.js'
+import { GlyphFlags } from '../tables/glyf.gen.js'
 import type { LocaTable } from '../tables/loca.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
 import { assert } from '../utils/utils.js'
@@ -68,16 +64,10 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
   let lastPoint = vec.ZERO
 
   for (const [i, point] of glyph.points.entries()) {
-    const flag: GlyphFlags = {
-      onCurvePoint: point.onCurve,
-      xShortVector: false,
-      yShortVector: false,
-      repeat: false,
-      xIsSameOrPositiveXShortVector: false,
-      yIsSameOrPositiveYShortVector: false,
-      // The spec says OVERLAP_SIMPLE should only be set on the first flag
-      contoursOverlap: i === 0 && glyph.contoursOverlap,
-    }
+    const flag = new GlyphFlags()
+    flag.onCurvePoint = point.onCurve
+    // The spec says OVERLAP_SIMPLE should only be set on the first flag
+    flag.contoursOverlap = i === 0 && glyph.contoursOverlap
 
     const { x, y } = vec.subtract(point, lastPoint)
 
@@ -112,22 +102,22 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
     lastPoint = point
   }
 
-  const flagGroups: { flags: GlyphFlags; value: number; repeat: number }[] = []
+  const flagGroups: { flags: GlyphFlags; repeat: number }[] = []
 
   for (const flags of flagsArray) {
-    const value = writeGlyphFlags(flags)
     const lastGroup = flagGroups[flagGroups.length - 1]
 
     // the repeat count is a single byte, so start a new run after 255
-    if (lastGroup?.value === value && lastGroup.repeat < 255) {
+    if (lastGroup?.flags.value === flags.value && lastGroup.repeat < 255) {
       lastGroup.repeat++
     } else {
-      flagGroups.push({ flags, value, repeat: 0 })
+      flagGroups.push({ flags, repeat: 0 })
     }
   }
 
   for (const { flags, repeat } of flagGroups) {
-    writer.u8(writeGlyphFlags({ ...flags, repeat: repeat > 0 }))
+    if (repeat) flags.repeat = true
+    writer.u8(flags.value)
     if (repeat) writer.u8(repeat)
   }
 
@@ -152,7 +142,7 @@ function writeCompositeGlyph(writer: Writer, glyph: GlyphComposite) {
   for (const { flags, glyphIndex, arg1, arg2, extra } of glyph.components) {
     weHaveInstructions ||= flags.weHaveInstructions
 
-    writer.u16(writeGlyphCompositeFlags(flags))
+    writer.u16(flags.value)
     writer.u16(glyphIndex)
 
     // types vary based on flags

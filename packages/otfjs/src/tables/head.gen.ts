@@ -2,86 +2,184 @@
 // Run `pnpm generate` to regenerate. Do not edit manually.
 import { type Reader, Writer } from '@otfjs/buffer'
 
-export interface HeadFlags {
-  baselineAtY0: boolean
-  leftSidebearingAtX0: boolean
-  instructionsMayDependOnPointSize: boolean
-  forcePpemToIntegers: boolean
-  instructionsMayAlterAdvanceWidth: boolean
-  lossless: boolean
-  converted: boolean
-  clearTypeOptimized: boolean
-  lastResortFont: boolean
-}
+export class HeadFlags {
+  value: number
 
-export function decodeHeadFlags(v: number): HeadFlags {
-  return {
-    baselineAtY0: !!(v & (1 << 0)),
-    leftSidebearingAtX0: !!(v & (1 << 1)),
-    instructionsMayDependOnPointSize: !!(v & (1 << 2)),
-    forcePpemToIntegers: !!(v & (1 << 3)),
-    instructionsMayAlterAdvanceWidth: !!(v & (1 << 4)),
-    lossless: !!(v & (1 << 11)),
-    converted: !!(v & (1 << 12)),
-    clearTypeOptimized: !!(v & (1 << 13)),
-    lastResortFont: !!(v & (1 << 14)),
+  constructor(value = 0) {
+    this.value = value
+  }
+
+  get baselineAtY0(): boolean {
+    return (this.value & 0x1) !== 0
+  }
+
+  set baselineAtY0(on: boolean) {
+    this.value = on ? this.value | 0x1 : this.value & ~0x1
+  }
+
+  get leftSidebearingAtX0(): boolean {
+    return (this.value & 0x2) !== 0
+  }
+
+  set leftSidebearingAtX0(on: boolean) {
+    this.value = on ? this.value | 0x2 : this.value & ~0x2
+  }
+
+  get instructionsMayDependOnPointSize(): boolean {
+    return (this.value & 0x4) !== 0
+  }
+
+  set instructionsMayDependOnPointSize(on: boolean) {
+    this.value = on ? this.value | 0x4 : this.value & ~0x4
+  }
+
+  get forcePpemToIntegers(): boolean {
+    return (this.value & 0x8) !== 0
+  }
+
+  set forcePpemToIntegers(on: boolean) {
+    this.value = on ? this.value | 0x8 : this.value & ~0x8
+  }
+
+  get instructionsMayAlterAdvanceWidth(): boolean {
+    return (this.value & 0x10) !== 0
+  }
+
+  set instructionsMayAlterAdvanceWidth(on: boolean) {
+    this.value = on ? this.value | 0x10 : this.value & ~0x10
+  }
+
+  get lossless(): boolean {
+    return (this.value & 0x800) !== 0
+  }
+
+  set lossless(on: boolean) {
+    this.value = on ? this.value | 0x800 : this.value & ~0x800
+  }
+
+  get converted(): boolean {
+    return (this.value & 0x1000) !== 0
+  }
+
+  set converted(on: boolean) {
+    this.value = on ? this.value | 0x1000 : this.value & ~0x1000
+  }
+
+  get clearTypeOptimized(): boolean {
+    return (this.value & 0x2000) !== 0
+  }
+
+  set clearTypeOptimized(on: boolean) {
+    this.value = on ? this.value | 0x2000 : this.value & ~0x2000
+  }
+
+  get lastResortFont(): boolean {
+    return (this.value & 0x4000) !== 0
+  }
+
+  set lastResortFont(on: boolean) {
+    this.value = on ? this.value | 0x4000 : this.value & ~0x4000
+  }
+
+  toJSON() {
+    return {
+      value: this.value,
+      baselineAtY0: this.baselineAtY0,
+      leftSidebearingAtX0: this.leftSidebearingAtX0,
+      instructionsMayDependOnPointSize: this.instructionsMayDependOnPointSize,
+      forcePpemToIntegers: this.forcePpemToIntegers,
+      instructionsMayAlterAdvanceWidth: this.instructionsMayAlterAdvanceWidth,
+      lossless: this.lossless,
+      converted: this.converted,
+      clearTypeOptimized: this.clearTypeOptimized,
+      lastResortFont: this.lastResortFont,
+    }
   }
 }
 
 export function readHeadFlags(r: Reader): HeadFlags {
-  return decodeHeadFlags(r.u16())
+  return new HeadFlags(r.u16())
 }
 
-export function writeHeadFlags(d: HeadFlags): number {
-  return (
-    (d.baselineAtY0 ? 1 << 0 : 0) |
-    (d.leftSidebearingAtX0 ? 1 << 1 : 0) |
-    (d.instructionsMayDependOnPointSize ? 1 << 2 : 0) |
-    (d.forcePpemToIntegers ? 1 << 3 : 0) |
-    (d.instructionsMayAlterAdvanceWidth ? 1 << 4 : 0) |
-    (d.lossless ? 1 << 11 : 0) |
-    (d.converted ? 1 << 12 : 0) |
-    (d.clearTypeOptimized ? 1 << 13 : 0) |
-    (d.lastResortFont ? 1 << 14 : 0)
-  )
-}
+export class MacStyle {
+  value: number
 
-export interface MacStyle {
-  bold: boolean
-  italic: boolean
-  underline: boolean
-  outline: boolean
-  shadow: boolean
-  condensed: boolean
-  extended: boolean
-}
+  constructor(value = 0) {
+    this.value = value
+  }
 
-export function decodeMacStyle(v: number): MacStyle {
-  return {
-    bold: !!(v & (1 << 0)),
-    italic: !!(v & (1 << 1)),
-    underline: !!(v & (1 << 2)),
-    outline: !!(v & (1 << 3)),
-    shadow: !!(v & (1 << 4)),
-    condensed: !!(v & (1 << 5)),
-    extended: !!(v & (1 << 6)),
+  get bold(): boolean {
+    return (this.value & 0x1) !== 0
+  }
+
+  set bold(on: boolean) {
+    this.value = on ? this.value | 0x1 : this.value & ~0x1
+  }
+
+  get italic(): boolean {
+    return (this.value & 0x2) !== 0
+  }
+
+  set italic(on: boolean) {
+    this.value = on ? this.value | 0x2 : this.value & ~0x2
+  }
+
+  get underline(): boolean {
+    return (this.value & 0x4) !== 0
+  }
+
+  set underline(on: boolean) {
+    this.value = on ? this.value | 0x4 : this.value & ~0x4
+  }
+
+  get outline(): boolean {
+    return (this.value & 0x8) !== 0
+  }
+
+  set outline(on: boolean) {
+    this.value = on ? this.value | 0x8 : this.value & ~0x8
+  }
+
+  get shadow(): boolean {
+    return (this.value & 0x10) !== 0
+  }
+
+  set shadow(on: boolean) {
+    this.value = on ? this.value | 0x10 : this.value & ~0x10
+  }
+
+  get condensed(): boolean {
+    return (this.value & 0x20) !== 0
+  }
+
+  set condensed(on: boolean) {
+    this.value = on ? this.value | 0x20 : this.value & ~0x20
+  }
+
+  get extended(): boolean {
+    return (this.value & 0x40) !== 0
+  }
+
+  set extended(on: boolean) {
+    this.value = on ? this.value | 0x40 : this.value & ~0x40
+  }
+
+  toJSON() {
+    return {
+      value: this.value,
+      bold: this.bold,
+      italic: this.italic,
+      underline: this.underline,
+      outline: this.outline,
+      shadow: this.shadow,
+      condensed: this.condensed,
+      extended: this.extended,
+    }
   }
 }
 
 export function readMacStyle(r: Reader): MacStyle {
-  return decodeMacStyle(r.u16())
-}
-
-export function writeMacStyle(d: MacStyle): number {
-  return (
-    (d.bold ? 1 << 0 : 0) |
-    (d.italic ? 1 << 1 : 0) |
-    (d.underline ? 1 << 2 : 0) |
-    (d.outline ? 1 << 3 : 0) |
-    (d.shadow ? 1 << 4 : 0) |
-    (d.condensed ? 1 << 5 : 0) |
-    (d.extended ? 1 << 6 : 0)
-  )
+  return new MacStyle(r.u16())
 }
 
 export interface HeadTable {
@@ -158,7 +256,7 @@ export function writeHeadTable(d: HeadTable): Uint8Array {
   w.u32(d.fontRevision)
   w.u32(d.checksumAdjustment)
   w.u32(0x5f0f3cf5)
-  w.u16(writeHeadFlags(d.flags))
+  w.u16(d.flags.value)
   w.u16(d.unitsPerEm)
   w.date(d.created)
   w.date(d.modified)
@@ -166,7 +264,7 @@ export function writeHeadTable(d: HeadTable): Uint8Array {
   w.i16(d.yMin)
   w.i16(d.xMax)
   w.i16(d.yMax)
-  w.u16(writeMacStyle(d.macStyle))
+  w.u16(d.macStyle.value)
   w.u16(d.lowestRecPpem)
   w.i16(2)
   w.i16(d.indexToLocFormat)

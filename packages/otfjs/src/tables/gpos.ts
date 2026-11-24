@@ -336,6 +336,8 @@ interface ValueRecord {
 function readValueRecord(view: Reader, valueFormat: ValueFormat) {
   const rec: ValueRecord = {}
 
+  if (valueFormat.value === 0) return rec
+
   if (valueFormat.xPlacement) {
     rec.xPlacement = view.i16()
   }

@@ -88,12 +88,7 @@ async function processFile(filePath: string, outDir?: string) {
   const blocks: string[] = []
 
   for (const def of flagsDefs) {
-    blocks.push(
-      genFlagsInterface(def),
-      genFlagsDecoder(def),
-      genFlagsReader(def),
-      genFlagsWriter(def),
-    )
+    blocks.push(genFlagsClass(def), genFlagsReader(def))
   }
 
   for (const def of structDefs) {
@@ -158,29 +153,55 @@ function isSchemaValue(
 
 // ---- Flags generation -------------------------------------------------------
 
-function genFlagsInterface(def: FlagsDef) {
-  const fields = Object.entries(def.bits)
-    .map(
-      ([name, bits]) =>
-        `  ${name}: ${Array.isArray(bits) ? 'number' : 'boolean'}`,
-    )
-    .join('\n')
-  return `export interface ${def.name} {\n${fields}\n}`
-}
+/**
+ * Flags are generated as a class wrapping the raw number. Reading only
+ * stores the number; each flag is a getter/setter over its bits. `value`
+ * keeps every bit, including reserved ones, so read-then-write round
+ * trips exactly.
+ */
+function genFlagsClass(def: FlagsDef) {
+  const n = def.type === 'u32' || def.type === 'i32' ? ' >>> 0' : ''
+  const accessors = Object.entries(def.bits).map(([name, bits]) => {
+    if (Array.isArray(bits)) {
+      const [start, width] = bits
+      const m = mask(width)
+      return `\
+  get ${name}(): number {
+    return (this.value >> ${start}) & ${m}
+  }
 
-/** Decodes flags from an already-read number, e.g. a value off a stack. */
-function genFlagsDecoder(def: FlagsDef) {
-  const fields = Object.entries(def.bits)
-    .map(([name, bits]) =>
-      Array.isArray(bits) ?
-        `    ${name}: (v >> ${bits[0]}) & ${mask(bits[1])},`
-      : `    ${name}: !!(v & (1 << ${bits})),`,
-    )
+  set ${name}(n: number) {
+    this.value = ((this.value & ~(${m} << ${start})) | ((n & ${m}) << ${start}))${n}
+  }`
+    }
+    const bit = `0x${(2 ** bits).toString(16)}`
+    return `\
+  get ${name}(): boolean {
+    return (this.value & ${bit}) !== 0
+  }
+
+  set ${name}(on: boolean) {
+    this.value = (on ? this.value | ${bit} : this.value & ~${bit})${n}
+  }`
+  })
+  const json = Object.keys(def.bits)
+    .map((name) => `      ${name}: this.${name},`)
     .join('\n')
   return `\
-export function decode${def.name}(v: number): ${def.name} {
-  return {
-${fields}
+export class ${def.name} {
+  value: number
+
+  constructor(value = 0) {
+    this.value = value
+  }
+
+${accessors.join('\n\n')}
+
+  toJSON() {
+    return {
+      value: this.value,
+${json}
+    }
   }
 }`
 }
@@ -188,23 +209,7 @@ ${fields}
 function genFlagsReader(def: FlagsDef) {
   return `\
 export function read${def.name}(r: Reader): ${def.name} {
-  return decode${def.name}(r.${typeToFn(def.type)}())
-}`
-}
-
-function genFlagsWriter(def: FlagsDef) {
-  const terms = Object.entries(def.bits)
-    .map(([name, bits]) =>
-      Array.isArray(bits) ?
-        `    ((d.${name} & ${mask(bits[1])}) << ${bits[0]})`
-      : `    (d.${name} ? (1 << ${bits}) : 0)`,
-    )
-    .join(' |\n')
-  return `\
-export function write${def.name}(d: ${def.name}): number {
-  return (
-${terms}
-  )
+  return new ${def.name}(r.${typeToFn(def.type)}())
 }`
 }
 
@@ -327,7 +332,7 @@ function genStructWriter(def: StructDef) {
       return `  for (const item of d.${name}) {\n    ${genArrayElementWriter(field)}\n  }`
     }
     if (field.kind === 'flags') {
-      return `  w.${typeToFn(field.type)}(write${field.name}(d.${name}))`
+      return `  w.${typeToFn(field.type)}(d.${name}.value)`
     }
     if (field.kind === 'struct') return `  write${field.name}(w, d.${name})`
     if (countFields.has(name)) {
@@ -363,7 +368,7 @@ function genArrayElementWriter(field: ArrayDef): string {
   const { element } = field
   if (element.kind === 'primitive') return `w.${typeToFn(element.type)}(item)`
   if (element.kind === 'flags') {
-    return `w.${typeToFn(element.type)}(write${element.name}(item))`
+    return `w.${typeToFn(element.type)}(item.value)`
   }
   return `write${element.name}(w, item)`
 }
@@ -463,7 +468,7 @@ function genVersionedWriter(def: VersionedDef) {
         return `      w.${typeToFn(field.type)}(${formatValue(field.value)})`
       }
       if (field.kind === 'flags') {
-        return `      w.${typeToFn(field.type)}(write${field.name}(d.${name}))`
+        return `      w.${typeToFn(field.type)}(d.${name}.value)`
       }
       if (field.kind === 'struct') {
         return `      write${field.name}(w, d.${name})`
