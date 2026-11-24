@@ -267,7 +267,44 @@ function genStructInterface(def: StructDef) {
       return `${doc}  ${name}: ${fieldToTs(field)}`
     })
     .join('\n')
-  return `export interface ${def.name} {\n${fields}\n}`
+  const iface = `export interface ${def.name} {\n${fields}\n}`
+  return hasDefaults(def.fields) ? `${iface}\n\n${genInitInterface(def)}` : iface
+}
+
+/**
+ * The writer's input: the struct, with fields that have a default optional.
+ */
+function genInitInterface(def: StructDef) {
+  const defaulted = Object.entries(def.fields).filter(
+    (entry): entry is [string, PrimitiveDef] => isDefaulted(entry[1]),
+  )
+  const omitted = defaulted.map(([name]) => `'${name}'`).join(' | ')
+  const fields = defaulted
+    .map(([name, field]) => {
+      const doc = field.doc ? `${field.doc}. ` : ''
+      return `  /** ${doc}Defaults to ${formatValue(field.default!)}. */\n  ${name}?: ${fieldToTs(field)}`
+    })
+    .join('\n')
+  return `\
+/** {@link ${def.name}} for \`write${def.name}\`, which fills in defaults. */
+export interface ${def.name}Init extends Omit<${def.name}, ${omitted}> {
+${fields}
+}`
+}
+
+function isDefaulted(field: FieldDef): field is PrimitiveDef {
+  return field.kind === 'primitive' && field.default !== undefined
+}
+
+function hasDefaults(fields: Record<string, FieldDef>) {
+  return Object.values(fields).some(isDefaulted)
+}
+
+/** Defaults are only generated for plain structs so far. */
+function assertNoDefaults(name: string, fields: Record<string, FieldDef>) {
+  if (hasDefaults(fields)) {
+    throw new Error(`${name}: withDefault is only supported in plain structs`)
+  }
 }
 
 function genStructReader(def: StructDef) {
@@ -338,12 +375,16 @@ function genStructWriter(def: StructDef) {
     if (countFields.has(name)) {
       return `  w.${typeToFn((field as { type: PrimitiveType }).type)}(d.${getArrayForCountField(name, def.fields)}.length)`
     }
+    if (field.default !== undefined) {
+      return `  w.${typeToFn(field.type)}(d.${name} ?? ${formatValue(field.default)})`
+    }
     return `  w.${typeToFn(field.type)}(d.${name})`
   })
 
   const writerInit = size === null ? `new Writer()` : `new Writer(${size})`
+  const input = hasDefaults(def.fields) ? `${def.name}Init` : def.name
   return `\
-export function write${def.name}(d: ${def.name}): Uint8Array {
+export function write${def.name}(d: ${input}): Uint8Array {
   const w = ${writerInit}
 
 ${lines.join('\n')}
@@ -376,6 +417,7 @@ function genArrayElementWriter(field: ArrayDef): string {
 // ---- Versioned generation ---------------------------------------------------
 
 function genVersionedCode(def: VersionedDef) {
+  for (const v of def.variants) assertNoDefaults(v.struct.name, v.struct.fields)
   const interfaces = def.variants.map((v) =>
     genVariantInterface(v, def.versionType),
   )
@@ -503,6 +545,7 @@ function formatVersionHex(value: number, type: PrimitiveType): string {
 // ---- Additive generation ----------------------------------------------------
 
 function genAdditiveCode(def: AdditiveDef) {
+  for (const tier of def.tiers) assertNoDefaults(def.name, tier.fields)
   return [
     genAdditiveInterface(def),
     genAdditiveReader(def),

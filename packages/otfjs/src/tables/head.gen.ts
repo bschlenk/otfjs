@@ -183,7 +183,7 @@ export function readMacStyle(r: Reader): MacStyle {
 }
 
 export interface HeadTable {
-  /** Should be 0; minor versions are backward compatible, so accept any */
+  /** Any value is read, since minor versions are backward compatible */
   minorVersion: number
   /** Set by font manufacturer */
   fontRevision: number
@@ -207,10 +207,21 @@ export interface HeadTable {
   macStyle: MacStyle
   /** Smallest readable size in pixels */
   lowestRecPpem: number
-  /** Deprecated; should be 2, but older fonts use 0, 1, -1 or -2 */
+  /** Deprecated; older fonts use 0, 1, -1 or -2 */
   fontDirectionHint: number
   /** 0 for short offsets (Offset16), 1 for long (Offset32) */
   indexToLocFormat: number
+}
+
+/** {@link HeadTable} for `writeHeadTable`, which fills in defaults. */
+export interface HeadTableInit extends Omit<
+  HeadTable,
+  'minorVersion' | 'fontDirectionHint'
+> {
+  /** Any value is read, since minor versions are backward compatible. Defaults to 0. */
+  minorVersion?: number
+  /** Deprecated; older fonts use 0, 1, -1 or -2. Defaults to 2. */
+  fontDirectionHint?: number
 }
 
 export function readHeadTable(r: Reader): HeadTable {
@@ -254,11 +265,11 @@ export function readHeadTable(r: Reader): HeadTable {
   }
 }
 
-export function writeHeadTable(d: HeadTable): Uint8Array {
+export function writeHeadTable(d: HeadTableInit): Uint8Array {
   const w = new Writer(54)
 
   w.u16(1)
-  w.u16(d.minorVersion)
+  w.u16(d.minorVersion ?? 0)
   w.u32(d.fontRevision)
   w.u32(d.checksumAdjustment)
   w.u32(0x5f0f3cf5)
@@ -272,7 +283,7 @@ export function writeHeadTable(d: HeadTable): Uint8Array {
   w.i16(d.yMax)
   w.u16(d.macStyle.value)
   w.u16(d.lowestRecPpem)
-  w.i16(d.fontDirectionHint)
+  w.i16(d.fontDirectionHint ?? 2)
   w.i16(d.indexToLocFormat)
   w.i16(0)
 
