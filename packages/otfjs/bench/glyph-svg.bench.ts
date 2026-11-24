@@ -5,9 +5,10 @@
 //   pnpm bench --outputJson base.json  # save a baseline
 //   pnpm bench --compare base.json     # compare against it
 //
-// Fonts come from the gitignored fonts/ folder (see scripts/update-fonts.sh);
-// missing ones are skipped. Each iteration opens a fresh `Font`, so table
-// caches start cold, like opening a font in the UI.
+// Fonts come from the gitignored fonts/ folder; fetch them with
+// scripts/update-fonts.sh. A missing font is an error rather than a skip,
+// so results always cover the same fonts. Each iteration opens a fresh
+// `Font`, so table caches start cold, like opening a font in the UI.
 
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
@@ -33,13 +34,15 @@ const OPTIONS = { iterations: 5, time: 0, warmupIterations: 1, warmupTime: 0 }
 
 for (const name of FONTS) {
   const path = resolve(FONTS_DIR, name)
-  const exists = existsSync(path)
-  const data = exists ? new Uint8Array(readFileSync(path)) : new Uint8Array()
+  if (!existsSync(path)) {
+    throw new Error(`${path} not found, run scripts/update-fonts.sh`)
+  }
+  const data = new Uint8Array(readFileSync(path))
 
-  describe.skipIf(!exists)(name, () => {
+  describe(name, () => {
     // A hash of the color-svg output, to check that optimizations don't
     // change it.
-    if (exists) console.log(`${name} output: ${digest(new Font(data))}`)
+    console.log(`${name} output: ${digest(new Font(data))}`)
 
     bench(
       'decode',
@@ -65,7 +68,7 @@ for (const name of FONTS) {
       OPTIONS,
     )
 
-    bench.skipIf(!fontHasColr(data))(
+    bench.skipIf(!new Font(data).hasTable('COLR'))(
       'colr',
       () => {
         const font = new Font(data)
@@ -84,10 +87,6 @@ for (const name of FONTS) {
       OPTIONS,
     )
   })
-}
-
-function fontHasColr(data: Uint8Array) {
-  return data.length > 0 && new Font(data).hasTable('COLR')
 }
 
 function digest(font: Font) {

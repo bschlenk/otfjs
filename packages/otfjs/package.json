@@ -24,7 +24,7 @@
     "lint": "eslint . --color",
     "lint:fix": "pnpm lint --fix",
     "test": "vitest",
-    "bench": "vitest bench --run"
+    "bench": "pnpm --filter @otfjs/buffer build && vitest bench --run"
   },
   "dependencies": {
     "@bschlenk/mat": "^0.0.12",
