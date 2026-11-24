@@ -3,11 +3,7 @@
 
 import type { Reader } from '@otfjs/buffer'
 
-import {
-  type GlyphFlags,
-  readGlyphCompositeFlags,
-  readGlyphFlags,
-} from '../tables/glyf.gen.js'
+import { GlyphFlags, readGlyphCompositeFlags } from '../tables/glyf.gen.js'
 import type {
   Glyph,
   GlyphComposite,
@@ -55,7 +51,9 @@ export function readGlyf(view: Reader): Glyph {
     return glyph
   }
 
-  const endPtsOfContours = view.array(numberOfContours, () => view.u16())
+  const endPtsOfContours = new Array<number>(numberOfContours)
+  for (let i = 0; i < numberOfContours; ++i) endPtsOfContours[i] = view.u16()
+
   const instructionLength = view.u16()
   const instructions = view.u8Array(instructionLength)
 
@@ -63,15 +61,10 @@ export function readGlyf(view: Reader): Glyph {
   let contoursOverlap = false
 
   if (numberOfContours > 0) {
-    const numEntries = endPtsOfContours[endPtsOfContours.length - 1] + 1
-
-    const result = readFlags(numEntries, view)
-    contoursOverlap = result.contoursOverlap
-
-    const flags = result.flags
-    const xCoordinates = readXCoordinates(flags, view)
-    const yCoordinates = readYCoordinates(flags, view)
-    points = combinePoints(flags, xCoordinates, yCoordinates)
+    const numPoints = endPtsOfContours[numberOfContours - 1] + 1
+    const flags = readFlags(numPoints, view)
+    contoursOverlap = new GlyphFlags(flags[0]).contoursOverlap
+    points = readPoints(flags, view)
   }
 
   const glyph: GlyphSimple = {
@@ -132,75 +125,63 @@ export function readCompositeGlyphComponent(
   return { flags, glyphIndex, arg1, arg2, extra }
 }
 
+/**
+ * The raw flag bytes, one per point, with repeats expanded. They're kept
+ * as bytes rather than `GlyphFlags` objects to avoid an allocation per
+ * point; wrap one in a `GlyphFlags` to read it.
+ */
 function readFlags(count: number, view: Reader) {
-  const flags: GlyphFlags[] = []
-  while (flags.length < count) {
-    const flag = readGlyphFlags(view)
-    flags.push(flag)
+  const flags = new Uint8Array(count)
+  const flag = new GlyphFlags()
+
+  for (let i = 0; i < count;) {
+    flag.value = flags[i++] = view.u8()
 
     if (flag.repeat) {
-      const count = view.u8()
-      for (let i = 0; i < count; ++i) {
-        flags.push(flag)
-      }
+      const end = Math.min(count, i + view.u8())
+      flags.fill(flag.value, i, end)
+      i = end
     }
   }
 
-  const contoursOverlap = flags[0]?.contoursOverlap ?? false
-
-  return { flags, contoursOverlap }
+  return flags
 }
 
-function readXCoordinates(flags: GlyphFlags[], view: Reader) {
-  const xCoordinates: number[] = []
-  for (const flag of flags) {
+/**
+ * Read the x then y coordinate deltas, accumulating them into absolute
+ * points.
+ */
+function readPoints(flags: Uint8Array, view: Reader) {
+  const count = flags.length
+  const points = new Array<Point>(count)
+  const flag = new GlyphFlags()
+
+  let x = 0
+  for (let i = 0; i < count; ++i) {
+    flag.value = flags[i]
+
     if (flag.xShortVector) {
-      const x = view.u8()
-      xCoordinates.push(flag.xIsSameOrPositiveXShortVector ? x : -x)
-    } else {
-      if (flag.xIsSameOrPositiveXShortVector) {
-        xCoordinates.push(0)
-      } else {
-        const x = view.i16()
-        xCoordinates.push(x)
-      }
+      const dx = view.u8()
+      x += flag.xIsSameOrPositiveXShortVector ? dx : -dx
+    } else if (!flag.xIsSameOrPositiveXShortVector) {
+      x += view.i16()
     }
+
+    points[i] = { x, y: 0, onCurve: flag.onCurvePoint }
   }
 
-  return xCoordinates
-}
+  let y = 0
+  for (let i = 0; i < count; ++i) {
+    flag.value = flags[i]
 
-function readYCoordinates(flags: GlyphFlags[], view: Reader) {
-  const yCoordinates: number[] = []
-  for (const flag of flags) {
     if (flag.yShortVector) {
-      const y = view.u8()
-      yCoordinates.push(flag.yIsSameOrPositiveYShortVector ? y : -y)
-    } else {
-      if (flag.yIsSameOrPositiveYShortVector) {
-        yCoordinates.push(0)
-      } else {
-        const y = view.i16()
-        yCoordinates.push(y)
-      }
+      const dy = view.u8()
+      y += flag.yIsSameOrPositiveYShortVector ? dy : -dy
+    } else if (!flag.yIsSameOrPositiveYShortVector) {
+      y += view.i16()
     }
-  }
 
-  return yCoordinates
-}
-
-function combinePoints(
-  flags: GlyphFlags[],
-  xCoordinates: number[],
-  yCoordinates: number[],
-) {
-  const points: Point[] = []
-  for (let i = 0; i < flags.length; ++i) {
-    const prevPoint = points[i - 1] ?? { x: 0, y: 0 }
-    const x = xCoordinates[i] + prevPoint.x
-    const y = yCoordinates[i] + prevPoint.y
-    const onCurve = flags[i].onCurvePoint
-    points.push({ x, y, onCurve })
+    points[i].y = y
   }
 
   return points

@@ -22,7 +22,13 @@ export function getGlyph(font: FontHandle, id: number): GlyphEnriched {
 
   const glyph = readGlyf(glyf.subtable(offset, length))
 
-  if (glyph.type === 'simple') return { ...glyph, id, advanceWidth }
+  if (glyph.type === 'simple') {
+    // readGlyf returned a fresh object, so add to it rather than copying
+    const enriched = glyph as GlyphEnriched
+    enriched.id = id
+    enriched.advanceWidth = advanceWidth
+    return enriched
+  }
 
   const { components, ...rest } = glyph
   const fullGlyph: GlyphEnriched = {
