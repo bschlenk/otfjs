@@ -5,11 +5,11 @@ import { compileGlyfLoca } from '../fns/compile-glyf-loca.js'
 import { buildFont } from '../font-builder.js'
 import { FontHandle } from '../font-handle.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
+import { decodeGlyphCompositeFlags } from './glyf.gen.js'
 import {
   emptyGlyph,
   GlyfTableWriter,
   GlyfTag,
-  glyphCompositeFlags,
   isEmptyGlyph,
   readGlyf,
   writeGlyfTableWithOffsets,
@@ -154,7 +154,7 @@ function head(indexToLocFormat: number) {
 
 function component(flags: number, glyphIndex: number, extra: number[] = []) {
   return {
-    flags: glyphCompositeFlags(flags),
+    flags: decodeGlyphCompositeFlags(flags),
     glyphIndex,
     arg1: flags & 1 ? -1000 : -5,
     arg2: flags & 1 ? 2000 : 7,

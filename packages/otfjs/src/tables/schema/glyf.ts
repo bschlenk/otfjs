@@ -12,3 +12,19 @@ export const GlyphFlags = s.flags('GlyphFlags', s.u8(), {
   yIsSameOrPositiveYShortVector: 5,
   contoursOverlap: 6,
 })
+
+// The flags on each component of a composite glyph
+export const GlyphCompositeFlags = s.flags('GlyphCompositeFlags', s.u16(), {
+  arg1And2AreWords: 0,
+  argsAreXYValues: 1,
+  roundXYToGrid: 2,
+  weHaveAScale: 3,
+  moreComponents: 5,
+  weHaveAnXAndYScale: 6,
+  weHaveATwoByTwo: 7,
+  weHaveInstructions: 8,
+  useMyMetrics: 9,
+  overlapCompound: 10,
+  scaledComponentOffset: 11,
+  unscaledComponentOffset: 12,
+})

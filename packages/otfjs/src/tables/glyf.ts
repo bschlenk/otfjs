@@ -7,6 +7,7 @@ import type { Glyph } from '../types.js'
 export { readGlyf } from '../glyph/glyph.read.js'
 export * from '../glyph/glyph.utils.js'
 export * from '../glyph/glyph.write.js'
+export type { GlyphCompositeFlags } from './glyf.gen.js'
 
 /**
  * Every glyph in the font, in glyph id order, with composite glyphs left

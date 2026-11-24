@@ -4,7 +4,11 @@
 import * as vec from '@bschlenk/vec'
 import { Writer } from '@otfjs/buffer'
 
-import { type GlyphFlags, writeGlyphFlags } from '../tables/glyf.gen.js'
+import {
+  type GlyphFlags,
+  writeGlyphCompositeFlags,
+  writeGlyphFlags,
+} from '../tables/glyf.gen.js'
 import type { LocaTable } from '../tables/loca.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
 import { assert } from '../utils/utils.js'
@@ -147,7 +151,7 @@ function writeCompositeGlyph(writer: Writer, glyph: GlyphComposite) {
   for (const { flags, glyphIndex, arg1, arg2, extra } of glyph.components) {
     weHaveInstructions ||= flags.weHaveInstructions
 
-    writer.u16(flags.value)
+    writer.u16(writeGlyphCompositeFlags(flags))
     writer.u16(glyphIndex)
 
     // types vary based on flags

@@ -1,6 +1,5 @@
 import * as mat from '@bschlenk/mat'
 
-import { createFlagReader } from '../flags.js'
 import type { Glyph, GlyphCompositeComponent, GlyphSimple } from '../types.js'
 import { EMPTY_U8_ARRAY } from '../utils/utils.js'
 
@@ -30,23 +29,6 @@ export function isEmptyGlyph(glyph: Glyph): boolean {
     glyph.instructions.length === 0
   )
 }
-
-export const glyphCompositeFlags = createFlagReader({
-  arg1And2AreWords: 0,
-  argsAreXYValues: 1,
-  roundXYToGrid: 2,
-  weHaveAScale: 3,
-  moreComponents: 5,
-  weHaveAnXAndYScale: 6,
-  weHaveATwoByTwo: 7,
-  weHaveInstructions: 8,
-  useMyMetrics: 9,
-  overlapCompound: 10,
-  scaledComponentOffset: 11,
-  unscaledComponentOffset: 12,
-})
-
-export type GlyphCompositeFlags = ReturnType<typeof glyphCompositeFlags>
 
 export function compositeGlyphComponentMatrix({
   flags,

@@ -3,7 +3,11 @@
 
 import type { Reader } from '@otfjs/buffer'
 
-import { type GlyphFlags, readGlyphFlags } from '../tables/glyf.gen.js'
+import {
+  type GlyphFlags,
+  readGlyphCompositeFlags,
+  readGlyphFlags,
+} from '../tables/glyf.gen.js'
 import type {
   Glyph,
   GlyphComposite,
@@ -12,7 +16,7 @@ import type {
   Point,
 } from '../types.js'
 import { assert, EMPTY_U8_ARRAY } from '../utils/utils.js'
-import { emptyGlyph, glyphCompositeFlags } from './glyph.utils.js'
+import { emptyGlyph } from './glyph.utils.js'
 
 /**
  * This reader is a special case, where the `view` is expected to already
@@ -88,7 +92,7 @@ export function readGlyf(view: Reader): Glyph {
 export function readCompositeGlyphComponent(
   view: Reader,
 ): GlyphCompositeComponent {
-  const flags = glyphCompositeFlags(view.u16())
+  const flags = readGlyphCompositeFlags(view)
   const glyphIndex = view.u16()
 
   let arg1: number, arg2: number
