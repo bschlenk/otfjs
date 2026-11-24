@@ -6,7 +6,7 @@ export default [
 
   {
     languageOptions: {
-      parserOptions: { project: './tsconfig.json' },
+      parserOptions: { project: ['./tsconfig.json', './bench/tsconfig.json'] },
       globals: { ...globals.browser, ...globals.es2022 },
     },
   },

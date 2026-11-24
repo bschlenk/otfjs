@@ -11,15 +11,15 @@ export class SvgPathBuilder {
   private d = ''
 
   moveTo(p: Vector) {
-    this.d += 'M' + join(p.x, p.y)
+    this.d += 'M' + p.x + sep(p.y)
   }
 
   lineTo(p: Vector) {
-    this.d += 'L' + join(p.x, p.y)
+    this.d += 'L' + p.x + sep(p.y)
   }
 
   quadraticCurveTo(p1: Vector, p2: Vector) {
-    this.d += 'Q' + join(p1.x, p1.y, p2.x, p2.y)
+    this.d += 'Q' + p1.x + sep(p1.y) + sep(p2.x) + sep(p2.y)
   }
 
   closePath() {
@@ -51,12 +51,10 @@ export class CanvasPathBuilder {
   }
 }
 
-function join(...nums: number[]) {
-  let n = '' + nums[0]
-  for (let i = 1; i < nums.length; ++i) {
-    // paths don't need a separator for negative numbers
-    if (nums[i] >= 0) n += ' '
-    n += nums[i]
-  }
-  return n
+/**
+ * A number preceded by the separator it needs. Paths don't need one before
+ * a negative number, since the minus sign separates it.
+ */
+function sep(n: number) {
+  return n < 0 ? '' + n : ' ' + n
 }

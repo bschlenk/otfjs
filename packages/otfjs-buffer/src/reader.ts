@@ -1,17 +1,46 @@
 import { from2dot14, from16dot16 } from './bit.js'
 import { fromLongDateTime } from './date.js'
-import { asDataView, asUint8Array } from './utils.js'
+import { asDataView } from './utils.js'
 
+/**
+ * Reads big-endian values from a range of bytes, advancing `offset` as it
+ * goes.
+ *
+ * Readers made with `subtable` or `stream` share their parent's `DataView`
+ * rather than allocating new typed arrays, so they're cheap to create.
+ * Reads are still bounds-checked against the reader's own range.
+ */
 export class Reader {
-  private view: DataView
+  private readonly view: DataView
+  /** Where this reader's range starts within `view`. */
+  private readonly start: number
+
+  /** The number of bytes in this reader's range. */
+  public readonly length: number
+
+  /** The current position, relative to the start of this reader's range. */
   public offset = 0
 
-  constructor(public readonly data: Uint8Array) {
-    this.view = asDataView(data)
+  constructor(data: Uint8Array)
+  /** @internal Share `view`, reading `length` bytes from `start`. */
+  constructor(view: DataView, start: number, length: number)
+  constructor(data: Uint8Array | DataView, start?: number, length?: number) {
+    // Tell the internal form apart by its arguments rather than with
+    // `instanceof DataView`, which fails for views from another realm.
+    if (start !== undefined && length !== undefined) {
+      this.view = data as DataView
+      this.start = start
+      this.length = length
+    } else {
+      this.view = asDataView(data)
+      this.start = 0
+      this.length = data.byteLength
+    }
   }
 
-  get length(): number {
-    return this.view.byteLength
+  /** This reader's bytes. Allocates a new `Uint8Array` view each call. */
+  get data(): Uint8Array {
+    return this.bytes(0, this.length)
   }
 
   public done(): boolean {
@@ -19,51 +48,36 @@ export class Reader {
   }
 
   public u8(): number {
-    const val = this.view.getUint8(this.offset)
-    this.offset += 1
-    return val
+    return this.view.getUint8(this.advance(1))
   }
 
   public i8(): number {
-    const val = this.view.getInt8(this.offset)
-    this.offset += 1
-    return val
+    return this.view.getInt8(this.advance(1))
   }
 
   public u16(): number {
-    const val = this.view.getUint16(this.offset)
-    this.offset += 2
-    return val
+    return this.view.getUint16(this.advance(2))
   }
 
   public i16(): number {
-    const val = this.view.getInt16(this.offset)
-    this.offset += 2
-    return val
+    return this.view.getInt16(this.advance(2))
   }
 
   public u24(): number {
-    const val = this.view.getUint32(this.offset) >> 8
-    this.offset += 3
-    return val
+    const at = this.advance(3)
+    return (this.view.getUint16(at) << 8) | this.view.getUint8(at + 2)
   }
 
   public u32(): number {
-    const val = this.view.getUint32(this.offset)
-    this.offset += 4
-    return val
+    return this.view.getUint32(this.advance(4))
   }
 
   public i32(): number {
-    const val = this.view.getInt32(this.offset)
-    this.offset += 4
-    return val
+    return this.view.getInt32(this.advance(4))
   }
 
   public i64(): bigint {
-    const val = this.view.getBigInt64(this.offset)
-    this.offset += 8
-    return val
+    return this.view.getBigInt64(this.advance(8))
   }
 
   public f2dot14(): number {
@@ -134,15 +148,15 @@ export class Reader {
    * uses a view of this reader rather than making a copy.
    */
   public array<T>(length: number, fn: (view: Reader) => T): T[] {
-    const arr = []
-    for (let i = 0; i < length; i++) {
-      arr.push(fn(this))
+    const arr = new Array<T>(length)
+    for (let i = 0; i < length; ++i) {
+      arr[i] = fn(this)
     }
     return arr
   }
 
   public u8Array(length: number): Uint8Array {
-    const arr = asUint8Array(this.data, this.offset, length)
+    const arr = this.bytes(this.offset, length)
     this.offset += length
     return arr
   }
@@ -151,16 +165,52 @@ export class Reader {
 
   public dataview(
     offset = this.offset,
-    length = this.view.byteLength - this.offset,
+    length = this.length - this.offset,
   ): DataView {
-    return asDataView(this.data, offset, length)
+    this.checkRange(offset, length)
+    const { buffer, byteOffset } = this.view
+    return new DataView(buffer, byteOffset + this.start + offset, length)
   }
 
-  public subtable(offset: number, length?: number): Reader {
-    return new Reader(asUint8Array(this.data, offset, length))
+  /**
+   * A new reader over `length` bytes starting at `offset`, which is relative
+   * to the start of this reader. Without a length, it runs to the end of
+   * this reader.
+   */
+  public subtable(offset: number, length = this.length - offset): Reader {
+    this.checkRange(offset, length)
+    return new Reader(this.view, this.start + offset, length)
   }
 
   public stream(length: number): Reader {
-    return new Reader(this.u8Array(length))
+    const reader = this.subtable(this.offset, length)
+    this.offset += length
+    return reader
+  }
+
+  /**
+   * Advance past `size` bytes, returning the absolute position in `view`
+   * they start at. Throws a RangeError if they run past the end of this
+   * reader.
+   */
+  private advance(size: number): number {
+    const offset = this.offset
+    this.checkRange(offset, size)
+    this.offset = offset + size
+    return this.start + offset
+  }
+
+  private bytes(offset: number, length: number): Uint8Array {
+    this.checkRange(offset, length)
+    const { buffer, byteOffset } = this.view
+    return new Uint8Array(buffer, byteOffset + this.start + offset, length)
+  }
+
+  private checkRange(offset: number, length: number) {
+    if (offset < 0 || length < 0 || offset + length > this.length) {
+      throw new RangeError(
+        `Range ${offset} + ${length} is outside the bounds of a ${this.length} byte reader`,
+      )
+    }
   }
 }

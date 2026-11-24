@@ -17,11 +17,17 @@ export class FontHandle {
   #header: Header
   #tables: Record<string, TableRecord>
   #readCache: Cache<TableReader<unknown>, unknown>
+  #views: Cache<string, Reader | null>
 
   constructor(data: Uint8Array) {
     this.#data = data
     this.#header = readHeader(new Reader(data))
     this.#tables = toObject(this.#header.tables, (table) => table.tag)
+    this.#views = createCache((tag) => {
+      const table = this.#tables[tag]
+      if (!table) return null
+      return new Reader(asUint8Array(this.#data, table.offset, table.length))
+    })
     this.#readCache = createCache((reader) => {
       const view = this.getTableViewOrNull(reader.tag)
       return view && reader.read(view, this)
@@ -89,8 +95,9 @@ export class FontHandle {
    * table.
    */
   public getTableViewOrNull(tag: string): Reader | null {
-    const table = this.#tables[tag]
-    if (!table) return null
-    return new Reader(asUint8Array(this.#data, table.offset, table.length))
+    // Readers are stateful, so hand out a fresh one each time. Subtables
+    // share the cached reader's buffer, so this doesn't allocate a new
+    // typed array.
+    return this.#views.get(tag)?.subtable(0) ?? null
   }
 }
