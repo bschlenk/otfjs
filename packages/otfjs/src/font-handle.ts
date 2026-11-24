@@ -1,6 +1,5 @@
-import { Reader } from '@otfjs/buffer'
+import { asUint8Array, Reader } from '@otfjs/buffer'
 
-import { asUint8Array } from './buffer/utils.js'
 import { Cache, createCache } from './cache.js'
 import { CffTable, readCffTable } from './tables/cff.js'
 import { CmapTable, readCmapTable } from './tables/cmap.js'

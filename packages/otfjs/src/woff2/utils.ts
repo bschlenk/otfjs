@@ -1,4 +1,4 @@
-import { asDataView } from '../buffer/utils.js'
+import { asDataView } from '@otfjs/buffer'
 
 // wOF2
 export const WOFF2_SIGNATURE = 0x774f4632
