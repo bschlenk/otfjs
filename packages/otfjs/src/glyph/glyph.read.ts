@@ -3,6 +3,7 @@
 
 import type { Reader } from '@otfjs/buffer'
 
+import { type GlyphFlags, readGlyphFlags } from '../tables/glyf.gen.js'
 import type {
   Glyph,
   GlyphComposite,
@@ -11,7 +12,6 @@ import type {
   Point,
 } from '../types.js'
 import { assert, EMPTY_U8_ARRAY } from '../utils/utils.js'
-import { type GlyphFlags, glyphFlags } from './glyph.flags.js'
 import { emptyGlyph, glyphCompositeFlags } from './glyph.utils.js'
 
 /**
@@ -131,7 +131,7 @@ export function readCompositeGlyphComponent(
 function readFlags(count: number, view: Reader) {
   const flags: GlyphFlags[] = []
   while (flags.length < count) {
-    const flag = glyphFlags(view.u8())
+    const flag = readGlyphFlags(view)
     flags.push(flag)
 
     if (flag.repeat) {
