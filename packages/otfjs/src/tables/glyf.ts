@@ -4,7 +4,7 @@ import { writeGlyfTable } from '../glyph/glyph.write.js'
 import type { TableWriter } from '../table-writer.js'
 import type { Glyph } from '../types.js'
 
-export * from '../glyph/glyph.read.js'
+export { readGlyf } from '../glyph/glyph.read.js'
 export * from '../glyph/glyph.utils.js'
 export * from '../glyph/glyph.write.js'
 

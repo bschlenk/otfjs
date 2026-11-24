@@ -3,11 +3,6 @@
 
 import type { Reader } from '@otfjs/buffer'
 
-import {
-  type GlyphFlags,
-  glyphFlags,
-  readCompositeGlyphComponent,
-} from '../glyph-utils.js'
 import type {
   Glyph,
   GlyphComposite,
@@ -16,7 +11,8 @@ import type {
   Point,
 } from '../types.js'
 import { assert, EMPTY_U8_ARRAY } from '../utils/utils.js'
-import { emptyGlyph } from './glyph.utils.js'
+import { type GlyphFlags, glyphFlags } from './glyph.flags.js'
+import { emptyGlyph, glyphCompositeFlags } from './glyph.utils.js'
 
 /**
  * This reader is a special case, where the `view` is expected to already
@@ -87,6 +83,49 @@ export function readGlyf(view: Reader): Glyph {
   }
 
   return glyph
+}
+
+export function readCompositeGlyphComponent(
+  view: Reader,
+): GlyphCompositeComponent {
+  const flags = glyphCompositeFlags(view.u16())
+  const glyphIndex = view.u16()
+
+  let arg1: number, arg2: number
+
+  if (flags.arg1And2AreWords) {
+    if (flags.argsAreXYValues) {
+      arg1 = view.i16()
+      arg2 = view.i16()
+    } else {
+      arg1 = view.u16()
+      arg2 = view.u16()
+    }
+  } else {
+    if (flags.argsAreXYValues) {
+      arg1 = view.i8()
+      arg2 = view.i8()
+    } else {
+      arg1 = view.u8()
+      arg2 = view.u8()
+    }
+  }
+
+  const extra: number[] = []
+
+  if (flags.weHaveAScale) {
+    extra.push(view.f2dot14())
+  } else if (flags.weHaveAnXAndYScale) {
+    extra.push(view.f2dot14())
+    extra.push(view.f2dot14())
+  } else if (flags.weHaveATwoByTwo) {
+    extra.push(view.f2dot14())
+    extra.push(view.f2dot14())
+    extra.push(view.f2dot14())
+    extra.push(view.f2dot14())
+  }
+
+  return { flags, glyphIndex, arg1, arg2, extra }
 }
 
 function readFlags(count: number, view: Reader) {

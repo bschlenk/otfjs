@@ -4,12 +4,12 @@ import { describe, expect, it } from 'vitest'
 import { compileGlyfLoca } from '../fns/compile-glyf-loca.js'
 import { buildFont } from '../font-builder.js'
 import { FontHandle } from '../font-handle.js'
-import { glyphCompositeFlags } from '../glyph-utils.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
 import {
   emptyGlyph,
   GlyfTableWriter,
   GlyfTag,
+  glyphCompositeFlags,
   isEmptyGlyph,
   readGlyf,
   writeGlyfTableWithOffsets,

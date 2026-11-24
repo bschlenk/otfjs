@@ -1,4 +1,4 @@
-import { walkGlyphPath } from './glyph-utils.js'
+import { walkGlyphPath } from './glyph/glyph.path.js'
 import { CanvasPathBuilder } from './path-builder.js'
 import type { Glyph } from './types.js'
 
