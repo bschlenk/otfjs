@@ -111,11 +111,16 @@ async function processFile(filePath: string, outDir?: string) {
     blocks.push(genAdditiveCode(def))
   }
 
+  const body = blocks.join('\n\n')
+  // flags-only schemas don't construct a Writer
+  const imports =
+    body.includes('new Writer(') ? 'type Reader, Writer' : 'type Reader'
+
   const generated =
     generatedHeader(path.relative(process.cwd(), filePath)) +
-    `import { type Reader, Writer } from '@otfjs/buffer'\n` +
+    `import { ${imports} } from '@otfjs/buffer'\n` +
     `\n` +
-    blocks.join('\n\n') +
+    body +
     `\n`
 
   const baseName = path.basename(filePath).replace(/\.ts$/, '.gen.ts')
