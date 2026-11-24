@@ -2,6 +2,7 @@ import * as vec from '@bschlenk/vec'
 import { Writer } from '@otfjs/buffer'
 
 import { GlyphFlags, glyphFlags } from '../glyph-utils.js'
+import { isEmptyGlyph } from '../tables/glyf.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
 import { assert } from '../utils/utils.js'
 
@@ -29,10 +30,8 @@ export function writeGlyfTable(glyphs: Glyph[], loca: number[]): Uint8Array {
 }
 
 function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
-  if (glyph.endPtsOfContours.length === 0 && glyph.instructions.length === 0) {
-    // empty glyph can be represented as a 0 offset in the loca table
-    return
-  }
+  // empty glyphs take no space; see isEmptyGlyph
+  if (isEmptyGlyph(glyph)) return
 
   writer.i16(glyph.endPtsOfContours.length)
   writeMinMax(writer, glyph)

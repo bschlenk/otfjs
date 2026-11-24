@@ -2,17 +2,9 @@ import { Reader } from '@otfjs/buffer'
 import { describe, expect, it } from 'vitest'
 
 import { glyphCompositeFlags } from '../glyph-utils.js'
-import { emptyGlyph, readGlyf } from '../tables/glyf.js'
+import { emptyGlyph, isEmptyGlyph, readGlyf } from '../tables/glyf.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
 import { writeGlyfTable } from './glyf.js'
-
-function roundTrip(glyphs: Glyph[]) {
-  const loca: number[] = []
-  const data = writeGlyfTable(glyphs, loca)
-  return glyphs.map((_, i) =>
-    readGlyf(new Reader(data.subarray(loca[i], loca[i + 1]))),
-  )
-}
 
 const simple: GlyphSimple = {
   type: 'simple',
@@ -33,16 +25,6 @@ const simple: GlyphSimple = {
     { x: 700, y: 795, onCurve: true },
     { x: 700, y: 795, onCurve: true },
   ],
-}
-
-function component(flags: number, glyphIndex: number, extra: number[] = []) {
-  return {
-    flags: glyphCompositeFlags(flags),
-    glyphIndex,
-    arg1: flags & 1 ? -1000 : -5,
-    arg2: flags & 1 ? 2000 : 7,
-    extra,
-  }
 }
 
 const composite: GlyphComposite = {
@@ -66,6 +48,12 @@ describe('writeGlyfTable', () => {
     expect(roundTrip(glyphs)).toEqual(glyphs)
   })
 
+  it('writes glyphs with instructions but no contours', () => {
+    const glyph = { ...emptyGlyph(), instructions: new Uint8Array([1]) }
+    expect(isEmptyGlyph(glyph)).toBe(false)
+    expect(roundTrip([glyph])).toEqual([glyph])
+  })
+
   it('writes each glyph at a 4-byte aligned offset', () => {
     const loca: number[] = []
     writeGlyfTable([simple, emptyGlyph(), composite], loca)
@@ -84,3 +72,21 @@ describe('writeGlyfTable', () => {
     expect(data[flagsStart + 1] & OVERLAP).toBe(0)
   })
 })
+
+function roundTrip(glyphs: Glyph[]) {
+  const loca: number[] = []
+  const data = writeGlyfTable(glyphs, loca)
+  return glyphs.map((_, i) =>
+    readGlyf(new Reader(data.subarray(loca[i], loca[i + 1]))),
+  )
+}
+
+function component(flags: number, glyphIndex: number, extra: number[] = []) {
+  return {
+    flags: glyphCompositeFlags(flags),
+    glyphIndex,
+    arg1: flags & 1 ? -1000 : -5,
+    arg2: flags & 1 ? 2000 : 7,
+    extra,
+  }
+}
