@@ -4,16 +4,6 @@ import { Font } from './font.js'
 import { buildFont } from './font-builder.js'
 import { CvtTableReader } from './tables/cvt.js'
 
-function makeFont(tables: Record<string, number[]>) {
-  return new Font(
-    buildFont({
-      tables: Object.fromEntries(
-        Object.entries(tables).map(([tag, b]) => [tag, new Uint8Array(b)]),
-      ),
-    }),
-  )
-}
-
 describe('Font.getTable', () => {
   it('reads tables by tag with the built-in readers', () => {
     const font = makeFont({ 'cvt ': [0, 1, 0xff, 0xff] })
@@ -46,3 +36,13 @@ describe('Font.getTableOrNull', () => {
     expect(makeFont({}).getTableOrNull('GSUB')).toBeNull()
   })
 })
+
+function makeFont(tables: Record<string, number[]>) {
+  return new Font(
+    buildFont({
+      tables: Object.fromEntries(
+        Object.entries(tables).map(([tag, b]) => [tag, new Uint8Array(b)]),
+      ),
+    }),
+  )
+}

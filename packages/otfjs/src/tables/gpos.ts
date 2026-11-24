@@ -1,7 +1,7 @@
 import { Reader } from '@otfjs/buffer'
 
 import { createFlagReader } from '../flags.js'
-import { readerFor } from '../table-reader.js'
+import type { TableReader } from '../table-reader.js'
 import { assert } from '../utils/utils.js'
 
 enum GposLookupType {
@@ -49,6 +49,13 @@ export function readGposTable(view: Reader): GposTable {
 }
 
 // Script List
+
+export const GposTag = 'GPOS'
+
+export const GposTableReader: TableReader<GposTable> = {
+  tag: GposTag,
+  read: readGposTable,
+}
 
 function readScriptListTable(view: Reader) {
   const scriptCount = view.u16()
@@ -410,10 +417,3 @@ function readClassDefTable(view: Reader) {
       assert(false, `unsupported class format ${classFormat}`)
   }
 }
-
-export const GposTag = 'GPOS'
-
-export const GposTableReader = /* @__PURE__ */ readerFor<GposTable>(
-  GposTag,
-  readGposTable,
-)

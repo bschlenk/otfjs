@@ -1,6 +1,6 @@
 import { Reader } from '@otfjs/buffer'
 
-import { readerFor } from '../table-reader.js'
+import type { TableReader } from '../table-reader.js'
 import { RGBA } from '../types.js'
 
 export class CpalTable {
@@ -64,7 +64,7 @@ export function readCpalTable(view: Reader) {
 
 export const CpalTag = 'CPAL'
 
-export const CpalTableReader = /* @__PURE__ */ readerFor<CpalTable>(
-  CpalTag,
-  readCpalTable,
-)
+export const CpalTableReader: TableReader<CpalTable> = {
+  tag: CpalTag,
+  read: readCpalTable,
+}

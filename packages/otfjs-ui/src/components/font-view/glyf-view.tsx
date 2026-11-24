@@ -2,18 +2,14 @@ import { createElement, type JSX, useState } from 'react'
 import * as mat from '@bschlenk/mat'
 import * as vec from '@bschlenk/vec'
 import clsx from 'clsx'
+import { Extend, Font, GlyphEnriched, GlyphSimple, glyphToSvgPath } from 'otfjs'
 import {
   ColorLayer,
   ColorRecordType,
   ColrTable,
   CompositeMode,
-  CpalTable,
-  Extend,
-  Font,
-  GlyphEnriched,
-  GlyphSimple,
-  glyphToSvgPath,
-} from 'otfjs'
+} from 'otfjs/tables/colr'
+import { CpalTable } from 'otfjs/tables/cpal'
 
 import { rgbaToCss } from '../../utils/color'
 import { GlyphEditor } from './glyph-editor'

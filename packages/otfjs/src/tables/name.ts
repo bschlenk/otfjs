@@ -3,9 +3,8 @@
 import { Reader, Writer } from '@otfjs/buffer'
 
 import { NameId, PlatformId } from '../enums.js'
-import { readerFor } from '../table-reader.js'
-import { tableFor } from '../table-reader-writer.js'
-import { writerFor } from '../table-writer.js'
+import type { TableReader } from '../table-reader.js'
+import type { TableWriter } from '../table-writer.js'
 
 export interface NameRecord {
   platformId: number
@@ -134,17 +133,12 @@ const DECODER = new TextDecoder('utf-16be')
 
 export const NameTag = 'name'
 
-export const NameTableReader = /* @__PURE__ */ readerFor<NameTable>(
-  NameTag,
-  readNameTable,
-)
+export const NameTableReader: TableReader<NameTable> = {
+  tag: NameTag,
+  read: readNameTable,
+}
 
-export const NameTableWriter = /* @__PURE__ */ writerFor<NameTable>(
-  NameTag,
-  writeNameTable,
-)
-
-export const NameTable = /* @__PURE__ */ tableFor(
-  NameTableReader,
-  NameTableWriter,
-)
+export const NameTableWriter: TableWriter<NameTable> = {
+  tag: NameTag,
+  write: writeNameTable,
+}

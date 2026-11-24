@@ -2,44 +2,19 @@ import { describe, expect, it } from 'vitest'
 
 import { buildFont } from '../font-builder.js'
 import { FontHandle } from '../font-handle.js'
-import { CmapTable, CmapTableReader, CmapTableWriter, CmapTag } from './cmap.js'
+import {
+  type CmapTable,
+  CmapTableReader,
+  CmapTableWriter,
+  CmapTag,
+} from './cmap.js'
 import { CvtTableReader } from './cvt.js'
 import { FpgmTableReader } from './fpgm.js'
 import { HeadTableReader } from './head.js'
 import { HheaTableReader } from './hhea.js'
-import { HmtxTable, HmtxTableReader } from './hmtx.js'
+import { HmtxTableReader } from './hmtx.js'
 import { LocaTableReader } from './loca.js'
 import { MaxpTableReader } from './maxp.js'
-
-function bytes(size: number, fill: (view: DataView) => void) {
-  const data = new Uint8Array(size)
-  fill(new DataView(data.buffer))
-  return data
-}
-
-function maxp(numGlyphs: number) {
-  return bytes(6, (v) => {
-    v.setUint32(0, 0x00005000)
-    v.setUint16(4, numGlyphs)
-  })
-}
-
-function hhea(numberOfHMetrics: number) {
-  return bytes(36, (v) => {
-    v.setUint32(0, 0x00010000)
-    v.setUint16(34, numberOfHMetrics)
-  })
-}
-
-function head(indexToLocFormat: number) {
-  return bytes(54, (v) => {
-    v.setUint16(0, 1)
-    v.setUint32(12, 0x5f0f3cf5)
-    v.setUint16(18, 1000)
-    v.setInt16(48, 2)
-    v.setInt16(50, indexToLocFormat)
-  })
-}
 
 describe('table readers', () => {
   it('hmtx reads its dependencies from hhea and maxp', () => {
@@ -120,11 +95,34 @@ describe('table readers', () => {
     const font = new FontHandle(buildFont({ tables: { [CmapTag]: data } }))
     expect(font.readTable(CmapTableReader)).toEqual(cmap)
   })
-
-  it('combines reader and writer into a single object', () => {
-    expect(CmapTable.tag).toBe('cmap')
-    expect(CmapTable.read).toBe(CmapTableReader.read)
-    expect(CmapTable.write).toBe(CmapTableWriter.write)
-    expect(HmtxTable.tag).toBe('hmtx')
-  })
 })
+
+function bytes(size: number, fill: (view: DataView) => void) {
+  const data = new Uint8Array(size)
+  fill(new DataView(data.buffer))
+  return data
+}
+
+function maxp(numGlyphs: number) {
+  return bytes(6, (v) => {
+    v.setUint32(0, 0x00005000)
+    v.setUint16(4, numGlyphs)
+  })
+}
+
+function hhea(numberOfHMetrics: number) {
+  return bytes(36, (v) => {
+    v.setUint32(0, 0x00010000)
+    v.setUint16(34, numberOfHMetrics)
+  })
+}
+
+function head(indexToLocFormat: number) {
+  return bytes(54, (v) => {
+    v.setUint16(0, 1)
+    v.setUint32(12, 0x5f0f3cf5)
+    v.setUint16(18, 1000)
+    v.setInt16(48, 2)
+    v.setInt16(50, indexToLocFormat)
+  })
+}

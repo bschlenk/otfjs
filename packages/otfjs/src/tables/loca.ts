@@ -2,7 +2,7 @@
 
 import { Reader } from '@otfjs/buffer'
 
-import { readerFor } from '../table-reader.js'
+import type { TableReader } from '../table-reader.js'
 import { HeadTableReader } from './head.js'
 import { MaxpTableReader } from './maxp.js'
 
@@ -24,11 +24,11 @@ export function readLocaTable(
 
 export const LocaTag = 'loca'
 
-export const LocaTableReader = /* @__PURE__ */ readerFor<LocaTable>(
-  LocaTag,
-  (view, font) => {
+export const LocaTableReader: TableReader<LocaTable> = {
+  tag: LocaTag,
+  read(view, font) {
     const { indexToLocFormat } = font.readTable(HeadTableReader)
     const { numGlyphs } = font.readTable(MaxpTableReader)
     return readLocaTable(view, indexToLocFormat, numGlyphs)
   },
-)
+}
