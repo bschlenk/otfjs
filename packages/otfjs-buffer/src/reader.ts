@@ -24,11 +24,13 @@ export class Reader {
   constructor(data: Uint8Array)
   /** @internal Share `view`, reading `length` bytes from `start`. */
   constructor(view: DataView, start: number, length: number)
-  constructor(data: Uint8Array | DataView, start = 0, length?: number) {
-    if (data instanceof DataView) {
-      this.view = data
+  constructor(data: Uint8Array | DataView, start?: number, length?: number) {
+    // Tell the internal form apart by its arguments rather than with
+    // `instanceof DataView`, which fails for views from another realm.
+    if (start !== undefined && length !== undefined) {
+      this.view = data as DataView
       this.start = start
-      this.length = length!
+      this.length = length
     } else {
       this.view = asDataView(data)
       this.start = 0
@@ -46,8 +48,7 @@ export class Reader {
   }
 
   public u8(): number {
-    const val = this.view.getUint8(this.advance(1))
-    return val
+    return this.view.getUint8(this.advance(1))
   }
 
   public i8(): number {
@@ -148,7 +149,7 @@ export class Reader {
    */
   public array<T>(length: number, fn: (view: Reader) => T): T[] {
     const arr = new Array<T>(length)
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < length; ++i) {
       arr[i] = fn(this)
     }
     return arr
@@ -194,13 +195,8 @@ export class Reader {
    */
   private advance(size: number): number {
     const offset = this.offset
-    const end = offset + size
-    if (end > this.length || offset < 0) {
-      throw new RangeError(
-        `Offset ${offset} + ${size} is outside the bounds of a ${this.length} byte reader`,
-      )
-    }
-    this.offset = end
+    this.checkRange(offset, size)
+    this.offset = offset + size
     return this.start + offset
   }
 

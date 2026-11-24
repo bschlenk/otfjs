@@ -1,3 +1,5 @@
+import { runInNewContext } from 'node:vm'
+
 import { describe, expect, it } from 'vitest'
 
 import { Reader } from '../reader.js'
@@ -61,6 +63,13 @@ describe('reader.ts', () => {
       // a failed read doesn't move the offset
       expect(sub.offset).toBe(2)
       expect(sub.u8()).toBe(4)
+    })
+
+    it('reads a Uint8Array from another realm', () => {
+      const data = runInNewContext('new Uint8Array([0, 1, 2, 3])') as Uint8Array
+      const reader = new Reader(data)
+      expect(reader.length).toBe(4)
+      expect(reader.subtable(1, 2).u16()).toBe(0x0102)
     })
 
     it('throws on a subtable outside the reader', () => {
