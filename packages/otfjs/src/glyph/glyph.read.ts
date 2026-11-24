@@ -51,8 +51,7 @@ export function readGlyf(view: Reader): Glyph {
     return glyph
   }
 
-  const endPtsOfContours = new Array<number>(numberOfContours)
-  for (let i = 0; i < numberOfContours; ++i) endPtsOfContours[i] = view.u16()
+  const endPtsOfContours = view.array(numberOfContours, () => view.u16())
 
   const instructionLength = view.u16()
   const instructions = view.u8Array(instructionLength)
