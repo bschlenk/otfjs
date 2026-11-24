@@ -62,15 +62,6 @@
     outline: 1px auto var(--color-border-selected);
   }
 
-  @media (prefers-color-scheme: light) {
-    a:hover {
-      color: #747bff;
-    }
-    button {
-      background-color: #f9f9f9;
-    }
-  }
-
   @media (prefers-reduced-motion: no-preference) {
     * {
       animation: none;
