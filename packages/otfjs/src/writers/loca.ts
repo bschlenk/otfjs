@@ -11,9 +11,7 @@ export function writeLocaTable(
       writer.u16(offset / 2)
     }
   } else {
-    for (const offset of offsets) {
-      writer.u32(offset)
-    }
+    writer.array('u32', offsets)
   }
 
   return writer.toBuffer()

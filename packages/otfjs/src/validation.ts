@@ -1,5 +1,5 @@
-import { asDataView, asUint8Array } from './buffer/utils.js'
-import { computeChecksum } from './checksum.js'
+import { asDataView, asUint8Array, computeChecksum } from '@otfjs/buffer'
+
 import { SfntVersion } from './enums.js'
 import type { Header, TableRecord } from './tables/header.js'
 import { getAlignPadding, toHex } from './utils/utils.js'

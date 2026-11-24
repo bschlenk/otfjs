@@ -7,6 +7,10 @@ import {
   getAlignPadding,
 } from './utils.js'
 
+/** Writer methods that write a single number. */
+export type NumberType =
+  'u8' | 'i8' | 'u16' | 'i16' | 'u24' | 'u32' | 'i32' | 'f2dot14'
+
 export class Writer {
   public data: ArrayBuffer
   public view: DataView
@@ -95,6 +99,11 @@ export class Writer {
 
   public date(date: Date) {
     this.i64(toLongDateTime(date))
+  }
+
+  /** Write each value in `values` as `type`, e.g. `w.array('u16', offsets)`. */
+  public array(type: NumberType, values: Iterable<number>) {
+    for (const val of values) this[type](val)
   }
 
   public tag(val: string) {

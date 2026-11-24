@@ -1,5 +1,4 @@
 export * from './canvas.js'
-export { computeChecksum } from './checksum.js'
 export * from './enums.js'
 export { NotAFontError } from './errors.js'
 export * from './fns/index.js'
@@ -21,3 +20,4 @@ export {
 export type { CpalTable } from './tables/cpal.js'
 export type * from './types.js'
 export { isWoff2 } from './woff2/utils.js'
+export { computeChecksum } from '@otfjs/buffer'

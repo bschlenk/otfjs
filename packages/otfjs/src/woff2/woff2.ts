@@ -1,7 +1,6 @@
-import { Reader } from '@otfjs/buffer'
+import { asDataView, asUint8Array, Reader } from '@otfjs/buffer'
 import decompress from 'brotli/decompress.js'
 
-import { asDataView, asUint8Array } from '../buffer/utils.js'
 import { asSfntVersion } from '../enum-utils.js'
 import { buildFont } from '../font-builder.js'
 import { assert, error, sum } from '../utils/utils.js'

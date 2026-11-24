@@ -5,10 +5,8 @@
 // for the most part we can start with character == glyph (for this
 // font at least)
 
-import { Writer } from '@otfjs/buffer'
+import { asDataView, computeChecksum, Writer } from '@otfjs/buffer'
 
-import { asDataView } from './buffer/utils.js'
-import { computeChecksum } from './checksum.js'
 import { SfntVersion } from './enums.js'
 import { padToMultiple } from './utils/utils.js'
 

@@ -1,7 +1,6 @@
 import * as mat from '@bschlenk/mat'
-import { Reader } from '@otfjs/buffer'
+import { asUint8Array, Reader } from '@otfjs/buffer'
 
-import { asUint8Array } from '../buffer/utils.js'
 import type { FontHandle } from '../font-handle.js'
 import { compositeGlyphComponentMatrix } from '../glyph-utils.js'
 import { readGlyf } from '../tables/glyf.js'
