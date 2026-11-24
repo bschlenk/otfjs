@@ -36,5 +36,38 @@ describe('reader.ts', () => {
       expect(sub.length).toBe(2)
       expect([...sub.u8Array(2)]).toEqual([6, 7])
     })
+
+    it('nested subtables read relative to their own start', () => {
+      const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7])
+      const sub = new Reader(data.subarray(1)).subtable(2, 4).subtable(1, 2)
+      expect(sub.u16()).toBe(0x0405)
+      expect([...sub.data]).toEqual([4, 5])
+    })
+
+    it('stream returns the next bytes and advances past them', () => {
+      const reader = new Reader(new Uint8Array([1, 2, 3, 4, 5]))
+      reader.u8()
+      const stream = reader.stream(2)
+      expect(reader.offset).toBe(3)
+      expect(stream.u16()).toBe(0x0203)
+      expect(reader.u8()).toBe(4)
+    })
+
+    it('throws when reading past the end of a subtable', () => {
+      const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7])
+      const sub = new Reader(data).subtable(2, 3)
+      expect(sub.u16()).toBe(0x0203)
+      expect(() => sub.u16()).toThrow(RangeError)
+      // a failed read doesn't move the offset
+      expect(sub.offset).toBe(2)
+      expect(sub.u8()).toBe(4)
+    })
+
+    it('throws on a subtable outside the reader', () => {
+      const reader = new Reader(new Uint8Array(4))
+      expect(() => reader.subtable(2, 3)).toThrow(RangeError)
+      expect(() => reader.subtable(5)).toThrow(RangeError)
+      expect(() => reader.u8Array(5)).toThrow(RangeError)
+    })
   })
 })
