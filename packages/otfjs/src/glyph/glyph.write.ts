@@ -1,16 +1,33 @@
+// Writing glyphs to the glyf table.
+// https://learn.microsoft.com/en-us/typography/opentype/spec/glyf
+
 import * as vec from '@bschlenk/vec'
 import { Writer } from '@otfjs/buffer'
 
-import { GlyphFlags, glyphFlags } from '../glyph-utils.js'
-import { isEmptyGlyph } from '../tables/glyf.js'
+import {
+  type GlyphFlags,
+  writeGlyphCompositeFlags,
+  writeGlyphFlags,
+} from '../tables/glyf.gen.js'
+import type { LocaTable } from '../tables/loca.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
 import { assert } from '../utils/utils.js'
+import { isEmptyGlyph } from './glyph.utils.js'
 
-export function writeGlyfTable(glyphs: Glyph[], loca: number[]): Uint8Array {
+/**
+ * Write the glyf table, also returning the loca offsets of each glyph.
+ * When building a font, use this (or `compileGlyfLoca`) so loca matches
+ * the glyf table it indexes into.
+ */
+export function writeGlyfTableWithOffsets(glyphs: Glyph[]): {
+  data: Uint8Array
+  offsets: LocaTable
+} {
   const writer = new Writer()
+  const offsets: LocaTable = []
 
   for (const glyph of glyphs) {
-    loca.push(writer.length)
+    offsets.push(writer.length)
 
     switch (glyph.type) {
       case 'simple':
@@ -24,9 +41,13 @@ export function writeGlyfTable(glyphs: Glyph[], loca: number[]): Uint8Array {
     writer.pad(4)
   }
 
-  loca.push(writer.length)
+  offsets.push(writer.length)
 
-  return writer.toBuffer()
+  return { data: writer.toBuffer(), offsets }
+}
+
+export function writeGlyfTable(glyphs: Glyph[]): Uint8Array {
+  return writeGlyfTableWithOffsets(glyphs).data
 }
 
 function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
@@ -35,9 +56,7 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
   writer.i16(glyph.endPtsOfContours.length)
   writeMinMax(writer, glyph)
 
-  for (const endPt of glyph.endPtsOfContours) {
-    writer.u16(endPt)
-  }
+  writer.array('u16', glyph.endPtsOfContours)
 
   writer.u16(glyph.instructions.length)
   writer.buffer(glyph.instructions)
@@ -49,10 +68,16 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
   let lastPoint = vec.ZERO
 
   for (const [i, point] of glyph.points.entries()) {
-    const flag = glyphFlags(0)
-    flag.onCurvePoint = point.onCurve
-    // The spec says OVERLAP_SIMPLE should only be set on the first flag
-    flag.contoursOverlap = i === 0 && glyph.contoursOverlap
+    const flag: GlyphFlags = {
+      onCurvePoint: point.onCurve,
+      xShortVector: false,
+      yShortVector: false,
+      repeat: false,
+      xIsSameOrPositiveXShortVector: false,
+      yIsSameOrPositiveYShortVector: false,
+      // The spec says OVERLAP_SIMPLE should only be set on the first flag
+      contoursOverlap: i === 0 && glyph.contoursOverlap,
+    }
 
     const { x, y } = vec.subtract(point, lastPoint)
 
@@ -87,21 +112,22 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
     lastPoint = point
   }
 
-  const flagGroups: { flags: GlyphFlags; repeat: number }[] = []
+  const flagGroups: { flags: GlyphFlags; value: number; repeat: number }[] = []
 
   for (const flags of flagsArray) {
+    const value = writeGlyphFlags(flags)
     const lastGroup = flagGroups[flagGroups.length - 1]
 
-    if (lastGroup?.flags.value === flags.value) {
+    // the repeat count is a single byte, so start a new run after 255
+    if (lastGroup?.value === value && lastGroup.repeat < 255) {
       lastGroup.repeat++
     } else {
-      flagGroups.push({ flags, repeat: 0 })
+      flagGroups.push({ flags, value, repeat: 0 })
     }
   }
 
   for (const { flags, repeat } of flagGroups) {
-    if (repeat) flags.repeat = true
-    writer.u8(flags.value)
+    writer.u8(writeGlyphFlags({ ...flags, repeat: repeat > 0 }))
     if (repeat) writer.u8(repeat)
   }
 
@@ -126,7 +152,7 @@ function writeCompositeGlyph(writer: Writer, glyph: GlyphComposite) {
   for (const { flags, glyphIndex, arg1, arg2, extra } of glyph.components) {
     weHaveInstructions ||= flags.weHaveInstructions
 
-    writer.u16(flags.value)
+    writer.u16(writeGlyphCompositeFlags(flags))
     writer.u16(glyphIndex)
 
     // types vary based on flags

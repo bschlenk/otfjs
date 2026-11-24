@@ -2,7 +2,7 @@ import type { Matrix } from '@bschlenk/mat'
 import type { Vector } from '@bschlenk/vec'
 
 import type { Extend } from './enums.js'
-import { GlyphCompositeFlags } from './glyph-utils.js'
+import type { GlyphCompositeFlags } from './tables/glyf.gen.js'
 
 interface GlyphBase<T extends string> {
   type: T

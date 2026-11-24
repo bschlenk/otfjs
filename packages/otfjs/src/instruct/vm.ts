@@ -1,9 +1,9 @@
 import * as vec from '@bschlenk/vec'
 
 import type { FontHandle } from '../font-handle.js'
+import { emptyGlyph } from '../glyph/glyph.utils.js'
 import { CvtTableReader } from '../tables/cvt.js'
 import { FpgmTableReader } from '../tables/fpgm.js'
-import { emptyGlyph } from '../tables/glyf.js'
 import { HeadTableReader } from '../tables/head.js'
 import { MaxpTable10, MaxpTableReader } from '../tables/maxp.js'
 import { PrepTableReader } from '../tables/prep.js'
@@ -11,6 +11,7 @@ import type { GlyphSimple, Point } from '../types.js'
 import { symmetricCeil, symmetricFloor, symmetricRound } from '../utils/math.js'
 import { assert, debug, error, range, toHex } from '../utils/utils.js'
 import { disassemble } from './disassemble.js'
+import { decodeGetinfoSelector } from './getinfo.gen.js'
 import {
   type GraphicsState,
   makeGraphicsState,
@@ -24,7 +25,6 @@ import {
   customRoundState,
   deltaValue,
   DistanceType,
-  getinfoFlags,
   makeStore,
   opcodeLength,
   SQRT2_2,
@@ -1656,7 +1656,7 @@ export class VirtualMachine {
       }
 
       case Opcode.GETINFO: {
-        const flags = getinfoFlags(this.stack.pop())
+        const flags = decodeGetinfoSelector(this.stack.pop())
         let result = 0
 
         if (flags.version) {

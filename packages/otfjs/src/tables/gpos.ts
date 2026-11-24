@@ -1,8 +1,12 @@
 import { Reader } from '@otfjs/buffer'
 
-import { createFlagReader } from '../flags.js'
 import type { TableReader } from '../table-reader.js'
 import { assert } from '../utils/utils.js'
+import {
+  readLookupFlag,
+  readValueFormat,
+  type ValueFormat,
+} from './gpos.gen.js'
 
 enum GposLookupType {
   Single = 1,
@@ -125,18 +129,9 @@ function readLookupListTable(view: Reader) {
   })
 }
 
-const lookupFlagReader = createFlagReader({
-  rightToLeft: 0,
-  ignoreBaseGlyphs: 1,
-  ignoreLigatures: 2,
-  ignoreMarks: 3,
-  useMarkFilteringSet: 4,
-  markAttachmentTypeMask: (flag: number) => (flag >> 8) & 0xff,
-})
-
 function readLookupTable(view: Reader) {
   const lookupType: GposLookupType = view.u16()
-  const lookupFlag = lookupFlagReader(view.u16())
+  const lookupFlag = readLookupFlag(view)
   const subTableCount = view.u16()
   const subTableOffsets = view.array(subTableCount, () => view.u16())
 
@@ -200,24 +195,11 @@ function readSingleSubtable(view: Reader) {
   return { posFormat }
 }
 
-const valueFormatReader = createFlagReader({
-  xPlacement: 0,
-  yPlacement: 1,
-  xAdvance: 2,
-  yAdvance: 3,
-  xPlaDeviceOffset: 4,
-  yPlaDeviceOffset: 5,
-  xAdvDeviceOffset: 6,
-  yAdvDeviceOffset: 7,
-})
-
-type ValueFormat = ReturnType<typeof valueFormatReader>
-
 function readPairSubtable(view: Reader) {
   const posFormat = view.u16()
   const coverageOffset = view.u16()
-  const valueFormat1 = valueFormatReader(view.u16())
-  const valueFormat2 = valueFormatReader(view.u16())
+  const valueFormat1 = readValueFormat(view)
+  const valueFormat2 = readValueFormat(view)
   const coverage = readCoverageTable(view.subtable(coverageOffset))
 
   switch (posFormat) {
@@ -353,8 +335,6 @@ interface ValueRecord {
 
 function readValueRecord(view: Reader, valueFormat: ValueFormat) {
   const rec: ValueRecord = {}
-
-  if (valueFormat.value === 0) return rec
 
   if (valueFormat.xPlacement) {
     rec.xPlacement = view.i16()

@@ -2,10 +2,9 @@ import { asDataView, asUint8Array, Reader } from '@otfjs/buffer'
 import decompress from 'brotli/decompress.js'
 
 import { asSfntVersion } from '../enum-utils.js'
+import { compileGlyfLoca } from '../fns/compile-glyf-loca.js'
 import { buildFont } from '../font-builder.js'
 import { assert, error, sum } from '../utils/utils.js'
-import { writeGlyfTable } from '../writers/glyf.js'
-import { writeLocaTable } from '../writers/loca.js'
 import { decodeGlyfTransform0 } from './glyf-transform.js'
 import { decodeHmtxTransform1 } from './hmtx-transform.js'
 import { KNOWN_TAGS } from './tags.js'
@@ -66,7 +65,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
     'Unexpected decompressed stream size',
   )
 
-  const loca: number[] = []
+  let glyfDecoded = false
   let locaEncountered = false
   let offset = 0
   const tables: Record<string, Uint8Array> = {}
@@ -96,8 +95,12 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
         }
 
         const { glyphs, indexFormat } = decodeGlyfTransform0(buff)
-        tables[table.tag] = writeGlyfTable(glyphs, loca)
-        tables.loca = writeLocaTable(loca, indexFormat)
+        // WOFF2 requires the rebuilt loca to keep the original format,
+        // since the head table is passed through unchanged
+        const compiled = compileGlyfLoca(glyphs, indexFormat)
+        tables[table.tag] = compiled.glyf
+        tables.loca = compiled.loca
+        glyfDecoded = true
 
         // Extract x_mins for hmtx reconstruction
         numGlyphs = glyphs.length
@@ -131,7 +134,7 @@ export function decodeWoff2(buffer: Uint8Array): Uint8Array {
     }
   }
 
-  if (loca.length && !locaEncountered) {
+  if (glyfDecoded && !locaEncountered) {
     error('Expected entry for loca table after glyf table')
   }
 

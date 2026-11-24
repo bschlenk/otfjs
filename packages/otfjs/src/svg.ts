@@ -5,7 +5,7 @@ import { rgbaToCss } from './color.js'
 import { Extend } from './enums.js'
 import { getGlyph } from './fns/get-glyph.js'
 import type { FontHandle } from './font-handle.js'
-import { walkGlyphPath } from './glyph-utils.js'
+import { walkGlyphPath } from './glyph/glyph.path.js'
 import { SvgPathBuilder } from './path-builder.js'
 import {
   type ColorLayer,
