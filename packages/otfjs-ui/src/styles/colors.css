@@ -20,6 +20,9 @@
 }
 
 /*
+Light mode is disabled for now and the app always renders in dark mode
+(see #15). These unpolished light tokens are kept as a starting point.
+
 @media (prefers-color-scheme: light) {
   :root {
     --color-bg: #fff;
