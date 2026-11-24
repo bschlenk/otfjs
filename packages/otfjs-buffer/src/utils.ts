@@ -22,7 +22,7 @@ export function computeChecksum(table: Uint8Array) {
   }
   if (remainder) {
     const b = new Uint8Array(4)
-    b.set(new Uint8Array(view.buffer, n, remainder))
+    b.set(asUint8Array(table, n, remainder))
     checksum = (checksum + new DataView(b.buffer).getUint32(0)) >>> 0
   }
   return checksum
