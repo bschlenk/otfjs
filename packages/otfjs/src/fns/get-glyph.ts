@@ -11,7 +11,6 @@ export function getGlyph(font: FontHandle, id: number): GlyphEnriched {
   const loca = font.readTable(LocaTableReader)
   const hmtx = font.readTable(HmtxTableReader)
   const glyf = font.getTableView(GlyfTag)
-  if (!glyf) throw new Error('"glyf" table not found')
 
   const offset = loca[id]
   const length = loca[id + 1] - offset
