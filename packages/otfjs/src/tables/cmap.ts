@@ -92,12 +92,12 @@ function writeSubtable(w: Writer, subtable: CmapSubtable): void {
   w.u16(entrySelector)
   w.u16(rangeShift)
 
-  for (const code of subtable.endCodes) w.u16(code)
+  w.array('u16', subtable.endCodes)
   w.u16(0) // reserved padding
-  for (const code of subtable.startCodes) w.u16(code)
-  for (const delta of subtable.idDeltas) w.i16(delta)
-  for (const off of subtable.idRangeOffsets) w.u16(off)
-  for (const id of subtable.glyphIdArray) w.u16(id)
+  w.array('u16', subtable.startCodes)
+  w.array('i16', subtable.idDeltas)
+  w.array('u16', subtable.idRangeOffsets)
+  w.array('u16', subtable.glyphIdArray)
 }
 
 function readCmapSubtable(view: Reader): CmapSubtable {

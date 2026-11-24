@@ -31,5 +31,12 @@ describe('writer.ts', () => {
         expect(writer.view.getUint16(0)).toBe(expected)
       }
     })
+
+    it('should write an array of values as the given type', () => {
+      const writer = new Writer()
+      writer.array('u16', [1, 0x0203])
+      writer.array('i8', [-1])
+      expect([...writer.toBuffer()]).toEqual([0, 1, 2, 3, 0xff])
+    })
   })
 })

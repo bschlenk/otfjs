@@ -37,9 +37,7 @@ export function writeHmtxTable(table: HmtxTable): Uint8Array {
     w.i16(leftSideBearing)
   }
 
-  for (const lsb of table.leftSideBearings) {
-    w.i16(lsb)
-  }
+  w.array('i16', table.leftSideBearings)
 
   return w.toBuffer()
 }
