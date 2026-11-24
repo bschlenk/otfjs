@@ -65,6 +65,8 @@ export class VirtualMachine {
 
   private pcStack: number[] = []
   private maxp: MaxpTable10
+  /** The font's unscaled cvt, which `cvt` is reset from on resize. */
+  private readonly fontCvt: readonly number[]
 
   constructor(private font: FontHandle) {
     const maxp = font.readTable(MaxpTableReader)
@@ -76,7 +78,8 @@ export class VirtualMachine {
 
     this.maxp = maxp
     this.upem = font.readTable(HeadTableReader).unitsPerEm
-    this.cvt = [...(font.readTableOrNull(CvtTableReader) ?? [])]
+    this.fontCvt = font.readTableOrNull(CvtTableReader) ?? []
+    this.cvt = [...this.fontCvt]
     this.store = makeStore(maxp.maxStorage)
     this.stack = new Stack(maxp.maxStackElements)
     this.gs = makeGraphicsState()
@@ -87,9 +90,7 @@ export class VirtualMachine {
   setFontSize(px: number) {
     this.fontSize = px
     const scale = px / this.upem
-    this.cvt = [...(this.font.readTableOrNull(CvtTableReader) ?? [])].map(
-      (v) => v * scale,
-    )
+    this.cvt = this.fontCvt.map((v) => v * scale)
   }
 
   setGlyph(
