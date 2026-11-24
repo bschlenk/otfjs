@@ -9,22 +9,20 @@ const theme: React.CSSProperties = {
 
 export function JsonView({
   data,
-  /* replacements, */
+  replacements,
 }: {
   data: object
   replacements?: Record<string, (value: unknown) => any>
 }) {
-  /*
-  const replacer = useMemo(() => {
-    if (!replacements) return undefined
-
-    return (key: string, value: any): any => {
-      const r = replacements[key]
-      if (r) return r(value)
-      return value
+  if (replacements) {
+    data = structuredClone(data)
+    for (const [key, replace] of Object.entries(replacements)) {
+      if (key in data) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        ;(data as any)[key] = replace((data as any)[key])
+      }
     }
-  }, [replacements])
-  */
+  }
 
   return <JsonViewPkg value={data} style={theme} displayDataTypes={false} />
 }

@@ -15,7 +15,7 @@ export function FontIcon({ name, size }: FontIconProps) {
   if (complexFonts.has(id)) {
     return (
       <img
-        src={`${id}.svg`}
+        src={`/${id}.svg`}
         width={size}
         height={size}
         className={styles.imgPreview}
