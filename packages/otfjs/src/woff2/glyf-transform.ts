@@ -1,8 +1,8 @@
 import * as vec from '@bschlenk/vec'
 import { Reader } from '@otfjs/buffer'
 
+import { emptyGlyph } from '../glyph/empty.js'
 import { readCompositeGlyphComponent } from '../glyph-utils.js'
-import { emptyGlyph } from '../tables/glyf.js'
 import type { Glyph, GlyphCompositeComponent, Point } from '../types.js'
 import { high12, highNibble, low12, lowNibble, readBit } from '../utils/bit.js'
 import { assert, EMPTY_U8_ARRAY } from '../utils/utils.js'

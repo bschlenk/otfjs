@@ -1,9 +1,9 @@
 import * as vec from '@bschlenk/vec'
 
 import type { FontHandle } from '../font-handle.js'
+import { emptyGlyph } from '../glyph/empty.js'
 import { CvtTableReader } from '../tables/cvt.js'
 import { FpgmTableReader } from '../tables/fpgm.js'
-import { emptyGlyph } from '../tables/glyf.js'
 import { HeadTableReader } from '../tables/head.js'
 import { MaxpTable10, MaxpTableReader } from '../tables/maxp.js'
 import { PrepTableReader } from '../tables/prep.js'

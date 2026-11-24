@@ -1,4 +1,5 @@
-import { type GlyfTable, writeGlyfTableWithOffsets } from '../tables/glyf.js'
+import { writeGlyfTableWithOffsets } from '../glyph/write.js'
+import type { GlyfTable } from '../tables/glyf.js'
 import {
   type LocaFormat,
   locaFormatFor,

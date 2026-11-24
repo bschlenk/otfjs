@@ -1,8 +1,9 @@
 import * as mat from '@bschlenk/mat'
 
 import type { FontHandle } from '../font-handle.js'
+import { readGlyf } from '../glyph/read.js'
 import { compositeGlyphComponentMatrix } from '../glyph-utils.js'
-import { GlyfTag, readGlyf } from '../tables/glyf.js'
+import { GlyfTag } from '../tables/glyf.js'
 import { HmtxTableReader } from '../tables/hmtx.js'
 import { LocaTableReader } from '../tables/loca.js'
 import type { GlyphEnriched } from '../types.js'
