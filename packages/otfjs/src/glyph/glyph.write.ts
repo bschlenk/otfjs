@@ -118,7 +118,8 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
     const value = writeGlyphFlags(flags)
     const lastGroup = flagGroups[flagGroups.length - 1]
 
-    if (lastGroup?.value === value) {
+    // the repeat count is a single byte, so start a new run after 255
+    if (lastGroup?.value === value && lastGroup.repeat < 255) {
       lastGroup.repeat++
     } else {
       flagGroups.push({ flags, value, repeat: 0 })

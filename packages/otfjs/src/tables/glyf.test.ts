@@ -64,6 +64,23 @@ describe('writeGlyfTableWithOffsets', () => {
     expect(roundTrip([glyph])).toEqual([glyph])
   })
 
+  it('splits runs of more than 255 repeated flags', () => {
+    // every point moves +1 in x, so all 300 flags are identical
+    const points = Array.from({ length: 300 }, (_, i) => ({
+      x: i + 1,
+      y: 0,
+      onCurve: true,
+    }))
+    const glyph: GlyphSimple = {
+      ...emptyGlyph(),
+      xMin: 1,
+      xMax: 300,
+      endPtsOfContours: [points.length - 1],
+      points,
+    }
+    expect(roundTrip([glyph])).toEqual([glyph])
+  })
+
   it('writes each glyph at a 4-byte aligned offset', () => {
     const { offsets } = writeGlyfTableWithOffsets([
       simple,
