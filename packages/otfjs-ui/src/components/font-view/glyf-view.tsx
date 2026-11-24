@@ -1,17 +1,14 @@
-import { createElement, type JSX, useState } from 'react'
-import * as mat from '@bschlenk/mat'
-import * as vec from '@bschlenk/vec'
+import { createElement, type JSX, type ReactElement, useState } from 'react'
 import clsx from 'clsx'
-import { Extend, Font, GlyphEnriched, GlyphSimple, glyphToSvgPath } from 'otfjs'
 import {
-  ColorLayer,
-  ColorRecordType,
-  ColrTable,
-  CompositeMode,
-} from 'otfjs/tables/colr'
+  Font,
+  GlyphEnriched,
+  GlyphSimple,
+  glyphToColorSvg,
+  type Node as SvgNode,
+} from 'otfjs'
 import { CpalTable } from 'otfjs/tables/cpal'
 
-import { rgbaToCss } from '../../utils/color'
 import { GlyphEditor } from './glyph-editor'
 import { HintingDebug } from './hinting-debug'
 import { HintingView } from './hinting-view'
@@ -97,7 +94,6 @@ export function AllGlyfView({
   const svgs: JSX.Element[] = []
 
   const head = font.getTable('head')
-  const colr = font.getTableOrNull('COLR')
   const cpal = font.getTableOrNull('CPAL')
   const height = head.unitsPerEm
 
@@ -110,13 +106,7 @@ export function AllGlyfView({
         className="bg-transparent p-0"
         onClick={() => onClick(glyph.id)}
       >
-        <SvgGlyph
-          glyph={glyph}
-          font={font}
-          height={height}
-          colr={colr}
-          palette={palette}
-        />
+        <SvgGlyph glyph={glyph} font={font} height={height} palette={palette} />
       </button>,
     )
   }
@@ -172,23 +162,15 @@ function GlyfContainer({
   )
 }
 
-interface ElementDesc {
-  type: string
-  props: Record<string, any>
-  children: any[]
-}
-
 function SvgGlyph({
   glyph,
   font,
   height,
-  colr,
-  palette: paletteIdx,
+  palette,
 }: {
   glyph: GlyphEnriched
   font: Font
   height: number
-  colr: ColrTable | null
   palette: number
 }) {
   let width = glyph.advanceWidth
@@ -196,233 +178,7 @@ function SvgGlyph({
     width = glyph.xMax - glyph.xMin
   }
 
-  const defs: any[] = []
-  let path: any[]
-
-  const tree = colr?.colorGlyph(glyph.id)
-
-  if (tree) {
-    // visit a node
-    // maybe push a new latest record
-    // some nodes just update props on the latest record
-    // some nodes push their own latest record
-    // when done, they need to pop and convert to jsx
-
-    const palette = font.getTable('CPAL').getPalette(paletteIdx)
-    const stack: ElementDesc[] = [{ type: 'root', props: {}, children: [] }]
-    let latest = stack[0]
-    let matrix: mat.Matrix | null = null
-    let key = 0
-
-    const getColor = (paletteIndex: number, alpha: number) => {
-      if (paletteIndex === 0xffff) return 'currentcolor'
-      return rgbaToCss(palette[paletteIndex], alpha)
-    }
-
-    const push = () => {
-      const el: ElementDesc = {
-        type: 'path',
-        props: { key: key++ },
-        children: [],
-      }
-      stack.push(el)
-      latest = el
-      return el
-    }
-
-    const popOnly = () => {
-      const el = stack.pop()!
-      latest = stack[stack.length - 1]
-
-      if (el.type === 'path' && !el.props.d) {
-        // make this a full size rect
-        el.type = 'rect'
-        Object.assign(el.props, { x: 0, y: 0, width, height })
-      }
-
-      return createElement(el.type, el.props, el.children)
-    }
-
-    const pop = () => {
-      const el = popOnly()
-      latest.children.push(el)
-    }
-
-    const walk = (layer: ColorLayer) => {
-      switch (layer.format) {
-        case ColorRecordType.SOLID: {
-          const { paletteIndex, alpha } = layer.props
-          latest.props.fill = getColor(paletteIndex, alpha)
-          break
-        }
-
-        case ColorRecordType.LINEAR_GRADIENT: {
-          const { p0, p1, p2, extend, stops } = layer.props
-          const spreadMethod = extendToSpreadMethod(extend)
-
-          const stopsEls = stops.map((stop, i) => (
-            <stop
-              key={i}
-              offset={stop.stopOffset}
-              stopColor={getColor(stop.paletteIndex, stop.alpha)}
-            />
-          ))
-
-          const id = `${glyph.id}-gradient-${defs.length}`
-
-          const p3 = vec.add(
-            p0,
-            vec.projectOnto(
-              vec.subtract(p1, p0),
-              vec.rotate90(vec.subtract(p2, p0)),
-            ),
-          )
-
-          defs.push(
-            <linearGradient
-              key={defs.length}
-              id={id}
-              x1={p0.x}
-              y1={p0.y}
-              x2={p3.x}
-              y2={p3.y}
-              gradientTransform={matrix ? mat.toSvg(matrix) : undefined}
-              spreadMethod={spreadMethod}
-              gradientUnits="userSpaceOnUse"
-            >
-              {stopsEls}
-            </linearGradient>,
-          )
-
-          matrix = null
-          latest.props.fill = `url('#${id}')`
-          break
-        }
-
-        case ColorRecordType.RADIAL_GRADIENT: {
-          const { p0, p1, r0, r1, extend, stops } = layer.props
-          const spreadMethod = extendToSpreadMethod(extend)
-
-          const stopsEls = stops.map((stop, i) => (
-            <stop
-              key={i}
-              offset={stop.stopOffset}
-              stopColor={getColor(stop.paletteIndex, stop.alpha)}
-            />
-          ))
-
-          const id = `${glyph.id}-radial-gradient-${defs.length}`
-
-          defs.push(
-            <radialGradient
-              key={defs.length}
-              id={id}
-              fx={p0.x}
-              fy={p0.y}
-              fr={r0}
-              cx={p1.x}
-              cy={p1.y}
-              r={r1}
-              gradientTransform={matrix ? mat.toSvg(matrix) : undefined}
-              spreadMethod={spreadMethod}
-              gradientUnits="userSpaceOnUse"
-            >
-              {stopsEls}
-            </radialGradient>,
-          )
-
-          matrix = null
-          latest.props.fill = `url('#${id}')`
-          break
-        }
-
-        case ColorRecordType.GLYPH: {
-          const { glyphId } = layer.props
-          const g = font.getGlyph(glyphId)
-          const d = glyphToSvgPath(g)
-
-          let hasMatrix = false
-          if (matrix) {
-            const el = push()
-            el.type = 'g'
-            el.props.transform = mat.toSvg(matrix)
-
-            hasMatrix = true
-            matrix = null
-          }
-
-          const el = push()
-          el.type = 'path'
-          el.props.d = d
-
-          walkAll(layer.children)
-
-          pop()
-
-          if (hasMatrix) pop()
-
-          break
-        }
-
-        case ColorRecordType.TRANSFORM: {
-          matrix = layer.props.matrix
-          walkAll(layer.children)
-
-          break
-        }
-
-        case ColorRecordType.COMPOSITE: {
-          const { mode, src, dest } = layer.props
-
-          switch (mode) {
-            case CompositeMode.SRC_IN: {
-              push()
-              walkAll(dest)
-              const destId = `${glyph.id}-${defs.length}`
-              latest.props.id = destId
-              latest.props.key = defs.length
-              const destEl = popOnly()
-
-              defs.push(destEl)
-              const id = `${glyph.id}-${defs.length}`
-              defs.push(
-                <filter key={defs.length} id={id}>
-                  <feImage href={`#${destId}`} x="0" y="0" />
-                  <feComposite in="SourceGraphic" operator="in" />
-                </filter>,
-              )
-
-              const el = push()
-              el.type = 'g'
-              el.props.style = { filter: `url(#${id})` }
-              walkAll(src)
-              pop()
-              break
-            }
-
-            case CompositeMode.SOFT_LIGHT: {
-              break
-            }
-
-            default:
-              break
-          }
-        }
-      }
-    }
-
-    const walkAll = (tree: ColorLayer[]) => {
-      for (const layer of tree) {
-        walk(layer)
-      }
-    }
-
-    walkAll(tree)
-
-    path = stack[0].children
-  } else {
-    path = [<path key={0} d={glyphToSvgPath(glyph)} />]
-  }
+  const { paths, defs } = glyphToColorSvg(glyph, font, palette)
 
   return (
     <svg
@@ -431,10 +187,24 @@ function SvgGlyph({
       height="100px"
       viewBox={`0 0 ${width} ${height}`}
     >
-      {defs.length > 0 && <defs>{defs}</defs>}
-      <g transform={`matrix(1 0 0 -1 0 ${height})`}>{path}</g>
+      {defs.length > 0 && <defs>{defs.map(nodeToElement)}</defs>}
+      <g transform={`matrix(1 0 0 -1 0 ${height})`}>
+        {paths.map(nodeToElement)}
+      </g>
     </svg>
   )
+}
+
+function nodeToElement(node: SvgNode, key: number): ReactElement {
+  const props: Record<string, unknown> = { key }
+  for (const name in node.props) props[reactPropName(name)] = node.props[name]
+
+  return createElement(node.type, props, ...node.children.map(nodeToElement))
+}
+
+/** React wants camelCase SVG attributes, like `stopColor` for `stop-color`. */
+function reactPropName(name: string) {
+  return name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
 }
 
 /*
@@ -514,14 +284,3 @@ function SingleGlyphView({
   )
 }
 */
-
-function extendToSpreadMethod(extend: Extend) {
-  switch (extend) {
-    case Extend.PAD:
-      return 'pad'
-    case Extend.REFLECT:
-      return 'reflect'
-    case Extend.REPEAT:
-      return 'repeat'
-  }
-}

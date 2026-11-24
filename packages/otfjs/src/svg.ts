@@ -20,6 +20,10 @@ import type { Glyph, GlyphEnriched } from './types.js'
 // The gradient coords of a color glyph are always relative to the em square
 const gradientUnits = 'userSpaceOnUse'
 
+// SVG paths of the glyphs COLR layers paint, per font. Color fonts reuse
+// layer glyphs heavily: Noto Color Emoji paints 38k glyphs 130k times.
+const layerPaths = new WeakMap<FontHandle, Map<number, string>>()
+
 export function glyphToSvgPath(glyph: Glyph) {
   const path = new SvgPathBuilder()
   walkGlyphPath(glyph, path)
@@ -56,7 +60,7 @@ export function glyphToColorSvg(
     return { paths: [node('path', { d })], defs }
   }
 
-  const width = glyph.advanceWidth
+  const width = glyph.advanceWidth || glyph.xMax - glyph.xMin
   const height = font.readTable(HeadTableReader).unitsPerEm
 
   const palette = font.readTable(CpalTableReader).getPalette(paletteIdx)
@@ -185,8 +189,7 @@ export function glyphToColorSvg(
 
       case ColorRecordType.GLYPH: {
         const { glyphId } = layer.props
-        const g = getGlyph(font, glyphId)
-        const d = glyphToSvgPath(g)
+        const d = layerGlyphPath(font, glyphId)
         let hasMatrix = false
 
         if (matrix) {
@@ -258,6 +261,19 @@ export function glyphToColorSvg(
   walkAll(tree)
 
   return { paths: stack[0].children, defs }
+}
+
+function layerGlyphPath(font: FontHandle, glyphId: number) {
+  let paths = layerPaths.get(font)
+  if (!paths) layerPaths.set(font, (paths = new Map<number, string>()))
+
+  let d = paths.get(glyphId)
+  if (d === undefined) {
+    d = glyphToSvgPath(getGlyph(font, glyphId))
+    paths.set(glyphId, d)
+  }
+
+  return d
 }
 
 function node(
