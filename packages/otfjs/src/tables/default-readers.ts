@@ -1,54 +1,28 @@
 import type { TableReader } from '../table-reader.js'
-import { type CffTable, CffTableReader } from './cff.js'
-import { type CmapTable, CmapTableReader } from './cmap.js'
-import { type ColrTable, ColrTableReader } from './colr.js'
-import { type CpalTable, CpalTableReader } from './cpal.js'
-import { type CvtTable, CvtTableReader } from './cvt.js'
-import { type FpgmTable, FpgmTableReader } from './fpgm.js'
-import { type GposTable, GposTableReader } from './gpos.js'
-import { type HeadTable, HeadTableReader } from './head.js'
-import { type HheaTable, HheaTableReader } from './hhea.js'
-import { type HmtxTable, HmtxTableReader } from './hmtx.js'
-import { type LocaTable, LocaTableReader } from './loca.js'
-import { type MathTable, MathTableReader } from './math.js'
-import { type MaxpTable, MaxpTableReader } from './maxp.js'
-import { type NameTable, NameTableReader } from './name.js'
-import { type OS2Table, OS2TableReader } from './os-2.js'
-import { type PostTable, PostTableReader } from './post.js'
-import { type PrepTable, PrepTableReader } from './prep.js'
+import { CffTableReader } from './cff.js'
+import { CmapTableReader } from './cmap.js'
+import { ColrTableReader } from './colr.js'
+import { CpalTableReader } from './cpal.js'
+import { CvtTableReader } from './cvt.js'
+import { FpgmTableReader } from './fpgm.js'
+import { GposTableReader } from './gpos.js'
+import { HeadTableReader } from './head.js'
+import { HheaTableReader } from './hhea.js'
+import { HmtxTableReader } from './hmtx.js'
+import { LocaTableReader } from './loca.js'
+import { MathTableReader } from './math.js'
+import { MaxpTableReader } from './maxp.js'
+import { NameTableReader } from './name.js'
+import { OS2TableReader } from './os-2.js'
+import { PostTableReader } from './post.js'
+import { PrepTableReader } from './prep.js'
 
 /**
- * Maps each table tag that has a built-in reader to its parsed type.
+ * Every built-in table reader, keyed by tag, for the string-based
+ * `Font.getTable`. Importing this pulls in every reader; to keep bundles
+ * small, import the readers you need instead.
  */
-export interface TableMap {
-  'CFF ': CffTable
-  cmap: CmapTable
-  COLR: ColrTable
-  CPAL: CpalTable
-  'cvt ': CvtTable
-  fpgm: FpgmTable
-  GPOS: GposTable
-  head: HeadTable
-  hhea: HheaTable
-  hmtx: HmtxTable
-  loca: LocaTable
-  MATH: MathTable
-  maxp: MaxpTable
-  name: NameTable
-  'OS/2': OS2Table
-  post: PostTable
-  prep: PrepTable
-}
-
-/**
- * Every built-in table reader, keyed by tag. Used by the string-based
- * `Font.getTable` convenience. Importing this pulls in every reader, so
- * code that cares about bundle size should import individual readers
- * instead.
- */
-export const defaultReaders: {
-  [K in keyof TableMap]: TableReader<TableMap[K]>
-} = {
+export const defaultReaders = {
   'CFF ': CffTableReader,
   cmap: CmapTableReader,
   COLR: ColrTableReader,
@@ -66,4 +40,13 @@ export const defaultReaders: {
   'OS/2': OS2TableReader,
   post: PostTableReader,
   prep: PrepTableReader,
+} satisfies Record<string, TableReader<unknown>>
+
+/** Maps each tag with a built-in reader to the type its reader returns. */
+export type TableMap = {
+  [K in keyof typeof defaultReaders]: (typeof defaultReaders)[K] extends (
+    TableReader<infer T>
+  ) ?
+    T
+  : never
 }
