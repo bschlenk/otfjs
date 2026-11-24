@@ -12,6 +12,7 @@ import { HmtxTableReader } from './tables/hmtx.js'
 import { LocaTableReader } from './tables/loca.js'
 import { MathTableReader } from './tables/math.js'
 import { MaxpTableReader } from './tables/maxp.js'
+import { MetaTableReader } from './tables/meta.js'
 import { NameTableReader } from './tables/name.js'
 import { OS2TableReader } from './tables/os-2.js'
 import { PostTableReader } from './tables/post.js'
@@ -36,6 +37,7 @@ export const defaultReaders = {
   loca: LocaTableReader,
   MATH: MathTableReader,
   maxp: MaxpTableReader,
+  meta: MetaTableReader,
   name: NameTableReader,
   'OS/2': OS2TableReader,
   post: PostTableReader,
