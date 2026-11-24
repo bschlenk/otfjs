@@ -1,3 +1,10 @@
+/**
+ * `Font` methods are one-line wrappers around the free functions in
+ * `fns/`. Keep logic in those functions, not here.
+ *
+ * @module
+ */
+
 import { NameId, PlatformId } from './enums.js'
 import { getGlyph } from './fns/get-glyph.js'
 import { getGlyphByCodePoint } from './fns/get-glyph-by-code-point.js'
@@ -17,10 +24,10 @@ export type TableType<T extends string> =
   T extends keyof TableMap ? TableMap[T] : unknown
 
 /**
- * A `FontHandle` with ergonomic methods for common operations, plus
- * string-based table access via the built-in readers. Each method
- * delegates to a free function in `fns/`; import those directly (with a
- * plain `FontHandle`) to keep bundles small.
+ * A `FontHandle` with convenience methods for common operations, plus
+ * string-based table access via the built-in readers. Each method is also
+ * available as a free function, like `getGlyph(font, id)`, which works on
+ * a plain `FontHandle` and keeps bundles smaller.
  */
 export class Font extends FontHandle {
   public get unitsPerEm(): number {
