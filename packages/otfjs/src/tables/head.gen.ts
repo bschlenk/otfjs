@@ -14,8 +14,7 @@ export interface HeadFlags {
   lastResortFont: boolean
 }
 
-export function readHeadFlags(r: Reader): HeadFlags {
-  const v = r.u16()
+export function decodeHeadFlags(v: number): HeadFlags {
   return {
     baselineAtY0: !!(v & (1 << 0)),
     leftSidebearingAtX0: !!(v & (1 << 1)),
@@ -27,6 +26,10 @@ export function readHeadFlags(r: Reader): HeadFlags {
     clearTypeOptimized: !!(v & (1 << 13)),
     lastResortFont: !!(v & (1 << 14)),
   }
+}
+
+export function readHeadFlags(r: Reader): HeadFlags {
+  return decodeHeadFlags(r.u16())
 }
 
 export function writeHeadFlags(d: HeadFlags): number {
@@ -53,8 +56,7 @@ export interface MacStyle {
   extended: boolean
 }
 
-export function readMacStyle(r: Reader): MacStyle {
-  const v = r.u16()
+export function decodeMacStyle(v: number): MacStyle {
   return {
     bold: !!(v & (1 << 0)),
     italic: !!(v & (1 << 1)),
@@ -64,6 +66,10 @@ export function readMacStyle(r: Reader): MacStyle {
     condensed: !!(v & (1 << 5)),
     extended: !!(v & (1 << 6)),
   }
+}
+
+export function readMacStyle(r: Reader): MacStyle {
+  return decodeMacStyle(r.u16())
 }
 
 export function writeMacStyle(d: MacStyle): number {

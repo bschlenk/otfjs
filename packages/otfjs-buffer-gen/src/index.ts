@@ -90,6 +90,7 @@ async function processFile(filePath: string, outDir?: string) {
   for (const def of flagsDefs) {
     blocks.push(
       genFlagsInterface(def),
+      genFlagsDecoder(def),
       genFlagsReader(def),
       genFlagsWriter(def),
     )
@@ -158,28 +159,46 @@ function isSchemaValue(
 // ---- Flags generation -------------------------------------------------------
 
 function genFlagsInterface(def: FlagsDef) {
-  const fields = Object.keys(def.bits)
-    .map((name) => `  ${name}: boolean`)
+  const fields = Object.entries(def.bits)
+    .map(
+      ([name, bits]) =>
+        `  ${name}: ${Array.isArray(bits) ? 'number' : 'boolean'}`,
+    )
     .join('\n')
   return `export interface ${def.name} {\n${fields}\n}`
 }
 
-function genFlagsReader(def: FlagsDef) {
+/** Decodes flags from an already-read number, e.g. a value off a stack. */
+function genFlagsDecoder(def: FlagsDef) {
   const fields = Object.entries(def.bits)
-    .map(([name, bit]) => `    ${name}: !!(v & (1 << ${bit})),`)
+    .map(([name, bits]) =>
+      Array.isArray(bits) ?
+        `    ${name}: (v >> ${bits[0]}) & ${mask(bits[1])},`
+      : `    ${name}: !!(v & (1 << ${bits})),`,
+    )
     .join('\n')
   return `\
-export function read${def.name}(r: Reader): ${def.name} {
-  const v = r.${typeToFn(def.type)}()
+export function decode${def.name}(v: number): ${def.name} {
   return {
 ${fields}
   }
 }`
 }
 
+function genFlagsReader(def: FlagsDef) {
+  return `\
+export function read${def.name}(r: Reader): ${def.name} {
+  return decode${def.name}(r.${typeToFn(def.type)}())
+}`
+}
+
 function genFlagsWriter(def: FlagsDef) {
   const terms = Object.entries(def.bits)
-    .map(([name, bit]) => `    (d.${name} ? (1 << ${bit}) : 0)`)
+    .map(([name, bits]) =>
+      Array.isArray(bits) ?
+        `    ((d.${name} & ${mask(bits[1])}) << ${bits[0]})`
+      : `    (d.${name} ? (1 << ${bits}) : 0)`,
+    )
     .join(' |\n')
   return `\
 export function write${def.name}(d: ${def.name}): number {
@@ -187,6 +206,10 @@ export function write${def.name}(d: ${def.name}): number {
 ${terms}
   )
 }`
+}
+
+function mask(width: number) {
+  return `0x${((1 << width) - 1).toString(16)}`
 }
 
 // ---- Struct generation ------------------------------------------------------

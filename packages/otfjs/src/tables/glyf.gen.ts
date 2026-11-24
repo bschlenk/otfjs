@@ -12,8 +12,7 @@ export interface GlyphFlags {
   contoursOverlap: boolean
 }
 
-export function readGlyphFlags(r: Reader): GlyphFlags {
-  const v = r.u8()
+export function decodeGlyphFlags(v: number): GlyphFlags {
   return {
     onCurvePoint: !!(v & (1 << 0)),
     xShortVector: !!(v & (1 << 1)),
@@ -23,6 +22,10 @@ export function readGlyphFlags(r: Reader): GlyphFlags {
     yIsSameOrPositiveYShortVector: !!(v & (1 << 5)),
     contoursOverlap: !!(v & (1 << 6)),
   }
+}
+
+export function readGlyphFlags(r: Reader): GlyphFlags {
+  return decodeGlyphFlags(r.u8())
 }
 
 export function writeGlyphFlags(d: GlyphFlags): number {

@@ -35,11 +35,17 @@ export interface BytesDef {
   doc?: string
 }
 
+/**
+ * A flag is either a single bit, giving a boolean field, or a
+ * `[startBit, width]` range, giving a numeric field.
+ */
+export type FlagBits = number | [start: number, width: number]
+
 export interface FlagsDef {
   kind: 'flags'
   name: string
   type: PrimitiveType
-  bits: Record<string, number>
+  bits: Record<string, FlagBits>
 }
 
 export interface StructDef {
@@ -124,7 +130,7 @@ export const s = {
   flags(
     name: string,
     type: PrimitiveDef,
-    bits: Record<string, number>,
+    bits: Record<string, FlagBits>,
   ): FlagsDef {
     return { kind: 'flags', name, type: type.type, bits }
   },
