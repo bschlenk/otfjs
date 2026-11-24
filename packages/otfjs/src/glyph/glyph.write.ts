@@ -8,7 +8,7 @@ import { type GlyphFlags, glyphFlags } from '../glyph-utils.js'
 import type { LocaTable } from '../tables/loca.js'
 import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
 import { assert } from '../utils/utils.js'
-import { isEmptyGlyph } from './empty.js'
+import { isEmptyGlyph } from './glyph.utils.js'
 
 /**
  * Write the glyf table, also returning the loca offsets of each glyph.

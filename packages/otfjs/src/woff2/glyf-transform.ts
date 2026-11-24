@@ -1,7 +1,7 @@
 import * as vec from '@bschlenk/vec'
 import { Reader } from '@otfjs/buffer'
 
-import { emptyGlyph } from '../glyph/empty.js'
+import { emptyGlyph } from '../glyph/glyph.utils.js'
 import { readCompositeGlyphComponent } from '../glyph-utils.js'
 import type { Glyph, GlyphCompositeComponent, Point } from '../types.js'
 import { high12, highNibble, low12, lowNibble, readBit } from '../utils/bit.js'

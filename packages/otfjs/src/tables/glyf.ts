@@ -1,12 +1,12 @@
 // https://learn.microsoft.com/en-us/typography/opentype/spec/glyf
 
-import { writeGlyfTable } from '../glyph/write.js'
+import { writeGlyfTable } from '../glyph/glyph.write.js'
 import type { TableWriter } from '../table-writer.js'
 import type { Glyph } from '../types.js'
 
-export * from '../glyph/empty.js'
-export * from '../glyph/read.js'
-export * from '../glyph/write.js'
+export * from '../glyph/glyph.read.js'
+export * from '../glyph/glyph.utils.js'
+export * from '../glyph/glyph.write.js'
 
 /**
  * Every glyph in the font, in glyph id order, with composite glyphs left

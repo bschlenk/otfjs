@@ -16,7 +16,7 @@ import type {
   Point,
 } from '../types.js'
 import { assert, EMPTY_U8_ARRAY } from '../utils/utils.js'
-import { emptyGlyph } from './empty.js'
+import { emptyGlyph } from './glyph.utils.js'
 
 /**
  * This reader is a special case, where the `view` is expected to already

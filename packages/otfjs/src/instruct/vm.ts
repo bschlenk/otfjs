@@ -1,7 +1,7 @@
 import * as vec from '@bschlenk/vec'
 
 import type { FontHandle } from '../font-handle.js'
-import { emptyGlyph } from '../glyph/empty.js'
+import { emptyGlyph } from '../glyph/glyph.utils.js'
 import { CvtTableReader } from '../tables/cvt.js'
 import { FpgmTableReader } from '../tables/fpgm.js'
 import { HeadTableReader } from '../tables/head.js'
