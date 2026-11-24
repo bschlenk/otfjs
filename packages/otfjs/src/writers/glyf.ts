@@ -30,7 +30,6 @@ export function writeGlyfTable(glyphs: Glyph[], loca: number[]): Uint8Array {
 }
 
 function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
-  // empty glyphs take no space; see isEmptyGlyph
   if (isEmptyGlyph(glyph)) return
 
   writer.i16(glyph.endPtsOfContours.length)
