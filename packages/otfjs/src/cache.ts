@@ -3,9 +3,8 @@ export interface Cache<K, V> {
 }
 
 /**
- * Memoize `getter` per key. Null results aren't cached, since they mean
- * there was nothing to compute (e.g. a missing table) and are cheap to
- * recompute.
+ * Memoize `getter` per key. `undefined` means "not computed yet", so the
+ * getter must not return it; `null` results are cached like any other.
  */
 export function createCache<K, V>(getter: (key: K) => V): Cache<K, V> {
   const values = new Map<K, V>()
@@ -16,7 +15,7 @@ export function createCache<K, V>(getter: (key: K) => V): Cache<K, V> {
 
       if (value === undefined) {
         value = getter(key)
-        if (value !== null) values.set(key, value)
+        values.set(key, value)
       }
 
       return value

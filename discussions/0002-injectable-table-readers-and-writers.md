@@ -81,7 +81,7 @@ class FontHandle {
 
 There's no `writeTable` on the handle. It would only call `writer.write(data)` without changing the font, so it added nothing. Producing a modified font is a separate, higher-level step.
 
-The cache is keyed by **reader identity**, not by `reader.tag`. Keying by tag would let a custom reader for, say, `cmap` and the built-in `CmapTableReader` share a cache slot and hand back each other's results. A missing table (`null`) isn't cached: finding out a table is missing is a single object lookup, so caching it would only slow down the common case. Cross-table dependencies are expressed naturally: the reader calls `font.readTable(HheaTableReader)` internally, so only the tables actually needed are parsed.
+The cache is keyed by **reader identity**, not by `reader.tag`. Keying by tag would let a custom reader for, say, `cmap` and the built-in `CmapTableReader` share a cache slot and hand back each other's results. A missing table is cached as `null`. The cache treats only `undefined` as a miss, so a lookup is a single `Map.get` either way, with no separate `has` check. Cross-table dependencies are expressed naturally: the reader calls `font.readTable(HheaTableReader)` internally, so only the tables actually needed are parsed.
 
 ### String-based convenience on `Font`
 
