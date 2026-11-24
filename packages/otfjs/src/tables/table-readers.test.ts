@@ -54,6 +54,18 @@ describe('table readers', () => {
     expect(font.readTable(HeadTableReader).unitsPerEm).toBe(1000)
   })
 
+  it('reads head with any minorVersion or fontDirectionHint', () => {
+    const data = head(0)
+    const view = new DataView(data.buffer)
+    view.setUint16(2, 1) // minorVersion
+    view.setInt16(48, 0) // fontDirectionHint
+    const font = new FontHandle(buildFont({ tables: { head: data } }))
+
+    const table = font.readTable(HeadTableReader)
+    expect(table.minorVersion).toBe(1)
+    expect(table.fontDirectionHint).toBe(0)
+  })
+
   it('reads cvt as i16s and fpgm as raw bytes', () => {
     const font = new FontHandle(
       buildFont({
