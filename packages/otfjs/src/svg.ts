@@ -60,8 +60,23 @@ export function glyphToColorSvg(
     return { paths: [node('path', { d })], defs }
   }
 
-  const width = glyph.advanceWidth || glyph.xMax - glyph.xMin
-  const height = font.readTable(HeadTableReader).unitsPerEm
+  // A paint with no glyph above it to clip it fills everything (up to the
+  // COLR ClipBox, which isn't read yet). Approximate that with the glyph's
+  // em box, or with its bbox when it has no advance, like a combining mark.
+  const fillRect =
+    glyph.advanceWidth ?
+      {
+        x: 0,
+        y: 0,
+        width: glyph.advanceWidth,
+        height: font.readTable(HeadTableReader).unitsPerEm,
+      }
+    : {
+        x: glyph.xMin,
+        y: glyph.yMin,
+        width: glyph.xMax - glyph.xMin,
+        height: glyph.yMax - glyph.yMin,
+      }
 
   const palette = font.readTable(CpalTableReader).getPalette(paletteIdx)
   const stack: Node[] = [node('')]
@@ -85,10 +100,8 @@ export function glyphToColorSvg(
     latest = stack[stack.length - 1]
 
     if (el.type === 'path' && !el.props.d) {
-      // TODO: explain this
-      // make this a full size rect
       el.type = 'rect'
-      Object.assign(el.props, { x: 0, y: 0, width, height })
+      Object.assign(el.props, fillRect)
     }
 
     return el
