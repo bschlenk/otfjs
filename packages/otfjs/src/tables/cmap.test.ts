@@ -5,6 +5,7 @@ import { FontHandle } from '../font-handle.js'
 import {
   type CmapSubtable4,
   type CmapSubtable12,
+  type CmapSubtable14,
   type CmapTable,
   CmapTableReader,
   CmapTableWriter,
@@ -19,6 +20,20 @@ describe('cmap', () => {
       encodingRecords: [
         { platformId: 3, encodingId: 1, subtable: format4 },
         { platformId: 3, encodingId: 10, subtable: format12 },
+      ],
+    }
+
+    const data = CmapTableWriter.write(cmap)
+    const font = new FontHandle(buildFont({ tables: { [CmapTag]: data } }))
+    expect(font.readTable(CmapTableReader)).toEqual(cmap)
+  })
+
+  it('round-trips a format 14 subtable', () => {
+    const cmap: CmapTable = {
+      version: 0,
+      encodingRecords: [
+        { platformId: 3, encodingId: 1, subtable: format4 },
+        { platformId: 0, encodingId: 5, subtable: format14 },
       ],
     }
 
@@ -85,5 +100,23 @@ const format12: CmapSubtable12 = {
   groups: [
     { startCharCode: 0x41, endCharCode: 0x42, startGlyphId: 1 },
     { startCharCode: 0x1f600, endCharCode: 0x1f601, startGlyphId: 100 },
+  ],
+}
+
+// U+FE0E (text style) uses the default glyph for U+2600..U+2602; U+FE0F
+// (emoji style) has its own glyph for U+2600 and no default table.
+const format14: CmapSubtable14 = {
+  format: 14,
+  varSelectorRecords: [
+    {
+      varSelector: 0xfe0e,
+      defaultUVS: [{ startUnicodeValue: 0x2600, additionalCount: 2 }],
+      nonDefaultUVS: null,
+    },
+    {
+      varSelector: 0xfe0f,
+      defaultUVS: null,
+      nonDefaultUVS: [{ unicodeValue: 0x2600, glyphId: 42 }],
+    },
   ],
 }

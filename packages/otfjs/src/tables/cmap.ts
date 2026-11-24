@@ -16,7 +16,8 @@ interface EncodingRecord {
   subtable: CmapSubtable
 }
 
-export type CmapSubtable = CmapSubtable4 | CmapSubtable12 | CmapSubtableRaw
+export type CmapSubtable =
+  CmapSubtable4 | CmapSubtable12 | CmapSubtable14 | CmapSubtableRaw
 
 export interface CmapSubtable4 {
   format: 4
@@ -43,6 +44,40 @@ export interface SequentialMapGroup {
 }
 
 /**
+ * Unicode variation sequences: which glyph to use for a base character
+ * followed by a variation selector (e.g. U+FE0E to ask for text style).
+ */
+export interface CmapSubtable14 {
+  format: 14
+  varSelectorRecords: VariationSelectorRecord[]
+}
+
+export interface VariationSelectorRecord {
+  varSelector: number
+  /**
+   * Base characters whose sequence with `varSelector` uses the same glyph as
+   * the character alone. Null if the subtable has no such table.
+   */
+  defaultUVS: UnicodeRange[] | null
+  /**
+   * Base characters whose sequence with `varSelector` uses its own glyph.
+   * Null if the subtable has no such table.
+   */
+  nonDefaultUVS: UVSMapping[] | null
+}
+
+export interface UnicodeRange {
+  startUnicodeValue: number
+  /** How many code points follow `startUnicodeValue` in the range. */
+  additionalCount: number
+}
+
+export interface UVSMapping {
+  unicodeValue: number
+  glyphId: number
+}
+
+/**
  * A subtable in a format we don't parse yet, kept as its raw bytes so the
  * rest of the table stays readable and writes back unchanged.
  */
@@ -51,7 +86,7 @@ export interface CmapSubtableRaw {
   data: Uint8Array
 }
 
-type RawFormat = 0 | 2 | 6 | 8 | 10 | 13 | 14
+type RawFormat = 0 | 2 | 6 | 8 | 10 | 13
 
 export function readCmapTable(view: Reader): CmapTable {
   const version = view.u16()
@@ -136,6 +171,8 @@ function getSubtableSize(subtable: CmapSubtable): number {
       )
     case 12:
       return 16 + subtable.groups.length * 12
+    case 14:
+      return getSubtable14Size(subtable)
     default:
       return subtable.data.byteLength
   }
@@ -147,6 +184,8 @@ function writeSubtable(w: Writer, subtable: CmapSubtable): void {
       return writeSubtable4(w, subtable)
     case 12:
       return writeSubtable12(w, subtable)
+    case 14:
+      return writeSubtable14(w, subtable)
     default:
       w.buffer(subtable.data)
   }
@@ -186,6 +225,61 @@ function writeSubtable12(w: Writer, subtable: CmapSubtable12): void {
     w.u32(group.startCharCode)
     w.u32(group.endCharCode)
     w.u32(group.startGlyphId)
+  }
+}
+
+function getSubtable14Size(subtable: CmapSubtable14): number {
+  let size = 10 + subtable.varSelectorRecords.length * 11
+  for (const record of subtable.varSelectorRecords) {
+    if (record.defaultUVS) size += 4 + record.defaultUVS.length * 4
+    if (record.nonDefaultUVS) size += 4 + record.nonDefaultUVS.length * 5
+  }
+  return size
+}
+
+function writeSubtable14(w: Writer, subtable: CmapSubtable14): void {
+  const { varSelectorRecords } = subtable
+
+  w.u16(subtable.format)
+  w.u32(getSubtable14Size(subtable))
+  w.u32(varSelectorRecords.length)
+
+  // The UVS tables follow the records, with offsets from the subtable start.
+  let offset = 10 + varSelectorRecords.length * 11
+  for (const record of varSelectorRecords) {
+    w.u24(record.varSelector)
+
+    if (record.defaultUVS) {
+      w.u32(offset)
+      offset += 4 + record.defaultUVS.length * 4
+    } else {
+      w.u32(0)
+    }
+
+    if (record.nonDefaultUVS) {
+      w.u32(offset)
+      offset += 4 + record.nonDefaultUVS.length * 5
+    } else {
+      w.u32(0)
+    }
+  }
+
+  for (const { defaultUVS, nonDefaultUVS } of varSelectorRecords) {
+    if (defaultUVS) {
+      w.u32(defaultUVS.length)
+      for (const range of defaultUVS) {
+        w.u24(range.startUnicodeValue)
+        w.u8(range.additionalCount)
+      }
+    }
+
+    if (nonDefaultUVS) {
+      w.u32(nonDefaultUVS.length)
+      for (const mapping of nonDefaultUVS) {
+        w.u24(mapping.unicodeValue)
+        w.u16(mapping.glyphId)
+      }
+    }
   }
 }
 
@@ -236,9 +330,31 @@ function readCmapSubtable(view: Reader): CmapSubtable {
       return { format, language, groups }
     }
 
+    case 14: {
+      view.u32() // length
+      const numVarSelectorRecords = view.u32()
+      const varSelectorRecords = view.array(numVarSelectorRecords, () => {
+        const varSelector = view.u24()
+        const defaultUVSOffset = view.u32()
+        const nonDefaultUVSOffset = view.u32()
+
+        const defaultUVS =
+          defaultUVSOffset ?
+            readUnicodeRanges(view.subtable(defaultUVSOffset))
+          : null
+        const nonDefaultUVS =
+          nonDefaultUVSOffset ?
+            readUVSMappings(view.subtable(nonDefaultUVSOffset))
+          : null
+
+        return { varSelector, defaultUVS, nonDefaultUVS }
+      })
+      return { format, varSelectorRecords }
+    }
+
     // Not parsed yet: 0 (byte encoding), 2 (high-byte mapping), 6 (trimmed
     // table), 8 (mixed 16/32-bit), 10 (trimmed array), 13 (many-to-one
-    // ranges), 14 (variation sequences).
+    // ranges).
     case 0:
     case 2:
     case 6: {
@@ -254,14 +370,25 @@ function readCmapSubtable(view: Reader): CmapSubtable {
       return { format, data: view.subtable(0, length).data }
     }
 
-    case 14: {
-      const length = view.u32()
-      return { format, data: view.subtable(0, length).data }
-    }
-
     default:
       throw new Error(`unknown cmap subtable format ${format}`)
   }
+}
+
+function readUnicodeRanges(view: Reader): UnicodeRange[] {
+  const count = view.u32()
+  return view.array(count, () => ({
+    startUnicodeValue: view.u24(),
+    additionalCount: view.u8(),
+  }))
+}
+
+function readUVSMappings(view: Reader): UVSMapping[] {
+  const count = view.u32()
+  return view.array(count, () => ({
+    unicodeValue: view.u24(),
+    glyphId: view.u16(),
+  }))
 }
 
 function lookupSubtable4(s: CmapSubtable4, codePoint: number): number {
