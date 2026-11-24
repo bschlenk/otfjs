@@ -61,7 +61,7 @@ The generated tables (`head`, `hhea`, `maxp`, `OS/2`, `post`, `MATH`) define the
 
 The main `otfjs` entry doesn't re-export tables; they're imported from `otfjs/tables/<name>`. `Font` already gives string-based access to every table, so the main entry stays focused on fonts and free functions.
 
-Modules that are `export *`'d, from the main entry or as a table entry point, contain only public API. Internal helpers live in separate modules (`tables/common.ts`, `tables/header.ts`, `tables/default-readers.ts`), which aren't listed in `package.json` `exports`, so consumers can't import them.
+Modules that are `export *`'d, from the main entry or as a table entry point, contain only public API. `package.json` exposes `src/tables/` with a single `./tables/*` pattern, so every module in that directory is public. Internal modules live elsewhere (`header.ts`, `default-readers.ts`, `utils/table-data.ts`), and `null` patterns exclude the generated `*.gen` files, the `schema/` sources and compiled tests.
 
 ### FontHandle API
 
@@ -92,7 +92,7 @@ class Font extends FontHandle {
 }
 ```
 
-`getTable(tag)` is a convenience for REPLs, devtools, and the UI, where tree-shaking doesn't matter. It lives on `Font`, not `FontHandle`: putting it on the handle would require the handle to import every reader again, which is exactly the problem this discussion solves. `Font` looks the tag up in `tables/default-readers.ts` (tag → built-in reader) and calls `readTable`, so it shares the cache with the typed path. `Font` is already the "batteries included" class — it imports every free function — so pulling in every reader there is consistent.
+`getTable(tag)` is a convenience for REPLs, devtools, and the UI, where tree-shaking doesn't matter. It lives on `Font`, not `FontHandle`: putting it on the handle would require the handle to import every reader again, which is exactly the problem this discussion solves. `Font` looks the tag up in `default-readers.ts` (tag → built-in reader) and calls `readTable`, so it shares the cache with the typed path. `Font` is already the "batteries included" class — it imports every free function — so pulling in every reader there is consistent.
 
 ### Free functions
 
@@ -120,11 +120,11 @@ If tag discoverability becomes a real need, a `tables/tags.ts` module that re-ex
 
 ## `TableMap` type
 
-Kept, as the return type of `Font.getTable(tag)`, and derived from the reader registry in `tables/default-readers.ts` rather than maintained by hand. The typed path (`readTable(reader)`) infers its return type from the reader and doesn't need it, but dropping it would make `getTable` return `unknown` and break every untyped-but-convenient call site (`font.getTable('head').unitsPerEm`). It's types-only, so it has no runtime or bundle cost.
+Kept, as the return type of `Font.getTable(tag)`, and derived from the reader registry in `default-readers.ts` rather than maintained by hand. The typed path (`readTable(reader)`) infers its return type from the reader and doesn't need it, but dropping it would make `getTable` return `unknown` and break every untyped-but-convenient call site (`font.getTable('head').unitsPerEm`). It's types-only, so it has no runtime or bundle cost.
 
 ## Current state
 
-Implemented. `FontHandle` imports no table modules; every table module exports `XTag`, `XTableReader`, and `XTableWriter` where a writer exists; `Font.getTable` goes through `tables/default-readers.ts`.
+Implemented. `FontHandle` imports no table modules; every table module exports `XTag`, `XTableReader`, and `XTableWriter` where a writer exists; `Font.getTable` goes through `default-readers.ts`.
 
 `src/tree-shaking.test.ts` bundles small entry points with esbuild and asserts which readers and writers end up in the output. Bundling only `getGlyphIndex` + `FontHandle` (minified, dependencies external) went from 23.0 KB to 4.2 KB.
 
