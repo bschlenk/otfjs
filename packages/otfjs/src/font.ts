@@ -11,6 +11,7 @@ import { getGlyph } from './fns/get-glyph.js'
 import { getGlyphByCodePoint } from './fns/get-glyph-by-code-point.js'
 import { getGlyphIndex } from './fns/get-glyph-index.js'
 import { getName } from './fns/get-name.js'
+import { getSampleText } from './fns/get-sample-text.js'
 import { glyphs } from './fns/glyphs.js'
 import { validate } from './fns/validate.js'
 import { FontHandle } from './font-handle.js'
@@ -80,6 +81,10 @@ export class Font extends FontHandle {
 
   public getGlyphIndex(codePoint: number): number {
     return getGlyphIndex(this, codePoint)
+  }
+
+  public getSampleText(): string {
+    return getSampleText(this)
   }
 
   public getGlyph(id: number): GlyphEnriched {
