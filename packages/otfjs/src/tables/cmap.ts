@@ -16,9 +16,9 @@ interface EncodingRecord {
   subtable: CmapSubtable
 }
 
-type CmapSubtable = CmapSubtable4
+export type CmapSubtable = CmapSubtable4 | CmapSubtableRaw
 
-interface CmapSubtable4 {
+export interface CmapSubtable4 {
   format: 4
   language: number
   endCodes: number[]
@@ -27,6 +27,17 @@ interface CmapSubtable4 {
   idRangeOffsets: number[]
   glyphIdArray: number[]
 }
+
+/**
+ * A subtable in a format we don't parse yet, kept as its raw bytes so the
+ * rest of the table stays readable and writes back unchanged.
+ */
+export interface CmapSubtableRaw {
+  format: RawFormat
+  data: Uint8Array
+}
+
+type RawFormat = 0 | 2 | 6 | 8 | 10 | 12 | 13 | 14
 
 export function readCmapTable(view: Reader): CmapTable {
   const version = view.u16()
@@ -86,11 +97,18 @@ export const CmapTableWriter: TableWriter<CmapTable> = {
 }
 
 function getSubtableSize(subtable: CmapSubtable): number {
+  if (isRaw(subtable)) return subtable.data.byteLength
+
   const segs = subtable.endCodes.length
   return 16 + segs * 8 + subtable.glyphIdArray.length * 2
 }
 
 function writeSubtable(w: Writer, subtable: CmapSubtable): void {
+  if (isRaw(subtable)) {
+    w.buffer(subtable.data)
+    return
+  }
+
   const segs = subtable.endCodes.length
   const segCountX2 = segs * 2
   const searchRange = 2 * 2 ** Math.floor(Math.log2(segs))
@@ -148,17 +166,35 @@ function readCmapSubtable(view: Reader): CmapSubtable {
       }
     }
 
-    case 0: // Byte encoding table
-    case 2: // High-byte mapping through table
-    case 6: // Trimmed table mapping
-    case 8: // Mixed 16-bit and 32-bit coverage
-    case 10: // Trimmed array
-    case 12: // Segmented coverage
-    case 13: // Many-to-one range mappings
-    case 14: // Unicode Variation Sequences
-      throw new Error(`cmap subtable format ${format} not implemented`)
+    // Not parsed yet: 0 (byte encoding), 2 (high-byte mapping), 6 (trimmed
+    // table), 8 (mixed 16/32-bit), 10 (trimmed array), 12 (segmented
+    // coverage), 13 (many-to-one ranges), 14 (variation sequences).
+    case 0:
+    case 2:
+    case 6: {
+      const length = view.u16()
+      return { format, data: view.subtable(0, length).data }
+    }
+
+    case 8:
+    case 10:
+    case 12:
+    case 13: {
+      view.skip(2) // reserved
+      const length = view.u32()
+      return { format, data: view.subtable(0, length).data }
+    }
+
+    case 14: {
+      const length = view.u32()
+      return { format, data: view.subtable(0, length).data }
+    }
 
     default:
       throw new Error(`unknown cmap subtable format ${format}`)
   }
+}
+
+function isRaw(subtable: CmapSubtable): subtable is CmapSubtableRaw {
+  return 'data' in subtable
 }

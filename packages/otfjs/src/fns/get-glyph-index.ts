@@ -18,6 +18,9 @@ export function getGlyphIndex(font: FontHandle, codePoint: number): number {
   }
 
   const s = record.subtable
+  // Format 12 subtables (encoding 10) aren't parsed yet.
+  if (s.format !== 4) return 0
+
   let i = 0
   while (s.endCodes[i] < codePoint) ++i
 

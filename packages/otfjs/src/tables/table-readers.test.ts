@@ -95,6 +95,42 @@ describe('table readers', () => {
     const font = new FontHandle(buildFont({ tables: { [CmapTag]: data } }))
     expect(font.readTable(CmapTableReader)).toEqual(cmap)
   })
+
+  it('keeps cmap subtables in unparsed formats as raw bytes', () => {
+    // A format 6 (trimmed table) subtable mapping 'A' to glyph 1.
+    const format6 = bytes(12, (v) => {
+      v.setUint16(0, 6) // format
+      v.setUint16(2, 12) // length
+      v.setUint16(4, 0) // language
+      v.setUint16(6, 0x41) // firstCode
+      v.setUint16(8, 1) // entryCount
+      v.setUint16(10, 1) // glyphIdArray[0]
+    })
+    // A format 13 (many-to-one) subtable with no groups.
+    const format13 = bytes(16, (v) => {
+      v.setUint16(0, 13) // format
+      v.setUint32(4, 16) // length
+    })
+    const cmap: CmapTable = {
+      version: 0,
+      encodingRecords: [
+        {
+          platformId: 1,
+          encodingId: 0,
+          subtable: { format: 6, data: format6 },
+        },
+        {
+          platformId: 0,
+          encodingId: 6,
+          subtable: { format: 13, data: format13 },
+        },
+      ],
+    }
+
+    const data = CmapTableWriter.write(cmap)
+    const font = new FontHandle(buildFont({ tables: { [CmapTag]: data } }))
+    expect(font.readTable(CmapTableReader)).toEqual(cmap)
+  })
 })
 
 function bytes(size: number, fill: (view: DataView) => void) {
