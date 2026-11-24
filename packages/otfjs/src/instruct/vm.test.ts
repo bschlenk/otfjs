@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Font } from '../font.js'
+import type { FontHandle } from '../font-handle.js'
+import type { TableReader } from '../table-reader.js'
 import { Opcode } from './opcode.js'
 import { VirtualMachine } from './vm.js'
 
@@ -16,7 +17,7 @@ function makeFont(
     maxFunctionDefs?: number
     cvt?: number[]
   } = {},
-): Font {
+): FontHandle {
   const {
     maxStorage = 64,
     maxStackElements = 128,
@@ -25,35 +26,39 @@ function makeFont(
     cvt = [],
   } = opts
 
+  const tables: Record<string, unknown> = {
+    maxp: {
+      version: 0x00010000 as const,
+      numGlyphs: 1,
+      maxPoints: 64,
+      maxContours: 8,
+      maxCompositePoints: 0,
+      maxCompositeContours: 0,
+      maxZones: 2,
+      maxTwilightPoints,
+      maxStorage,
+      maxFunctionDefs,
+      maxInstructionDefs: 0,
+      maxStackElements,
+      maxSizeOfInstructions: 256,
+      maxComponentElements: 0,
+      maxComponentDepth: 0,
+    },
+    head: { unitsPerEm: 1000 },
+    'cvt ': cvt.length ? cvt : null,
+  }
+
+  const readTableOrNull = (reader: TableReader<unknown>) =>
+    tables[reader.tag] ?? null
+
   return {
-    getTable(tag: string) {
-      if (tag === 'maxp') {
-        return {
-          version: 0x00010000 as const,
-          numGlyphs: 1,
-          maxPoints: 64,
-          maxContours: 8,
-          maxCompositePoints: 0,
-          maxCompositeContours: 0,
-          maxZones: 2,
-          maxTwilightPoints,
-          maxStorage,
-          maxFunctionDefs,
-          maxInstructionDefs: 0,
-          maxStackElements,
-          maxSizeOfInstructions: 256,
-          maxComponentElements: 0,
-          maxComponentDepth: 0,
-        }
-      }
-      throw new Error(`Table ${tag} not found`)
+    readTableOrNull,
+    readTable(reader: TableReader<unknown>) {
+      const table = readTableOrNull(reader)
+      if (table === null) throw new Error(`Table ${reader.tag} not found`)
+      return table
     },
-    getTableOrNull(tag: string) {
-      if (tag === 'cvt ') return cvt.length ? cvt : null
-      return null
-    },
-    unitsPerEm: 1000,
-  } as unknown as Font
+  } as unknown as FontHandle
 }
 
 function makeVM(opts: Parameters<typeof makeFont>[0] = {}): VirtualMachine {

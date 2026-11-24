@@ -1,5 +1,10 @@
 import { Reader, Writer } from '@otfjs/buffer'
 
+import type { TableReader } from '../table-reader.js'
+import type { TableWriter } from '../table-writer.js'
+import { HheaTableReader } from './hhea.js'
+import { MaxpTableReader } from './maxp.js'
+
 export interface LongHorMetric {
   advanceWidth: number
   leftSideBearing: number
@@ -40,4 +45,20 @@ export function writeHmtxTable(table: HmtxTable): Uint8Array {
   w.array('i16', table.leftSideBearings)
 
   return w.toBuffer()
+}
+
+export const HmtxTag = 'hmtx'
+
+export const HmtxTableReader: TableReader<HmtxTable> = {
+  tag: HmtxTag,
+  read(view, font) {
+    const { numberOfHMetrics } = font.readTable(HheaTableReader)
+    const { numGlyphs } = font.readTable(MaxpTableReader)
+    return readHmtxTable(view, numberOfHMetrics, numGlyphs)
+  },
+}
+
+export const HmtxTableWriter: TableWriter<HmtxTable> = {
+  tag: HmtxTag,
+  write: writeHmtxTable,
 }

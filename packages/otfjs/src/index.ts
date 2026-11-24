@@ -1,23 +1,17 @@
+// Only `export *` from modules whose exports are all public API. Tables
+// aren't re-exported here: import them from `otfjs/tables/<name>`.
 export * from './canvas.js'
+export type { TableMap } from './default-readers.js'
 export * from './enums.js'
-export { NotAFontError } from './errors.js'
+export * from './errors.js'
 export * from './fns/index.js'
 export * from './font.js'
-export { FontHandle, type TableMap } from './font-handle.js'
+export * from './font-handle.js'
 export { disassemble } from './instruct/disassemble.js'
 export { VirtualMachine } from './instruct/vm.js'
 export * from './svg.js'
-export type { CmapTable } from './tables/cmap.js'
-export type { ColrTable } from './tables/colr.js'
-export {
-  type ColorLayer,
-  type ColorLayerBase,
-  type ColorRecordPropsMap,
-  ColorRecordType,
-  type ColorStop,
-  CompositeMode,
-} from './tables/colr.js'
-export type { CpalTable } from './tables/cpal.js'
+export type * from './table-reader.js'
+export type * from './table-writer.js'
 export type * from './types.js'
 export { isWoff2 } from './woff2/utils.js'
 export { computeChecksum } from '@otfjs/buffer'

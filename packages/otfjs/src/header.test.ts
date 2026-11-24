@@ -1,7 +1,7 @@
 import { Reader } from '@otfjs/buffer'
 import { describe, expect, it } from 'vitest'
 
-import { NotAFontError } from '../errors.js'
+import { NotAFontError } from './errors.js'
 import { readHeader } from './header.js'
 
 describe('readHeader', () => {

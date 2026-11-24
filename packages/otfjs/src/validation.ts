@@ -1,7 +1,7 @@
 import { asDataView, asUint8Array, computeChecksum } from '@otfjs/buffer'
 
 import { SfntVersion } from './enums.js'
-import type { Header, TableRecord } from './tables/header.js'
+import type { Header, TableRecord } from './header.js'
 import { getAlignPadding, toHex } from './utils/utils.js'
 
 export function validateHeader(header: Header) {

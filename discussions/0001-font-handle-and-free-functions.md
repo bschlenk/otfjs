@@ -38,6 +38,6 @@ src/
 - **Honesty** — `Font extends FontHandle` is an "is-a" relationship that holds: a `Font` is strictly a superset of a `FontHandle`. "Has-a" would imply independent lifecycles, which isn't the case here.
 - **No redundant naming** — `FontHandle` is a concrete class, not an interface, so no `IFontHandle` gymnastics needed.
 
-## Current state (as of 0001)
+## Current state
 
-The handle logic is already implicit inside `Font`. `getGlyphIndex` has been extracted as a free function but is currently in `tables/cmap.ts` and typed against `CmapTable` rather than `FontHandle`. The full split is planned as a separate branch after the table writers are complete.
+Implemented. `FontHandle` lives in `font-handle.ts`, `Font` in `font.ts`, and the free functions in `fns/`. The follow-up problem of `FontHandle` statically importing every table reader is addressed in 0002.

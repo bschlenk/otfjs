@@ -114,6 +114,12 @@ export function isEmptyGlyph(glyph: Glyph): boolean {
   )
 }
 
+/**
+ * There's no glyf table reader: read glyphs one at a time with
+ * `getGlyph`, which uses `FontHandle.getTableView(GlyfTag)`.
+ */
+export const GlyfTag = 'glyf'
+
 function readFlags(count: number, view: Reader) {
   const flags: GlyphFlags[] = []
   while (flags.length < count) {

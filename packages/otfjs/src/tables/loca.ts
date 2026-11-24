@@ -2,6 +2,10 @@
 
 import { Reader } from '@otfjs/buffer'
 
+import type { TableReader } from '../table-reader.js'
+import { HeadTableReader } from './head.js'
+import { MaxpTableReader } from './maxp.js'
+
 export type LocaTable = number[]
 
 export function readLocaTable(
@@ -16,4 +20,15 @@ export function readLocaTable(
 
   // long version
   return view.array(numGlyphs + 1, () => view.u32())
+}
+
+export const LocaTag = 'loca'
+
+export const LocaTableReader: TableReader<LocaTable> = {
+  tag: LocaTag,
+  read(view, font) {
+    const { indexToLocFormat } = font.readTable(HeadTableReader)
+    const { numGlyphs } = font.readTable(MaxpTableReader)
+    return readLocaTable(view, indexToLocFormat, numGlyphs)
+  },
 }

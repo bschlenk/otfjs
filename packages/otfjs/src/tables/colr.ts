@@ -3,6 +3,7 @@ import * as vec from '@bschlenk/vec'
 import { Reader } from '@otfjs/buffer'
 
 import type { Extend } from '../enums.js'
+import type { TableReader } from '../table-reader.js'
 import { binarySearch } from '../utils/binary-search.js'
 
 export enum CompositeMode {
@@ -397,6 +398,13 @@ export class ColrTable {
 
 export function readColrTable(view: Reader) {
   return new ColrTable(view)
+}
+
+export const ColrTag = 'COLR'
+
+export const ColrTableReader: TableReader<ColrTable> = {
+  tag: ColrTag,
+  read: readColrTable,
 }
 
 function layer<T extends ColorRecordType>(

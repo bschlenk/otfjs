@@ -1,15 +1,19 @@
-export interface Cache<T> {
-  get(key: string): T
+export interface Cache<K, V> {
+  get(key: K): V
 }
 
-export function createCache<T>(getter: (key: string) => T) {
-  const values = new Map<string, T>()
+/**
+ * Memoize `getter` per key. `undefined` means "not computed yet", so the
+ * getter must not return it; `null` results are cached like any other.
+ */
+export function createCache<K, V>(getter: (key: K) => V): Cache<K, V> {
+  const values = new Map<K, V>()
 
   return {
-    get(key: string): T {
+    get(key: K): V {
       let value = values.get(key)
 
-      if (!value) {
+      if (value === undefined) {
         value = getter(key)
         values.set(key, value)
       }
