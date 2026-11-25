@@ -59,9 +59,14 @@ export function getSampleText(font: FontHandle): string {
 }
 
 interface Script {
-  /** ISO 15924 code. */
-  code: string
-  /** Code point ranges, inclusive. */
+  /** ISO 15924 codes that pick this script in `dlng`, like `Cyrl`. */
+  codes: string[]
+  /** Language codes that pick this script in `dlng`, like `ru`. */
+  languages: string[]
+  /**
+   * Code point ranges, inclusive, for grouping a font's letters. Empty for
+   * scripts only picked through `dlng`.
+   */
   ranges: [number, number][]
   /** Samples to use, best first; the first the font fully covers wins. */
   samples: string[]
@@ -69,26 +74,19 @@ interface Script {
 
 /** The sample for a ScriptLangTag from `dlng`, like `ko`, `zh-Hant`, `Cyrl`. */
 function languageSample(tag: string): string | undefined {
-  const [language, ...subtags] = tag.split(/[-_]/)
-  const scriptCode = subtags.find((s) => s.length === 4)
-  const region = subtags.find((s) => s.length === 2)?.toUpperCase()
+  const [language, ...subtags] = tag.toLowerCase().split(/[-_]/)
+  // A bare script code like `Latn`, or one in a subtag like `zh-Hant`.
+  const scriptCode =
+    language.length === 4 ? language : subtags.find((s) => s.length === 4)
+  const region = subtags.find((s) => s.length === 2)
 
-  // A bare script code, like `Latn`.
-  if (language.length === 4) return scriptSample(language)
-  if (scriptCode) return scriptSample(scriptCode)
+  const script =
+    scriptCode ? SCRIPTS.find((s) => s.codes.includes(scriptCode))
+    : language === 'zh' && region && HANT_REGIONS.has(region) ? HANT
+      // Languages not listed are assumed to be written in Latin.
+    : (SCRIPTS.find((s) => s.languages.includes(language)) ?? LATIN)
 
-  if (language === 'zh') {
-    return region && HANT_REGIONS.has(region) ? '漢' : '汉'
-  }
-
-  // Languages not listed are assumed to be written in Latin.
-  const code = LANGUAGE_SCRIPTS[language.toLowerCase()] ?? 'Latn'
-  return scriptSample(code)
-}
-
-function scriptSample(code: string): string | undefined {
-  const normalized = code[0].toUpperCase() + code.slice(1).toLowerCase()
-  return SCRIPT_ALIASES[normalized] ?? scriptsByCode.get(normalized)?.samples[0]
+  return script?.samples[0]
 }
 
 /**
@@ -234,46 +232,65 @@ function glyphHasInk(font: FontHandle, glyphId: number): boolean {
   return xMax > xMin || yMax > yMin
 }
 
+const LATIN: Script = {
+  codes: ['latn'],
+  languages: [],
+  ranges: [
+    [0x41, 0x5a],
+    [0x61, 0x7a],
+    [0xc0, 0x24f],
+  ],
+  samples: ['Aa'],
+}
+
+/** Traditional Chinese, only picked through `dlng`; Han letters are `Hani`. */
+const HANT: Script = {
+  codes: ['hant'],
+  languages: ['yue'],
+  ranges: [],
+  samples: ['漢'],
+}
+
+/** Scripts with hand-picked samples. Codes and languages are lowercase. */
 const SCRIPTS: Script[] = [
-  {
-    code: 'Latn',
-    ranges: [
-      [0x41, 0x5a],
-      [0x61, 0x7a],
-      [0xc0, 0x24f],
-    ],
-    samples: ['Aa'],
-  },
-  { code: 'Grek', ranges: [[0x370, 0x3ff]], samples: ['Ωω'] },
-  { code: 'Cyrl', ranges: [[0x400, 0x52f]], samples: ['Бб'] },
-  { code: 'Armn', ranges: [[0x531, 0x58f]], samples: ['Աա'] },
-  { code: 'Hebr', ranges: [[0x591, 0x5ff]], samples: ['א'] },
-  {
-    code: 'Arab',
-    ranges: [
+  LATIN,
+  defineScript('grek', ['el'], [[0x370, 0x3ff]], ['Ωω']),
+  defineScript(
+    'cyrl',
+    ['be', 'bg', 'mk', 'mn', 'ru', 'sr', 'uk'],
+    [[0x400, 0x52f]],
+    ['Бб'],
+  ),
+  defineScript('armn', ['hy'], [[0x531, 0x58f]], ['Աա']),
+  defineScript('hebr', ['he', 'yi'], [[0x591, 0x5ff]], ['א']),
+  defineScript(
+    'arab',
+    ['ar', 'fa', 'ps', 'ur'],
+    [
       [0x600, 0x6ff],
       [0x750, 0x77f],
       [0x8a0, 0x8ff],
     ],
-    samples: ['ع'],
-  },
-  { code: 'Deva', ranges: [[0x900, 0x97f]], samples: ['क'] },
-  { code: 'Beng', ranges: [[0x980, 0x9ff]], samples: ['ক'] },
-  { code: 'Guru', ranges: [[0xa00, 0xa7f]], samples: ['ਕ'] },
-  { code: 'Gujr', ranges: [[0xa80, 0xaff]], samples: ['ક'] },
-  { code: 'Orya', ranges: [[0xb00, 0xb7f]], samples: ['କ'] },
-  { code: 'Taml', ranges: [[0xb80, 0xbff]], samples: ['க'] },
-  { code: 'Telu', ranges: [[0xc00, 0xc7f]], samples: ['క'] },
-  { code: 'Knda', ranges: [[0xc80, 0xcff]], samples: ['ಕ'] },
-  { code: 'Mlym', ranges: [[0xd00, 0xd7f]], samples: ['ക'] },
-  { code: 'Sinh', ranges: [[0xd80, 0xdff]], samples: ['ක'] },
-  { code: 'Thai', ranges: [[0xe01, 0xe7f]], samples: ['ก'] },
-  { code: 'Laoo', ranges: [[0xe81, 0xeff]], samples: ['ກ'] },
-  { code: 'Tibt', ranges: [[0xf00, 0xfff]], samples: ['ཀ'] },
-  { code: 'Mymr', ranges: [[0x1000, 0x109f]], samples: ['က'] },
-  { code: 'Geor', ranges: [[0x10a0, 0x10ff]], samples: ['Ⴀა', 'ა'] },
+    ['ع'],
+  ),
+  defineScript('deva', ['hi', 'mr', 'ne', 'sa'], [[0x900, 0x97f]], ['क']),
+  defineScript('beng', ['bn'], [[0x980, 0x9ff]], ['ক']),
+  defineScript('guru', ['pa'], [[0xa00, 0xa7f]], ['ਕ']),
+  defineScript('gujr', ['gu'], [[0xa80, 0xaff]], ['ક']),
+  defineScript('orya', ['or'], [[0xb00, 0xb7f]], ['କ']),
+  defineScript('taml', ['ta'], [[0xb80, 0xbff]], ['க']),
+  defineScript('telu', ['te'], [[0xc00, 0xc7f]], ['క']),
+  defineScript('knda', ['kn'], [[0xc80, 0xcff]], ['ಕ']),
+  defineScript('mlym', ['ml'], [[0xd00, 0xd7f]], ['ക']),
+  defineScript('sinh', ['si'], [[0xd80, 0xdff]], ['ක']),
+  defineScript('thai', ['th'], [[0xe01, 0xe7f]], ['ก']),
+  defineScript('laoo', ['lo'], [[0xe81, 0xeff]], ['ກ']),
+  defineScript('tibt', ['bo'], [[0xf00, 0xfff]], ['ཀ']),
+  defineScript('mymr', ['my'], [[0x1000, 0x109f]], ['က']),
+  defineScript('geor', ['ka'], [[0x10a0, 0x10ff]], ['Ⴀა', 'ა']),
   {
-    code: 'Hang',
+    codes: ['hang', 'kore'],
+    languages: ['ko'],
     ranges: [
       [0xac00, 0xd7a3],
       [0x1100, 0x11ff],
@@ -281,20 +298,28 @@ const SCRIPTS: Script[] = [
     ],
     samples: ['동'],
   },
-  { code: 'Ethi', ranges: [[0x1200, 0x139f]], samples: ['አ'] },
-  { code: 'Cher', ranges: [[0x13a0, 0x13ff]], samples: ['Ꮳꮳ', 'Ꮳ'] },
-  { code: 'Khmr', ranges: [[0x1780, 0x17ff]], samples: ['ក'] },
-  { code: 'Mong', ranges: [[0x1800, 0x18af]], samples: ['ᠮ'] },
-  { code: 'Kana', ranges: [[0x3041, 0x30ff]], samples: ['あ'] },
+  defineScript('ethi', ['am', 'ti'], [[0x1200, 0x139f]], ['አ']),
+  defineScript('cher', ['chr'], [[0x13a0, 0x13ff]], ['Ꮳꮳ', 'Ꮳ']),
+  defineScript('khmr', ['km'], [[0x1780, 0x17ff]], ['ក']),
+  defineScript('mong', [], [[0x1800, 0x18af]], ['ᠮ']),
   {
-    code: 'Hani',
+    codes: ['kana', 'hira', 'jpan'],
+    languages: ['ja'],
+    ranges: [[0x3041, 0x30ff]],
+    samples: ['あ'],
+  },
+  {
+    // Simplified Chinese is the default for Han letters.
+    codes: ['hani', 'hans'],
+    languages: ['zh'],
     ranges: [
       [0x4e00, 0x9fff],
       [0x3400, 0x4dbf],
     ],
     samples: ['汉', '漢'],
   },
-  { code: 'Phag', ranges: [[0xa840, 0xa877]], samples: ['ꡀ'] },
+  HANT,
+  defineScript('phag', [], [[0xa840, 0xa877]], ['ꡀ']),
 ]
 
 const LETTER = /\p{L}/u
@@ -303,60 +328,15 @@ const UPPERCASE = /\p{Lu}/u
 const PRIVATE_USE = /\p{Co}/u
 const SYMBOL = /\p{S}/u
 
-const scriptsByCode = new Map(SCRIPTS.map((s) => [s.code, s]))
-
-/** Script codes whose sample isn't their entry's first one. */
-const SCRIPT_ALIASES: Record<string, string> = {
-  Hans: '汉',
-  Hant: '漢',
-  Hira: 'あ',
-  Jpan: 'あ',
-  Kore: '동',
-}
-
 /** Regions that write Chinese with Traditional characters. */
-const HANT_REGIONS = new Set(['TW', 'HK', 'MO'])
+const HANT_REGIONS = new Set(['tw', 'hk', 'mo'])
 
-/** Script codes for languages written in a non-Latin script. */
-const LANGUAGE_SCRIPTS: Record<string, string> = {
-  am: 'Ethi',
-  ar: 'Arab',
-  be: 'Cyrl',
-  bg: 'Cyrl',
-  bn: 'Beng',
-  bo: 'Tibt',
-  chr: 'Cher',
-  el: 'Grek',
-  fa: 'Arab',
-  gu: 'Gujr',
-  he: 'Hebr',
-  hi: 'Deva',
-  hy: 'Armn',
-  ja: 'Jpan',
-  ka: 'Geor',
-  km: 'Khmr',
-  kn: 'Knda',
-  ko: 'Kore',
-  lo: 'Laoo',
-  mk: 'Cyrl',
-  ml: 'Mlym',
-  mn: 'Cyrl',
-  mr: 'Deva',
-  my: 'Mymr',
-  ne: 'Deva',
-  or: 'Orya',
-  pa: 'Guru',
-  ps: 'Arab',
-  ru: 'Cyrl',
-  sa: 'Deva',
-  si: 'Sinh',
-  sr: 'Cyrl',
-  ta: 'Taml',
-  te: 'Telu',
-  th: 'Thai',
-  ti: 'Ethi',
-  uk: 'Cyrl',
-  ur: 'Arab',
-  yi: 'Hebr',
-  yue: 'Hant',
+/** A script picked by one code, for the table above. */
+function defineScript(
+  code: string,
+  languages: string[],
+  ranges: [number, number][],
+  samples: string[],
+): Script {
+  return { codes: [code], languages, ranges, samples }
 }
