@@ -437,11 +437,14 @@ export class ColrTable {
       }
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-28-to-31-paintskew-paintvarskew-paintskewaroundcenter-paintvarskewaroundcenter
+      // Angles are counter-clockwise half turns. A positive x angle tilts the
+      // y axis counter-clockwise, which is a negative CSS-style skew, so it's
+      // negated, as fontTools does in `PaintSkew.getTransform`.
       case 28: {
         const paintOffset = view.u24()
         const xSkewAngle = view.f2dot14()
         const ySkewAngle = view.f2dot14()
-        const matrix = skew(xSkewAngle, ySkewAngle)
+        const matrix = mat.skew(-xSkewAngle * Math.PI, ySkewAngle * Math.PI)
 
         const children = this.visitLayer(view.subtable(paintOffset))
 
@@ -454,10 +457,11 @@ export class ColrTable {
         const ySkewAngle = view.f2dot14()
         const centerX = view.i16()
         const centerY = view.i16()
-        const matrix = mat.mult(
-          mat.translate(centerX, centerY),
-          skew(xSkewAngle, ySkewAngle),
-          mat.translate(-centerX, -centerY),
+        const matrix = mat.skewAt(
+          -xSkewAngle * Math.PI,
+          ySkewAngle * Math.PI,
+          centerX,
+          centerY,
         )
 
         const children = this.visitLayer(view.subtable(paintOffset))
@@ -500,17 +504,6 @@ function layer<T extends ColorRecordType>(
   children: ColorLayer[] = [],
 ) {
   return { format, props, children }
-}
-
-/**
- * A skew by angles in half turns (1.0 is 180°), both counter-clockwise: x
- * tilts the y axis, y tilts the x axis. fontTools negates the x angle the
- * same way (`PaintSkew.getTransform`).
- */
-function skew(xSkewAngle: number, ySkewAngle: number): mat.Matrix {
-  const x = Math.tan(-xSkewAngle * Math.PI)
-  const y = Math.tan(ySkewAngle * Math.PI)
-  return mat.mat(1, y, x, 1, 0, 0)
 }
 
 function readAffine2x3(view: Reader) {
