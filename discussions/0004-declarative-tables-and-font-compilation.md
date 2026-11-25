@@ -30,7 +30,7 @@ The language's main features:
 - **Versions and flags:** `#[since_version(1)]` for fields added in later versions, `#[if_flag($flags, X)]` for fields present only when a flag is set.
 - **Values from other tables:** `#[read_args(num_glyphs: u16)]`.
 - **Fields derived on write:** `#[compile(array_len($records))] num_tables: u16` recomputes counts and lengths instead of trusting stored values.
-- **Escape hatches:** `#[read_with]`, `#[compile_with]` and `#[skip_font_write]`, so one awkward part of a table doesn't force the whole table to be hand-written.
+- **Escape hatches:** `#[read_with]`, `#[compile_with]` and `#[skip_font_write]`, so one awkward part of a table doesn't force the whole table to be hand-written. `meta` is an example: its header and data map records are generated, and `#[read_offset_with($tag, $data_length)]` hands each data block to a small hand-written reader that splits `dlng`/`slng` into tags and keeps other tags as raw bytes.
 
 ### fontTools (Python)
 
@@ -67,7 +67,7 @@ We won't adopt any of these directly:
 buffer-gen already covers structs, versioned variants, additive versions (fontations' `since_version`), flags, arrays counted by a field, fixed values, reserved fields, and byte blocks. These are the features to add, in order:
 
 1. **Count to end of table, and values passed in from other tables.** Generates cvt, fpgm and prep, and lets hmtx and loca be generated without hand-written wrappers.
-2. **Offsets (16- and 32-bit, nullable) and format dispatch.** CPAL, then cmap (replacing the hand-written version), then COLR v0.
+2. **Offsets (16- and 32-bit, nullable) and format dispatch.** CPAL and meta, then cmap (replacing the hand-written version), then COLR v0. meta is the simplest table with offsets: one 32-bit offset and length per record, pointing at a block of bytes, with no sharing or overflow. Its `dlng`/`slng` parsing stays hand-written in the `meta.ts` wrapper, as in fontations; fontTools writes the whole table by hand, and fontkit doesn't support it.
 3. **Flag-conditional fields, computed counts, fields derived on write, and escape hatches.** The glyf glyph header and composite components, leaving only coordinate encoding hand-written, which is the same split fontations makes.
 4. **Later:** COLR v1 paints and GPOS.
 
