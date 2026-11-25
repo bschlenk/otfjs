@@ -2,6 +2,7 @@ import { type Reader } from '@otfjs/buffer'
 
 import type { TableReader } from '../table-reader.js'
 import { highNibble, lowNibble } from '../utils/bit.js'
+import { utf8Decoder } from '../utils/text.js'
 import { assert, error } from '../utils/utils.js'
 
 export type CffTable = ReturnType<typeof readCffTable>
@@ -16,7 +17,7 @@ export function readCffTable(view: Reader) {
 
   view.skip(hdrSize - 4)
 
-  const names = readIndex(view, (data) => DECODER.decode(data.data))
+  const names = readIndex(view, (data) => utf8Decoder.decode(data.data))
 
   const topDicts = readIndex(view, (data) => {
     const entries: [string, number[]][] = []
@@ -54,7 +55,7 @@ export function readCffTable(view: Reader) {
     return Object.fromEntries(entries)
   })
 
-  const strings = readIndex(view, (data) => DECODER.decode(data.data))
+  const strings = readIndex(view, (data) => utf8Decoder.decode(data.data))
 
   return {
     major,
@@ -200,5 +201,3 @@ function readRealNumber(view: Reader) {
     return parseFloat(v)
   }
 }
-
-const DECODER = new TextDecoder()

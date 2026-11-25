@@ -17,6 +17,7 @@ const ALL_READ_FUNCTIONS = [
   'readLocaTable',
   'readMathTable',
   'readMaxpTable',
+  'readMetaTable',
   'readNameTable',
   'readOS2Table',
   'readPostTable',

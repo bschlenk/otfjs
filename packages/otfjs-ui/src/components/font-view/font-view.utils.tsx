@@ -22,6 +22,7 @@ export const TABLE_MAP: Record<string, React.ComponentType<{ font: Font }>> = {
   MATH: jsonView('MATH'),
   maxp: jsonView('maxp', { version: toHex }),
   loca: jsonView('loca'),
+  meta: jsonView('meta'),
   name: jsonView('name'),
   'OS/2': jsonView('OS/2'),
   post: jsonView('post', { version: toHex }),

@@ -27,6 +27,46 @@ export function sum<T>(
   return arr.reduce((acc, item) => acc + fn(item), 0)
 }
 
+/** A value `sortBy` can compare: strings by code unit, numbers by value. */
+type Sortable = string | number
+
+/** Keys of `T` whose values are sortable. */
+type SortableKeys<T> = {
+  [K in keyof T]: T[K] extends Sortable ? K : never
+}[keyof T]
+
+/**
+ * Sort `arr` in place and return it. Pass a key or function to sort objects
+ * by one of their strings or numbers. Strings sort by code unit, which is
+ * the byte order the OpenType spec uses for tags, unlike `localeCompare`.
+ * Numbers sort by value, unlike the default `Array.prototype.sort`. All
+ * keys should be the same type.
+ */
+export function sortBy<T extends Sortable>(arr: T[]): T[]
+export function sortBy<T>(
+  arr: T[],
+  by: SortableKeys<T> | ((item: T) => Sortable),
+): T[]
+export function sortBy<T>(
+  arr: T[],
+  by?: SortableKeys<T> | ((item: T) => Sortable),
+): T[] {
+  const key =
+    by === undefined ? (item: T) => item as Sortable
+    : typeof by === 'function' ? by
+    : (item: T) => item[by] as Sortable
+
+  return arr.sort((a, b) => {
+    const ka = key(a)
+    const kb = key(b)
+    return (
+      ka < kb ? -1
+      : ka > kb ? 1
+      : 0
+    )
+  })
+}
+
 /**
  * Create an object from the given array, where the keys
  * are the result of calling `getKey` on each item.
