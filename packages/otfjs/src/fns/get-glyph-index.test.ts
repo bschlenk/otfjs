@@ -57,6 +57,15 @@ describe('getGlyphIndex', () => {
     expect(getGlyphIndex(font, 0x22)).toBe(0)
   })
 
+  it('prefers the symbol subtable over Unicode ones, as HarfBuzz does', () => {
+    const font = makeFont([
+      [3, 1, bmp],
+      [3, 0, symbol],
+    ])
+    expect(getGlyphIndex(font, 0x21)).toBe(5)
+    expect(getGlyphIndex(font, 0x41)).toBe(0)
+  })
+
   it('returns 0 when the font has no usable subtable', () => {
     const raw: CmapSubtable = { format: 6, data: format6(0x41, 9) }
     const font = makeFont([[1, 0, raw]])

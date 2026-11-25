@@ -200,7 +200,15 @@ export class Reader {
     return this.start + offset
   }
 
-  private bytes(offset: number, length: number): Uint8Array {
+  /**
+   * A view of `length` bytes starting at `offset`, relative to the start of
+   * this reader, without moving the current position. Without arguments, the
+   * rest of the bytes from the current position.
+   */
+  public bytes(
+    offset = this.offset,
+    length = this.length - offset,
+  ): Uint8Array {
     this.checkRange(offset, length)
     const { buffer, byteOffset } = this.view
     return new Uint8Array(buffer, byteOffset + this.start + offset, length)

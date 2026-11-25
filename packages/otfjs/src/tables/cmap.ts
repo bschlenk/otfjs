@@ -4,13 +4,14 @@ import { Reader, Writer } from '@otfjs/buffer'
 import { PlatformId } from '../enums.js'
 import type { TableReader } from '../table-reader.js'
 import type { TableWriter } from '../table-writer.js'
+import { lowerBound } from '../utils/binary-search.js'
 
 export interface CmapTable {
   version: number
   encodingRecords: EncodingRecord[]
 }
 
-interface EncodingRecord {
+export interface EncodingRecord {
   platformId: PlatformId
   encodingId: number
   subtable: CmapSubtable
@@ -291,9 +292,7 @@ function readCmapSubtable(view: Reader): CmapSubtable {
       const length = view.u16()
       const language = view.u16()
       const segCountX2 = view.u16()
-      view.u16() // searchRange
-      view.u16() // entrySelector
-      view.u16() // rangeShift
+      view.skip(6) // searchRange, entrySelector, rangeShift
 
       const segs = segCountX2 / 2
 
@@ -318,8 +317,7 @@ function readCmapSubtable(view: Reader): CmapSubtable {
     }
 
     case 12: {
-      view.skip(2) // reserved
-      view.u32() // length
+      view.skip(6) // reserved, length
       const language = view.u32()
       const numGroups = view.u32()
       const groups = view.array(numGroups, () => ({
@@ -331,7 +329,7 @@ function readCmapSubtable(view: Reader): CmapSubtable {
     }
 
     case 14: {
-      view.u32() // length
+      view.skip(4) // length
       const numVarSelectorRecords = view.u32()
       const varSelectorRecords = view.array(numVarSelectorRecords, () => {
         const varSelector = view.u24()
@@ -352,14 +350,12 @@ function readCmapSubtable(view: Reader): CmapSubtable {
       return { format, varSelectorRecords }
     }
 
-    // Not parsed yet: 0 (byte encoding), 2 (high-byte mapping), 6 (trimmed
-    // table), 8 (mixed 16/32-bit), 10 (trimmed array), 13 (many-to-one
-    // ranges).
+    // The remaining formats aren't parsed yet.
     case 0:
     case 2:
     case 6: {
       const length = view.u16()
-      return { format, data: view.subtable(0, length).data }
+      return { format, data: view.bytes(0, length) }
     }
 
     case 8:
@@ -367,7 +363,7 @@ function readCmapSubtable(view: Reader): CmapSubtable {
     case 13: {
       view.skip(2) // reserved
       const length = view.u32()
-      return { format, data: view.subtable(0, length).data }
+      return { format, data: view.bytes(0, length) }
     }
 
     default:
@@ -394,7 +390,7 @@ function readUVSMappings(view: Reader): UVSMapping[] {
 function lookupSubtable4(s: CmapSubtable4, codePoint: number): number {
   if (codePoint > 0xffff) return 0
 
-  const i = firstIndexAtLeast(s.endCodes, codePoint, (end) => end)
+  const i = lowerBound(s.endCodes, codePoint, (end) => end)
   if (i === s.endCodes.length || s.startCodes[i] > codePoint) return 0
 
   if (s.idRangeOffsets[i] === 0) {
@@ -414,24 +410,8 @@ function lookupSubtable4(s: CmapSubtable4, codePoint: number): number {
 }
 
 function lookupSubtable12(s: CmapSubtable12, codePoint: number): number {
-  const i = firstIndexAtLeast(s.groups, codePoint, (g) => g.endCharCode)
+  const i = lowerBound(s.groups, codePoint, (g) => g.endCharCode)
   const group = s.groups[i] as SequentialMapGroup | undefined
   if (!group || group.startCharCode > codePoint) return 0
   return group.startGlyphId + (codePoint - group.startCharCode)
-}
-
-/** The index of the first item whose key is >= `target`, in sorted `items`. */
-function firstIndexAtLeast<T>(
-  items: T[],
-  target: number,
-  key: (item: T) => number,
-): number {
-  let lo = 0
-  let hi = items.length
-  while (lo < hi) {
-    const mid = (lo + hi) >>> 1
-    if (key(items[mid]) < target) lo = mid + 1
-    else hi = mid
-  }
-  return lo
 }

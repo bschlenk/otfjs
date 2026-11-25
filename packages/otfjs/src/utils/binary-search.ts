@@ -1,3 +1,22 @@
+/**
+ * The index of the first item in `items`, sorted by `key`, whose key is at
+ * least `target`, or `items.length` if there is none.
+ */
+export function lowerBound<T>(
+  items: T[],
+  target: number,
+  key: (item: T) => number,
+): number {
+  let lo = 0
+  let hi = items.length
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1
+    if (key(items[mid]) < target) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
 export function binarySearch(arr: number[], target: number): number | null
 export function binarySearch<T>(
   arr: T[],

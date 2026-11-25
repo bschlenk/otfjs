@@ -39,6 +39,16 @@ describe('reader.ts', () => {
       expect([...sub.u8Array(2)]).toEqual([6, 7])
     })
 
+    it('bytes views a range without moving the position', () => {
+      const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7])
+      const reader = new Reader(data.subarray(1))
+      reader.u16()
+      expect([...reader.bytes(0, 3)]).toEqual([1, 2, 3])
+      expect([...reader.bytes()]).toEqual([3, 4, 5, 6, 7])
+      expect(reader.offset).toBe(2)
+      expect(() => reader.bytes(5, 3)).toThrow(RangeError)
+    })
+
     it('nested subtables read relative to their own start', () => {
       const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7])
       const sub = new Reader(data.subarray(1)).subtable(2, 4).subtable(1, 2)
