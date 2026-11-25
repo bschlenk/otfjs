@@ -390,6 +390,81 @@ export class ColrTable {
         return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
       }
 
+      case 20: {
+        const paintOffset = view.u24()
+        const scale = view.f2dot14()
+        const matrix = mat.scale(scale)
+
+        const children = this.visitLayer(view.subtable(paintOffset))
+
+        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
+      }
+
+      case 22: {
+        const paintOffset = view.u24()
+        const scale = view.f2dot14()
+        const centerX = view.i16()
+        const centerY = view.i16()
+        const matrix = mat.scaleAt(scale, scale, centerX, centerY)
+
+        const children = this.visitLayer(view.subtable(paintOffset))
+
+        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
+      }
+
+      // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-24-to-27-paintrotate-paintvarrotate-paintrotatearoundcenter-paintvarrotatearoundcenter
+      // Angles are counter-clockwise, in half turns (1.0 is 180°).
+      case 24: {
+        const paintOffset = view.u24()
+        const angle = view.f2dot14()
+        const matrix = mat.rotate(angle * Math.PI)
+
+        const children = this.visitLayer(view.subtable(paintOffset))
+
+        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
+      }
+
+      case 26: {
+        const paintOffset = view.u24()
+        const angle = view.f2dot14()
+        const centerX = view.i16()
+        const centerY = view.i16()
+        const matrix = mat.rotateAt(angle * Math.PI, centerX, centerY)
+
+        const children = this.visitLayer(view.subtable(paintOffset))
+
+        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
+      }
+
+      // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-28-to-31-paintskew-paintvarskew-paintskewaroundcenter-paintvarskewaroundcenter
+      case 28: {
+        const paintOffset = view.u24()
+        const xSkewAngle = view.f2dot14()
+        const ySkewAngle = view.f2dot14()
+        const matrix = skew(xSkewAngle, ySkewAngle)
+
+        const children = this.visitLayer(view.subtable(paintOffset))
+
+        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
+      }
+
+      case 30: {
+        const paintOffset = view.u24()
+        const xSkewAngle = view.f2dot14()
+        const ySkewAngle = view.f2dot14()
+        const centerX = view.i16()
+        const centerY = view.i16()
+        const matrix = mat.mult(
+          mat.translate(centerX, centerY),
+          skew(xSkewAngle, ySkewAngle),
+          mat.translate(-centerX, -centerY),
+        )
+
+        const children = this.visitLayer(view.subtable(paintOffset))
+
+        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
+      }
+
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#format-32-paintcomposite
       case 32: {
         const sourcePaintOffset = view.u24()
@@ -425,6 +500,17 @@ function layer<T extends ColorRecordType>(
   children: ColorLayer[] = [],
 ) {
   return { format, props, children }
+}
+
+/**
+ * A skew by angles in half turns (1.0 is 180°), both counter-clockwise: x
+ * tilts the y axis, y tilts the x axis. fontTools negates the x angle the
+ * same way (`PaintSkew.getTransform`).
+ */
+function skew(xSkewAngle: number, ySkewAngle: number): mat.Matrix {
+  const x = Math.tan(-xSkewAngle * Math.PI)
+  const y = Math.tan(ySkewAngle * Math.PI)
+  return mat.mat(1, y, x, 1, 0, 0)
 }
 
 function readAffine2x3(view: Reader) {
