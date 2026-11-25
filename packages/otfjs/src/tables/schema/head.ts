@@ -26,7 +26,10 @@ export const HeadFlags = s.flags('HeadFlags', s.u16(), {
 
 export const HeadTable = s.struct('HeadTable', {
   majorVersion: s.fixed(s.u16(), 1),
-  minorVersion: s.fixed(s.u16(), 0),
+  minorVersion: s.withDefault(
+    s.u16('Any value is read, since minor versions are backward compatible'),
+    0,
+  ),
   fontRevision: s.u32('Set by font manufacturer'),
   checksumAdjustment: s.u32(
     'To compute: set it to 0, sum the entire font as uint32, then store 0xB1B0AFBA - sum',
@@ -42,7 +45,10 @@ export const HeadTable = s.struct('HeadTable', {
   yMax: s.i16('Maximum y coordinate across all glyph bounding boxes'),
   macStyle: MacStyle,
   lowestRecPpem: s.u16('Smallest readable size in pixels'),
-  fontDirectionHint: s.fixed(s.i16(), 2),
+  fontDirectionHint: s.withDefault(
+    s.i16('Deprecated; older fonts use 0, 1, -1 or -2'),
+    2,
+  ),
   indexToLocFormat: s.i16(
     '0 for short offsets (Offset16), 1 for long (Offset32)',
   ),

@@ -16,6 +16,11 @@ export interface PrimitiveDef {
   kind: 'primitive'
   type: PrimitiveType
   doc?: string
+  /**
+   * The value writers use when the field is omitted. The field is still
+   * read, and kept, like any other.
+   */
+  default?: number | bigint | string
 }
 
 export interface ReservedDef {
@@ -121,6 +126,18 @@ export const s = {
 
   fixed(type: PrimitiveDef, value: number | bigint | string): FixedDef {
     return { kind: 'fixed', type: type.type, value }
+  },
+
+  /**
+   * A field writers can omit, to write `value`. Unlike `fixed`, the field is
+   * read into the struct as is, so fonts with other values still load and
+   * round-trip. Only supported in plain structs.
+   */
+  withDefault(
+    type: PrimitiveDef,
+    value: number | bigint | string,
+  ): PrimitiveDef {
+    return { ...type, default: value }
   },
 
   struct(name: string, fields: Record<string, FieldDef>): StructDef {

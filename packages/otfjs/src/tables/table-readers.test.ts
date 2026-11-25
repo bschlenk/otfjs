@@ -10,7 +10,7 @@ import {
 } from './cmap.js'
 import { CvtTableReader } from './cvt.js'
 import { FpgmTableReader } from './fpgm.js'
-import { HeadTableReader } from './head.js'
+import { HeadTableReader, HeadTableWriter } from './head.js'
 import { HheaTableReader } from './hhea.js'
 import { HmtxTableReader } from './hmtx.js'
 import { LocaTableReader } from './loca.js'
@@ -52,6 +52,33 @@ describe('table readers', () => {
 
     expect(font.readTable(LocaTableReader)).toEqual([0, 10, 18])
     expect(font.readTable(HeadTableReader).unitsPerEm).toBe(1000)
+  })
+
+  it('reads head with any minorVersion or fontDirectionHint', () => {
+    const data = head(0)
+    const view = new DataView(data.buffer)
+    view.setUint16(2, 1) // minorVersion
+    view.setInt16(48, 0) // fontDirectionHint
+    const font = new FontHandle(buildFont({ tables: { head: data } }))
+
+    const table = font.readTable(HeadTableReader)
+    expect(table.minorVersion).toBe(1)
+    expect(table.fontDirectionHint).toBe(0)
+  })
+
+  it('writes head with default minorVersion and fontDirectionHint', () => {
+    const font = new FontHandle(buildFont({ tables: { head: head(0) } }))
+    const {
+      minorVersion: _minor,
+      fontDirectionHint: _hint,
+      ...rest
+    } = font.readTable(HeadTableReader)
+
+    const written = new FontHandle(
+      buildFont({ tables: { head: HeadTableWriter.write(rest) } }),
+    ).readTable(HeadTableReader)
+    expect(written.minorVersion).toBe(0)
+    expect(written.fontDirectionHint).toBe(2)
   })
 
   it('reads cvt as i16s and fpgm as raw bytes', () => {
