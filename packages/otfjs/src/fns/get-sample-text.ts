@@ -1,3 +1,5 @@
+import type { Reader } from '@otfjs/buffer'
+
 import { PlatformId } from '../enums.js'
 import type { FontHandle } from '../font-handle.js'
 import {
@@ -135,7 +137,7 @@ function groupLetters(codePoints: number[]): LetterGroup[] {
   const groups = new Map<Script | number, LetterGroup>()
 
   for (const cp of codePoints) {
-    if (!LETTER.test(String.fromCodePoint(cp))) continue
+    if (!RE_LETTER.test(String.fromCodePoint(cp))) continue
 
     const script = SCRIPTS.find((s) =>
       s.ranges.some(([start, end]) => cp >= start && cp <= end),
@@ -161,7 +163,7 @@ function letterSample(font: FontHandle, letters: number[]): string | null {
     if (!hasInk(font, char)) continue
 
     const lower = char.toLowerCase()
-    const isPair = UPPERCASE.test(char) && lower !== char
+    const isPair = RE_UPPERCASE.test(char) && lower !== char
     return isPair && hasInk(font, lower) ? char + lower : char
   }
 
@@ -174,8 +176,8 @@ function letterSample(font: FontHandle, letters: number[]): string | null {
  */
 function symbolSample(font: FontHandle, codePoints: number[]): string {
   const chars = codePoints.map((cp) => String.fromCodePoint(cp))
-  const privateUse = chars.filter((char) => PRIVATE_USE.test(char))
-  const symbols = chars.filter((char) => SYMBOL.test(char))
+  const privateUse = chars.filter((char) => RE_PRIVATE_USE.test(char))
+  const symbols = chars.filter((char) => RE_SYMBOL.test(char))
   const candidates = privateUse.length >= symbols.length ? privateUse : symbols
 
   let text = ''
@@ -190,6 +192,8 @@ function symbolSample(font: FontHandle, codePoints: number[]): string {
 
 /** Whether every character in `text` maps to a glyph that draws something. */
 function hasInk(font: FontHandle, text: string): boolean {
+  // for...of iterates by code point, so an emoji is one character, not the
+  // two UTF-16 code units it's stored as.
   for (const char of text) {
     const glyphId = getGlyphIndex(font, char.codePointAt(0)!)
     if (glyphId === 0 || !glyphHasInk(font, glyphId)) return false
@@ -204,8 +208,9 @@ function hasInk(font: FontHandle, text: string): boolean {
  * icon names for ligatures.
  */
 function glyphHasInk(font: FontHandle, glyphId: number): boolean {
-  const colr = font.readTableOrNull(ColrTableReader)
-  if (colr?.colorGlyph(glyphId)) return true
+  if (font.readTableOrNull(ColrTableReader)?.hasColorGlyph(glyphId)) {
+    return true
+  }
 
   const loca = font.readTableOrNull(LocaTableReader)
   const glyf = font.getTableViewOrNull(GlyfTag)
@@ -215,9 +220,15 @@ function glyphHasInk(font: FontHandle, glyphId: number): boolean {
   const offset = loca[glyphId]
   if (loca[glyphId + 1] <= offset) return false
 
-  // The glyph header: numberOfContours, then its bounding box.
-  const header = glyf.subtable(offset, 10)
-  header.skip(2)
+  return boundsHaveArea(glyf.subtable(offset, 10))
+}
+
+/**
+ * Whether the bounding box in a glyf glyph header is more than a point, read
+ * without decoding the glyph. A line still counts, e.g. a hyphen.
+ */
+function boundsHaveArea(header: Reader): boolean {
+  header.skip(2) // numberOfContours
   const xMin = header.i16()
   const yMin = header.i16()
   const xMax = header.i16()
@@ -225,8 +236,8 @@ function glyphHasInk(font: FontHandle, glyphId: number): boolean {
   return xMax > xMin || yMax > yMin
 }
 
-const LETTER = /\p{L}/u
-const UPPERCASE = /\p{Lu}/u
+const RE_LETTER = /\p{L}/u
+const RE_UPPERCASE = /\p{Lu}/u
 
-const PRIVATE_USE = /\p{Co}/u
-const SYMBOL = /\p{S}/u
+const RE_PRIVATE_USE = /\p{Co}/u
+const RE_SYMBOL = /\p{S}/u
