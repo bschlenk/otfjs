@@ -5,6 +5,26 @@ import { buildFont } from './font-builder.js'
 import { FontHandle } from './font-handle.js'
 import type { TableReader } from './table-reader.js'
 
+describe('FontHandle.derive', () => {
+  it('computes once per font and function', () => {
+    const fn = vi.fn((font: FontHandle) => ({ size: font.size }))
+    const a = makeHandle({ aaaa: [1, 2, 3, 4] })
+    const b = makeHandle({ aaaa: [1, 2, 3, 4], bbbb: [5, 6, 7, 8] })
+
+    expect(a.derive(fn)).toBe(a.derive(fn))
+    expect(b.derive(fn)).not.toBe(a.derive(fn))
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
+  it('caches each function separately', () => {
+    const font = makeHandle({ aaaa: [1, 2, 3, 4] })
+    const first = (f: FontHandle) => f.readTable(firstByteReader('aaaa'))
+    const size = (f: FontHandle) => f.size
+    expect(font.derive(first)).toBe(1)
+    expect(font.derive(size)).toBe(font.size)
+  })
+})
+
 describe('FontHandle.readTable', () => {
   it('passes the reader a view over just that table', () => {
     const font = makeHandle({ aaaa: [1, 2, 3, 4], bbbb: [5, 6, 7, 8] })

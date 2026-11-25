@@ -17,6 +17,7 @@ export class FontHandle {
   #header: Header
   #tables: Record<string, TableRecord>
   #readCache: Cache<TableReader<unknown>, unknown>
+  #derivedCache: Cache<(font: FontHandle) => unknown, unknown>
   #views: Cache<string, Reader | null>
 
   constructor(data: Uint8Array) {
@@ -32,6 +33,7 @@ export class FontHandle {
       const view = this.getTableViewOrNull(reader.tag)
       return view && reader.read(view, this)
     })
+    this.#derivedCache = createCache((fn) => fn(this))
   }
 
   public get data() {
@@ -78,6 +80,19 @@ export class FontHandle {
    */
   public readTableOrNull<T>(reader: TableReader<T>): T | null {
     return this.#readCache.get(reader) as T | null
+  }
+
+  /**
+   * Compute a value from this font once and cache it for the font's
+   * lifetime, like a lookup structure built from its tables. `readTable` is
+   * the special case for parsing one table's bytes.
+   *
+   * `fn` is the cache key, so pass the same function every time: a
+   * module-level function, not an inline arrow. It must not return
+   * `undefined`, which isn't cached.
+   */
+  public derive<T>(fn: (font: FontHandle) => T): T {
+    return this.#derivedCache.get(fn) as T
   }
 
   /**
