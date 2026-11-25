@@ -34,11 +34,11 @@ export class CpalTable {
 
     this.colorRecords = view
       .subtable(this.colorRecordsArrayOffset)
-      .array(this.numColorRecords, () => {
-        const b = view.u8()
-        const g = view.u8()
-        const r = view.u8()
-        const a = view.u8() / 255
+      .array(this.numColorRecords, (records) => {
+        const b = records.u8()
+        const g = records.u8()
+        const r = records.u8()
+        const a = records.u8() / 255
 
         return { r, g, b, a }
       })
