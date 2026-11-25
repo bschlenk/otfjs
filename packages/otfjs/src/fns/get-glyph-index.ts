@@ -1,8 +1,10 @@
 import { PlatformId } from '../enums.js'
 import type { FontHandle } from '../font-handle.js'
+import type { TableReader } from '../table-reader.js'
 import {
   type CmapTable,
   CmapTableReader,
+  CmapTag,
   type EncodingRecord,
   lookupCmapSubtable,
 } from '../tables/cmap.js'
@@ -38,17 +40,32 @@ const SUBTABLES: [PlatformId, number][] = [
  * missing-glyph box) if it doesn't map it.
  */
 export function getGlyphIndex(font: FontHandle, codePoint: number): number {
-  const table = font.readTable(CmapTableReader)
-  const record = findRecord(table)
-  if (!record) return 0
+  return font.readTable(GlyphIndexLookupReader)(codePoint)
+}
 
-  const glyphId = lookupCmapSubtable(record.subtable, codePoint)
-  if (glyphId || !isSymbol(record) || codePoint > 0xff) return glyphId
+/**
+ * Builds the font's code point to glyph lookup from its cmap. `FontHandle`
+ * caches each reader's result for the life of the font, so the subtable is
+ * picked once, not on every lookup.
+ */
+const GlyphIndexLookupReader: TableReader<(codePoint: number) => number> = {
+  tag: CmapTag,
+  read: (_view, font) => createLookup(font.readTable(CmapTableReader)),
+}
+
+function createLookup(table: CmapTable): (codePoint: number) => number {
+  const record = findRecord(table)
+  if (!record) return () => 0
+
+  const { subtable } = record
+  if (!isSymbol(record)) return (cp) => lookupCmapSubtable(subtable, cp)
 
   // Symbol fonts (e.g. Wingdings) map their characters into U+F020..F0FF,
   // but text set in them uses U+0020..00FF, so try both, as HarfBuzz and
   // Windows do.
-  return lookupCmapSubtable(record.subtable, 0xf000 + codePoint)
+  return (cp) =>
+    lookupCmapSubtable(subtable, cp) ||
+    (cp <= 0xff ? lookupCmapSubtable(subtable, 0xf000 + cp) : 0)
 }
 
 /**
