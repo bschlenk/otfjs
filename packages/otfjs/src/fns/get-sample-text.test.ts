@@ -78,6 +78,16 @@ describe('getSampleText', () => {
     expect(getSampleText(font)).toBe('')
   })
 
+  it('treats fonts with a symbol subtable as symbol fonts, even with a Unicode one', () => {
+    const font = makeFont({
+      chars: '\uf020\uf021\uf022\uf041\uf061',
+      blank: '\uf020',
+      symbol: true,
+      alsoUnicode: true,
+    })
+    expect(getSampleText(font)).toBe('\uf021\uf022')
+  })
+
   it('returns an empty string when nothing has ink', () => {
     expect(getSampleText(makeFont({ chars: 'Aa', blank: 'Aa' }))).toBe('')
   })
@@ -90,6 +100,8 @@ interface FontOptions {
   blank?: string
   /** Map `chars` in a Windows symbol subtable instead of a Unicode one. */
   symbol?: boolean
+  /** With `symbol`, also list the subtable as a Unicode (3, 1) one. */
+  alsoUnicode?: boolean
   dlng?: string[]
 }
 
@@ -97,7 +109,13 @@ interface FontOptions {
  * A font mapping each of `chars` to its own glyph, with glyf headers so
  * blank glyphs can be told apart from ones with ink.
  */
-function makeFont({ chars, blank = '', symbol = false, dlng }: FontOptions) {
+function makeFont({
+  chars,
+  blank = '',
+  symbol = false,
+  alsoUnicode = false,
+  dlng,
+}: FontOptions) {
   const codePoints = [...chars].map((c) => c.codePointAt(0)!)
   const blankSet = new Set([...blank].map((c) => c.codePointAt(0)!))
 
@@ -128,7 +146,10 @@ function makeFont({ chars, blank = '', symbol = false, dlng }: FontOptions) {
 
   const cmap = CmapTableWriter.write({
     version: 0,
-    encodingRecords: [{ platformId: 3, encodingId: symbol ? 0 : 10, subtable }],
+    encodingRecords: [
+      { platformId: 3, encodingId: symbol ? 0 : 10, subtable },
+      ...(alsoUnicode ? [{ platformId: 3, encodingId: 1, subtable }] : []),
+    ],
   })
 
   // Every glyph is just a 10-byte header: numberOfContours and a bbox.

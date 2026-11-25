@@ -30,8 +30,8 @@ import { getGlyphIndex } from './get-glyph-index.js'
 export function getSampleText(font: FontHandle): string {
   const inked = (text: string) => hasInk(font, text)
 
-  // Symbol fonts have no Unicode cmap, and getGlyphIndex maps U+0041 to
-  // their U+F041, so "Aa" would come out as two arbitrary symbols.
+  // getGlyphIndex maps U+0041 to a symbol font's U+F041, so "Aa" would come
+  // out as two arbitrary symbols.
   if (!isSymbolFont(font)) {
     // A font designed only for non-Latin languages shows their sample even
     // if it also covers Latin, e.g. 동 for a Korean font.
@@ -108,19 +108,19 @@ function getCodePageSample(font: FontHandle): string | undefined {
   return samples.size === 1 ? [...samples][0] : undefined
 }
 
-/** Whether the font's cmap only has a Windows symbol subtable. */
+/**
+ * Whether getGlyphIndex looks code points up in the font's Windows symbol
+ * subtable, which it prefers over Unicode ones whenever the font has one.
+ */
 function isSymbolFont(font: FontHandle): boolean {
-  const { encodingRecords } = font.readTable(CmapTableReader)
-  const hasUnicode = encodingRecords.some(
-    (r) =>
-      r.platformId === PlatformId.Unicode ||
-      (r.platformId === PlatformId.Windows &&
-        (r.encodingId === 1 || r.encodingId === 10)),
-  )
-  const hasSymbol = encodingRecords.some(
-    (r) => r.platformId === PlatformId.Windows && r.encodingId === 0,
-  )
-  return hasSymbol && !hasUnicode
+  return font
+    .readTable(CmapTableReader)
+    .encodingRecords.some(
+      (r) =>
+        r.platformId === PlatformId.Windows &&
+        r.encodingId === 0 &&
+        (r.subtable.format === 4 || r.subtable.format === 12),
+    )
 }
 
 /** Every code point the font's readable cmap subtables map, ascending. */
