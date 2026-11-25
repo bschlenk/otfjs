@@ -78,6 +78,17 @@ export function glyphToColorSvg(
         height: glyph.yMax - glyph.yMin,
       }
 
+  // Masks default to the masked element's bounding box plus 10%, which can
+  // cut off what they reveal. Make them cover far more than the glyph can.
+  const upem = font.readTable(HeadTableReader).unitsPerEm
+  const maskRegion = {
+    maskUnits: 'userSpaceOnUse',
+    x: -4 * upem,
+    y: -4 * upem,
+    width: 9 * upem,
+    height: 9 * upem,
+  }
+
   const palette = font.readTable(CpalTableReader).getPalette(paletteIdx)
   const stack: Node[] = [node('')]
   let latest = stack[0]
@@ -112,11 +123,23 @@ export function glyphToColorSvg(
     latest.children.push(el)
   }
 
+  // A fill paints the glyph shape it's in. With no shape (at the top level,
+  // or directly in a composite), it fills everything: a path with no `d`
+  // becomes the fill rect when popped.
+  const setFill = (fill: string) => {
+    if (latest.type === 'path') {
+      latest.props.fill = fill
+    } else {
+      push('path', { fill })
+      pop()
+    }
+  }
+
   const walk = (layer: ColorLayer) => {
     switch (layer.format) {
       case ColorRecordType.SOLID: {
         const { paletteIndex, alpha } = layer.props
-        latest.props.fill = getColor(paletteIndex, alpha)
+        setFill(getColor(paletteIndex, alpha))
         break
       }
 
@@ -158,8 +181,7 @@ export function glyphToColorSvg(
           ),
         )
 
-        matrix = null
-        latest.props.fill = `url('#${id}')`
+        setFill(`url('#${id}')`)
         break
       }
 
@@ -195,72 +217,120 @@ export function glyphToColorSvg(
           ),
         )
 
-        matrix = null
-        latest.props.fill = `url('#${id}')`
+        setFill(`url('#${id}')`)
         break
       }
 
       case ColorRecordType.GLYPH: {
         const { glyphId } = layer.props
         const d = layerGlyphPath(font, glyphId)
-        let hasMatrix = false
 
-        if (matrix) {
-          push('g', { transform: mat.toSvg(matrix) })
-          hasMatrix = true
-          matrix = null
+        // The glyph's paint is in the transformed space, so the group takes
+        // the pending transform and the paint starts without one.
+        const saved = matrix
+        matrix = null
+        const transform = saved ? mat.toSvg(saved) : undefined
+
+        if (layer.children.every(isFill)) {
+          // The common case: the glyph filled with a color or gradient.
+          if (transform) push('g', { transform })
+          push('path', { d })
+          walkAll(layer.children)
+          pop()
+          if (transform) pop()
+        } else {
+          // Anything else, like more glyphs, is clipped to this glyph.
+          const id = `${glyph.id}-clip-${defs.length}`
+          defs.push(node('clipPath', { id }, [node('path', { d })]))
+          push('g', { transform, 'clip-path': `url(#${id})` })
+          walkAll(layer.children)
+          pop()
         }
 
-        push('path', { d })
-        walkAll(layer.children)
-        pop()
-
-        if (hasMatrix) pop()
-
+        matrix = saved
         break
       }
 
       case ColorRecordType.TRANSFORM: {
-        matrix = layer.props.matrix
+        // Transforms apply to the whole subtree, including siblings within
+        // it, and nest by multiplying: the outer one applies last.
+        const saved = matrix
+        matrix =
+          matrix ? mat.mult(matrix, layer.props.matrix) : layer.props.matrix
         walkAll(layer.children)
+        matrix = saved
         break
       }
 
       case ColorRecordType.COMPOSITE: {
         const { mode, src, dest } = layer.props
 
-        switch (mode) {
-          case CompositeMode.SRC_IN: {
-            push()
-            walkAll(dest)
-            const destId = `${glyph.id}-${defs.length}`
-            latest.props.id = destId
-            const destEl = popOnly()
+        if (mode === CompositeMode.CLEAR) break
 
-            defs.push(destEl)
-            const id = `${glyph.id}-${defs.length}`
-            defs.push(
-              node('filter', { id }, [
-                node('feImage', { href: `#${destId}`, x: '0', y: '0' }),
-                node('feComposite', { in: 'SourceGraphic', operator: 'in' }),
-              ]),
-            )
+        if (mode === CompositeMode.SRC_IN || mode === CompositeMode.DEST_IN) {
+          // One side drawn only where the other has coverage, scaled by its
+          // alpha: an alpha mask made of the other side.
+          const [shown, mask] =
+            mode === CompositeMode.SRC_IN ? [src, dest] : [dest, src]
+          const saved = matrix
+          matrix = null
 
-            const el = push()
-            el.type = 'g'
-            el.props.style = { filter: `url(#${id})` }
-            walkAll(src)
-            pop()
-            break
-          }
+          const id = `${glyph.id}-mask-${defs.length}`
+          push('mask', { id, style: 'mask-type: alpha', ...maskRegion })
+          walkAll(mask)
+          defs.push(popOnly())
 
-          case CompositeMode.SOFT_LIGHT: {
-            break
-          }
+          push('g', {
+            transform: saved ? mat.toSvg(saved) : undefined,
+            mask: `url(#${id})`,
+          })
+          walkAll(shown)
+          pop()
 
-          default:
-            break
+          matrix = saved
+          break
         }
+
+        // Draw the backdrop, then the source over it, both in an isolated
+        // group so the source only blends with this backdrop. Nested
+        // composites are just nested groups.
+        const saved = matrix
+        matrix = null
+        push('g', {
+          transform: saved ? mat.toSvg(saved) : undefined,
+          style: 'isolation: isolate',
+        })
+
+        const blend = BLEND_MODES[mode]
+        const drawDest = () => {
+          push('g')
+          walkAll(dest)
+          pop()
+        }
+        const drawSrc = () => {
+          push('g', blend ? { style: `mix-blend-mode: ${blend}` } : {})
+          walkAll(src)
+          pop()
+        }
+
+        if (mode === CompositeMode.SRC) {
+          drawSrc()
+        } else if (mode === CompositeMode.DEST) {
+          drawDest()
+        } else if (mode === CompositeMode.DEST_OVER) {
+          drawSrc()
+          drawDest()
+        } else {
+          // SRC_OVER and the blend modes. The other Porter-Duff modes
+          // (DEST_IN, SRC_OUT, DEST_OUT, SRC_ATOP, DEST_ATOP, XOR) aren't
+          // supported yet and fall back to SRC_OVER.
+          drawDest()
+          drawSrc()
+        }
+
+        pop()
+        matrix = saved
+        break
       }
     }
   }
@@ -274,6 +344,45 @@ export function glyphToColorSvg(
   walkAll(tree)
 
   return { paths: stack[0].children, defs }
+}
+
+/** Whether a glyph's child paint layer is just a color or gradient fill. */
+function isFill(layer: ColorLayer): boolean {
+  switch (layer.format) {
+    case ColorRecordType.SOLID:
+    case ColorRecordType.LINEAR_GRADIENT:
+    case ColorRecordType.RADIAL_GRADIENT:
+      return true
+    case ColorRecordType.TRANSFORM:
+      // A transformed gradient becomes its gradientTransform.
+      return layer.children.every(isFill)
+    default:
+      return false
+  }
+}
+
+/**
+ * CSS `mix-blend-mode` values for the COLR composite modes that are blend
+ * modes. They line up one to one with the W3C Compositing spec, which COLR
+ * defines them by.
+ */
+const BLEND_MODES: Partial<Record<CompositeMode, string>> = {
+  [CompositeMode.PLUS]: 'plus-lighter',
+  [CompositeMode.SCREEN]: 'screen',
+  [CompositeMode.OVERLAY]: 'overlay',
+  [CompositeMode.DARKEN]: 'darken',
+  [CompositeMode.LIGHTEN]: 'lighten',
+  [CompositeMode.COLOR_DODGE]: 'color-dodge',
+  [CompositeMode.COLOR_BURN]: 'color-burn',
+  [CompositeMode.HARD_LIGHT]: 'hard-light',
+  [CompositeMode.SOFT_LIGHT]: 'soft-light',
+  [CompositeMode.DIFFERENCE]: 'difference',
+  [CompositeMode.EXCLUSION]: 'exclusion',
+  [CompositeMode.MULTIPLY]: 'multiply',
+  [CompositeMode.HSL_HUE]: 'hue',
+  [CompositeMode.HSL_SATURATION]: 'saturation',
+  [CompositeMode.HSL_COLOR]: 'color',
+  [CompositeMode.HSL_LUMINOSITY]: 'luminosity',
 }
 
 function layerGlyphPath(font: FontHandle, glyphId: number) {
