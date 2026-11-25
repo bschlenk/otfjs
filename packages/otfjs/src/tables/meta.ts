@@ -5,7 +5,7 @@ import { Reader, Writer } from '@otfjs/buffer'
 import type { TableReader } from '../table-reader.js'
 import type { TableWriter } from '../table-writer.js'
 import { utf8Decoder, utf8Encoder } from '../utils/text.js'
-import { sortByString } from '../utils/utils.js'
+import { sortBy } from '../utils/utils.js'
 
 export interface MetaTable {
   version: number
@@ -68,7 +68,7 @@ export function writeMetaTable(table: MetaTable): Uint8Array {
       data: encodeLanguages(table.supportedLanguages),
     })
   }
-  sortByString(dataMaps, 'tag')
+  sortBy(dataMaps, 'tag')
 
   const headerSize = 16 + dataMaps.length * 12
   const w = new Writer(headerSize)
