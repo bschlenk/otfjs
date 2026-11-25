@@ -93,43 +93,67 @@ export function readCmapTable(view: Reader): CmapTable {
   const version = view.u16()
   const numTables = view.u16()
 
+  // Records often point at the same subtable, e.g. (0, 3) and (3, 1), so
+  // parse each offset once and share the result.
+  const subtables = new Map<number, CmapSubtable>()
+
   const encodingRecords = view.array(numTables, () => {
     const platformId = view.u16()
     const encodingId = view.u16()
     const offset = view.u32()
-    const subtable = readCmapSubtable(view.subtable(offset))
+    let subtable = subtables.get(offset)
+    if (!subtable) {
+      subtable = readCmapSubtable(view.subtable(offset))
+      subtables.set(offset, subtable)
+    }
     return { platformId, encodingId, subtable }
   })
 
   return { version, encodingRecords }
 }
 
+/**
+ * Records with the same subtable, or byte-identical ones, share a single
+ * copy of it, as fonts usually do for (0, 3) and (3, 1).
+ */
 export function writeCmapTable(table: CmapTable): Uint8Array {
   const headerSize = 4 + table.encodingRecords.length * 8
 
-  const subtableSizes = table.encodingRecords.map((r) =>
-    getSubtableSize(r.subtable),
-  )
-  const subtableOffsets: number[] = []
-  let offset = headerSize
-  for (const size of subtableSizes) {
-    subtableOffsets.push(offset)
-    offset += size
-  }
+  const blobs: Uint8Array[] = []
+  const blobOffsets: number[] = []
+  const offsetsBySubtable = new Map<CmapSubtable, number>()
+  let end = headerSize
 
-  const w = new Writer(offset)
+  const recordOffsets = table.encodingRecords.map(({ subtable }) => {
+    let offset = offsetsBySubtable.get(subtable)
+    if (offset !== undefined) return offset
+
+    const bytes = encodeSubtable(subtable)
+    const i = blobs.findIndex((blob) => bytesEqual(blob, bytes))
+    if (i === -1) {
+      offset = end
+      blobs.push(bytes)
+      blobOffsets.push(offset)
+      end += bytes.byteLength
+    } else {
+      offset = blobOffsets[i]
+    }
+
+    offsetsBySubtable.set(subtable, offset)
+    return offset
+  })
+
+  const w = new Writer(end)
 
   w.u16(table.version)
   w.u16(table.encodingRecords.length)
   table.encodingRecords.forEach((r, i) => {
     w.u16(r.platformId)
     w.u16(r.encodingId)
-    w.u32(subtableOffsets[i])
+    w.u32(recordOffsets[i])
   })
 
-  for (const record of table.encodingRecords) {
-    writeSubtable(w, record.subtable)
-  }
+  for (const blob of blobs) w.buffer(blob)
 
   return w.toBuffer()
 }
@@ -177,6 +201,18 @@ function getSubtableSize(subtable: CmapSubtable): number {
     default:
       return subtable.data.byteLength
   }
+}
+
+function encodeSubtable(subtable: CmapSubtable): Uint8Array {
+  const w = new Writer(getSubtableSize(subtable))
+  writeSubtable(w, subtable)
+  return w.toBuffer()
+}
+
+function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.byteLength !== b.byteLength) return false
+  for (let i = 0; i < a.byteLength; ++i) if (a[i] !== b[i]) return false
+  return true
 }
 
 function writeSubtable(w: Writer, subtable: CmapSubtable): void {
