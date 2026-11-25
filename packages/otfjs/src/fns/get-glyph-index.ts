@@ -1,10 +1,8 @@
 import { PlatformId } from '../enums.js'
 import type { FontHandle } from '../font-handle.js'
-import type { TableReader } from '../table-reader.js'
 import {
   type CmapTable,
   CmapTableReader,
-  CmapTag,
   type EncodingRecord,
   lookupCmapSubtable,
 } from '../tables/cmap.js'
@@ -40,21 +38,17 @@ const SUBTABLES: [PlatformId, number][] = [
  * missing-glyph box) if it doesn't map it.
  */
 export function getGlyphIndex(font: FontHandle, codePoint: number): number {
-  return font.readTable(GlyphIndexLookupReader)(codePoint)
+  return font.derive(createGlyphIndexLookup)(codePoint)
 }
 
 /**
- * Builds the font's code point to glyph lookup from its cmap. `FontHandle`
- * caches each reader's result for the life of the font, so the subtable is
- * picked once, not on every lookup.
+ * The font's code point to glyph lookup. Called once per font through
+ * `FontHandle.derive`, so the subtable is picked once, not on every lookup.
  */
-const GlyphIndexLookupReader: TableReader<(codePoint: number) => number> = {
-  tag: CmapTag,
-  read: (_view, font) => createLookup(font.readTable(CmapTableReader)),
-}
-
-function createLookup(table: CmapTable): (codePoint: number) => number {
-  const record = findRecord(table)
+function createGlyphIndexLookup(
+  font: FontHandle,
+): (codePoint: number) => number {
+  const record = findRecord(font.readTable(CmapTableReader))
   if (!record) return () => 0
 
   const { subtable } = record
