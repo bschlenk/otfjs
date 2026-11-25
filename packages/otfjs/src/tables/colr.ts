@@ -201,6 +201,18 @@ export class ColrTable {
     }
   }
 
+  /**
+   * Whether `glyphId` has a color glyph, without building its layers like
+   * `colorGlyph` does.
+   */
+  hasColorGlyph(glyphId: number): boolean {
+    const byId = (r: { glyphId: number }) => r.glyphId
+    const paints = this.baseGlyphPaintRecords
+    if (paints && binarySearch(paints, glyphId, byId)) return true
+    const layers = this.baseGlyphRecords
+    return layers != null && binarySearch(layers, glyphId, byId) != null
+  }
+
   colorGlyph(glyphId: number) {
     if (this.baseGlyphPaintRecords) {
       const record = binarySearch(
