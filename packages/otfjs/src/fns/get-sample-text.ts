@@ -5,7 +5,6 @@ import { ColrTableReader } from '../tables/colr.js'
 import { GlyfTag } from '../tables/glyf.js'
 import { LocaTableReader } from '../tables/loca.js'
 import { MetaTableReader } from '../tables/meta.js'
-import { OS2TableReader } from '../tables/os-2.js'
 import { getGlyphIndex } from './get-glyph-index.js'
 
 /**
@@ -17,14 +16,13 @@ import { getGlyphIndex } from './get-glyph-index.js'
  * In order, it tries:
  * 1. "Aa", and the sample for each language or script in the `meta`
  *    table's `dlng`. "Aa" goes first unless `dlng` only lists non-Latin
- *    languages. Symbol fonts skip this (and step 2), so Wingdings shows its
- *    first two symbols, as Font Book does.
- * 2. A CJK sample, if the `OS/2` code page bits name exactly one CJK script.
- * 3. 😀, for emoji fonts.
- * 4. The script the font has the most letters in: a hand-picked sample for
+ *    languages. Symbol fonts skip this, so Wingdings shows its first two
+ *    symbols, as Font Book does.
+ * 2. 😀, for emoji fonts.
+ * 3. The script the font has the most letters in: a hand-picked sample for
  *    common scripts, or else its first letter (with its lowercase form, if
  *    the script has case).
- * 5. The first two symbols or icons, from private-use characters if the
+ * 4. The first two symbols or icons, from private-use characters if the
  *    font has more of those than symbols.
  */
 export function getSampleText(font: FontHandle): string {
@@ -43,9 +41,6 @@ export function getSampleText(font: FontHandle): string {
     for (const sample of candidates) {
       if (inked(sample)) return sample
     }
-
-    const codePageSample = getCodePageSample(font)
-    if (codePageSample && inked(codePageSample)) return codePageSample
   }
 
   // Checked before letters: emoji fonts map a few letter-like characters,
@@ -94,18 +89,6 @@ function languageSample(tag: string): string | undefined {
 function scriptSample(code: string): string | undefined {
   const normalized = code[0].toUpperCase() + code.slice(1).toLowerCase()
   return SCRIPT_ALIASES[normalized] ?? scriptsByCode.get(normalized)?.samples[0]
-}
-
-/** The CJK sample the OS/2 code page bits point to, if exactly one does. */
-function getCodePageSample(font: FontHandle): string | undefined {
-  const os2 = font.readTableOrNull(OS2TableReader)
-  if (!os2 || os2.version === 0) return
-
-  const bits = os2.ulCodePageRange1
-  const samples = new Set(
-    CODE_PAGE_SAMPLES.filter(([bit]) => bits & (1 << bit)).map(([, s]) => s),
-  )
-  return samples.size === 1 ? [...samples][0] : undefined
 }
 
 /**
@@ -377,12 +360,3 @@ const LANGUAGE_SCRIPTS: Record<string, string> = {
   yi: 'Hebr',
   yue: 'Hant',
 }
-
-/** OS/2 ulCodePageRange1 bits for CJK code pages, and their samples. */
-const CODE_PAGE_SAMPLES: [number, string][] = [
-  [17, 'あ'], // JIS/Japan
-  [18, '汉'], // Chinese: Simplified (PRC and Singapore)
-  [19, '동'], // Korean Wansung
-  [20, '漢'], // Chinese: Traditional (Taiwan, Hong Kong SAR)
-  [21, '동'], // Korean Johab
-]
