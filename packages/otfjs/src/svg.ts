@@ -32,6 +32,11 @@ export function glyphToSvgPath(glyph: Glyph) {
 
 export interface Node {
   type: string
+  /**
+   * SVG attributes, by their SVG names, like `stop-color`. `style` is an
+   * object with camelCase CSS property names, like React's:
+   * `{ mixBlendMode: 'screen' }`. Undefined values mean no attribute.
+   */
   props: Record<string, any>
   children: Node[]
 }
@@ -276,7 +281,7 @@ export function glyphToColorSvg(
           matrix = null
 
           const id = `${glyph.id}-mask-${defs.length}`
-          push('mask', { id, style: 'mask-type: alpha', ...maskRegion })
+          push('mask', { id, style: { maskType: 'alpha' }, ...maskRegion })
           walkAll(mask)
           defs.push(popOnly())
 
@@ -298,7 +303,7 @@ export function glyphToColorSvg(
         matrix = null
         push('g', {
           transform: saved ? mat.toSvg(saved) : undefined,
-          style: 'isolation: isolate',
+          style: { isolation: 'isolate' },
         })
 
         const blend = BLEND_MODES[mode]
@@ -308,7 +313,7 @@ export function glyphToColorSvg(
           pop()
         }
         const drawSrc = () => {
-          push('g', blend ? { style: `mix-blend-mode: ${blend}` } : {})
+          push('g', blend ? { style: { mixBlendMode: blend } } : {})
           walkAll(src)
           pop()
         }
@@ -320,12 +325,13 @@ export function glyphToColorSvg(
         } else if (mode === CompositeMode.DEST_OVER) {
           drawSrc()
           drawDest()
-        } else {
-          // SRC_OVER and the blend modes. The other Porter-Duff modes
-          // (DEST_IN, SRC_OUT, DEST_OUT, SRC_ATOP, DEST_ATOP, XOR) aren't
-          // supported yet and fall back to SRC_OVER.
+        } else if (mode === CompositeMode.SRC_OVER || blend) {
           drawDest()
           drawSrc()
+        } else {
+          // SRC_OUT, DEST_OUT, SRC_ATOP, DEST_ATOP and XOR. No local font
+          // uses them yet.
+          throw new Error(`TODO: unsupported COLR composite mode ${mode}`)
         }
 
         pop()
@@ -362,9 +368,11 @@ function isFill(layer: ColorLayer): boolean {
 }
 
 /**
- * CSS `mix-blend-mode` values for the COLR composite modes that are blend
- * modes. They line up one to one with the W3C Compositing spec, which COLR
- * defines them by.
+ * CSS `mix-blend-mode` values for the COLR composite modes that blend
+ * colors. They line up one to one with the W3C Compositing spec, which COLR
+ * defines them by. The rest, CLEAR through XOR, are Porter-Duff operators
+ * that only decide which shape covers which, and have no `mix-blend-mode`
+ * equivalent; they're handled in the COMPOSITE case.
  */
 const BLEND_MODES: Partial<Record<CompositeMode, string>> = {
   [CompositeMode.PLUS]: 'plus-lighter',

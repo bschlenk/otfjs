@@ -197,28 +197,9 @@ function SvgGlyph({
 
 function nodeToElement(node: SvgNode, key: number): ReactElement {
   const props: Record<string, unknown> = { key }
-  for (const name in node.props) {
-    const value: unknown = node.props[name]
-    props[reactPropName(name)] =
-      name === 'style' && typeof value === 'string' ? parseStyle(value) : value
-  }
+  for (const name in node.props) props[reactPropName(name)] = node.props[name]
 
   return createElement(node.type, props, ...node.children.map(nodeToElement))
-}
-
-/**
- * React wants `style` as an object with camelCase keys, like
- * `{ mixBlendMode: 'screen' }` for `mix-blend-mode: screen`.
- */
-function parseStyle(style: string): Record<string, string> {
-  const result: Record<string, string> = {}
-  for (const declaration of style.split(';')) {
-    const colon = declaration.indexOf(':')
-    if (colon === -1) continue
-    const name = declaration.slice(0, colon).trim()
-    result[reactPropName(name)] = declaration.slice(colon + 1).trim()
-  }
-  return result
 }
 
 /** React wants camelCase SVG attributes, like `stopColor` for `stop-color`. */

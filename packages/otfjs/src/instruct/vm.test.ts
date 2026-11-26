@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { FontHandle } from '../font-handle.js'
 import type { TableReader } from '../table-reader.js'
+import { expectPointCloseTo } from '../test-utils.js'
 import { Opcode } from './opcode.js'
 import { VirtualMachine } from './vm.js'
 
@@ -839,8 +840,7 @@ describe('SCFS', () => {
     )
 
     const pt = vm.getGlyph().points[0]
-    expect(pt.x).toBeCloseTo(150, 3)
-    expect(pt.y).toBeCloseTo(200, 3) // y unchanged
+    expectPointCloseTo(pt, 150, 200) // y unchanged
   })
 })
 
@@ -941,8 +941,7 @@ describe('ALIGNRP', () => {
 
     // Point 1's x should equal point 0's x = 100
     const pts = vm.getGlyph().points
-    expect(pts[1].x).toBeCloseTo(100, 3)
-    expect(pts[1].y).toBeCloseTo(80, 3) // y unchanged (freedom = x-axis)
+    expectPointCloseTo(pts[1], 100, 80) // y unchanged (freedom = x-axis)
   })
 })
 
@@ -1022,8 +1021,7 @@ describe('ISECT', () => {
     )
 
     const pts = vm.getGlyph().points
-    expect(pts[4].x).toBeCloseTo(60, 1)
-    expect(pts[4].y).toBeCloseTo(50, 1)
+    expectPointCloseTo(pts[4], 60, 50, 1)
   })
 })
 
