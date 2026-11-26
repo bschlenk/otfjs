@@ -1,12 +1,7 @@
 import type { PathBuilder } from '../path-builder.js'
-import type { Glyph, Point } from '../types.js'
+import type { GlyfSimple, Point } from '../types.js'
 
-export function walkGlyphPath(glyph: Glyph, path: PathBuilder) {
-  if (glyph.type === 'composite') {
-    console.log(glyph)
-    return
-  }
-
+export function walkGlyfPath(glyph: GlyfSimple, path: PathBuilder) {
   let i = 0
   for (const endIndex of glyph.endPtsOfContours) {
     let start = glyph.points[i++]

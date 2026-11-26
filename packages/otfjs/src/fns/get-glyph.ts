@@ -1,14 +1,14 @@
 import * as mat from '@bschlenk/mat'
 
 import type { FontHandle } from '../font-handle.js'
-import { readGlyf } from '../glyph/glyph.read.js'
-import { compositeGlyphComponentMatrix } from '../glyph/glyph.utils.js'
+import { readGlyf } from '../glyf/glyf.read.js'
+import { glyfComponentMatrix } from '../glyf/glyf.utils.js'
 import { GlyfTag } from '../tables/glyf.js'
 import { HmtxTableReader } from '../tables/hmtx.js'
 import { LocaTableReader } from '../tables/loca.js'
-import type { GlyphEnriched } from '../types.js'
+import type { Glyph } from '../types.js'
 
-export function getGlyph(font: FontHandle, id: number): GlyphEnriched {
+export function getGlyph(font: FontHandle, id: number): Glyph {
   const loca = font.readTable(LocaTableReader)
   const hmtx = font.readTable(HmtxTableReader)
   const glyf = font.getTableView(GlyfTag)
@@ -24,14 +24,14 @@ export function getGlyph(font: FontHandle, id: number): GlyphEnriched {
 
   if (glyph.type === 'simple') {
     // readGlyf returned a fresh object, so add to it rather than copying
-    const enriched = glyph as GlyphEnriched
+    const enriched = glyph as Glyph
     enriched.id = id
     enriched.advanceWidth = advanceWidth
     return enriched
   }
 
   const { components, ...rest } = glyph
-  const fullGlyph: GlyphEnriched = {
+  const fullGlyph: Glyph = {
     ...rest,
     id,
     type: 'simple',
@@ -49,7 +49,7 @@ export function getGlyph(font: FontHandle, id: number): GlyphEnriched {
     )
 
     if (c.flags.argsAreXYValues) {
-      const matrix = compositeGlyphComponentMatrix(c)
+      const matrix = glyfComponentMatrix(c)
       const roundXYToGrid = c.flags.roundXYToGrid
       for (const p of subGlyph.points) {
         const point = mat.transformPoint(matrix, p)

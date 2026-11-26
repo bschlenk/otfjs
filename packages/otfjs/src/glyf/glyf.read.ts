@@ -3,16 +3,16 @@
 
 import type { Reader } from '@otfjs/buffer'
 
-import { GlyphFlags, readGlyphCompositeFlags } from '../tables/glyf.gen.js'
+import { GlyfFlags, readGlyfCompositeFlags } from '../tables/glyf.gen.js'
 import type {
-  Glyph,
-  GlyphComposite,
-  GlyphCompositeComponent,
-  GlyphSimple,
+  Glyf,
+  GlyfComponent,
+  GlyfComposite,
+  GlyfSimple,
   Point,
 } from '../types.js'
 import { assert, EMPTY_U8_ARRAY } from '../utils/utils.js'
-import { emptyGlyph } from './glyph.utils.js'
+import { emptyGlyf } from './glyf.utils.js'
 
 /**
  * This reader is a special case, where the `view` is expected to already
@@ -20,8 +20,8 @@ import { emptyGlyph } from './glyph.utils.js'
  * offset can be determined by reading the `loca` table. The glyph length can be
  * determined by looking at glyphIndex + 1.
  */
-export function readGlyf(view: Reader): Glyph {
-  if (view.length === 0) return emptyGlyph()
+export function readGlyf(view: Reader): Glyf {
+  if (view.length === 0) return emptyGlyf()
 
   const numberOfContours = view.i16()
   const isComposite = numberOfContours < 0
@@ -39,8 +39,8 @@ export function readGlyf(view: Reader): Glyph {
   const yMax = view.i16()
 
   if (isComposite) {
-    const parts = readCompositeGlyph(view)
-    const glyph: GlyphComposite = {
+    const parts = readGlyfComposite(view)
+    const glyph: GlyfComposite = {
       type: 'composite',
       xMin,
       yMin,
@@ -62,11 +62,11 @@ export function readGlyf(view: Reader): Glyph {
   if (numberOfContours > 0) {
     const numPoints = endPtsOfContours[numberOfContours - 1] + 1
     const flags = readFlags(numPoints, view)
-    contoursOverlap = new GlyphFlags(flags[0]).contoursOverlap
+    contoursOverlap = new GlyfFlags(flags[0]).contoursOverlap
     points = readPoints(flags, view)
   }
 
-  const glyph: GlyphSimple = {
+  const glyph: GlyfSimple = {
     type: 'simple',
     xMin,
     yMin,
@@ -81,10 +81,8 @@ export function readGlyf(view: Reader): Glyph {
   return glyph
 }
 
-export function readCompositeGlyphComponent(
-  view: Reader,
-): GlyphCompositeComponent {
-  const flags = readGlyphCompositeFlags(view)
+export function readGlyfComponent(view: Reader): GlyfComponent {
+  const flags = readGlyfCompositeFlags(view)
   const glyphIndex = view.u16()
 
   let arg1: number, arg2: number
@@ -126,12 +124,12 @@ export function readCompositeGlyphComponent(
 
 /**
  * The raw flag bytes, one per point, with repeats expanded. They're kept
- * as bytes rather than `GlyphFlags` objects to avoid an allocation per
- * point; wrap one in a `GlyphFlags` to read it.
+ * as bytes rather than `GlyfFlags` objects to avoid an allocation per
+ * point; wrap one in a `GlyfFlags` to read it.
  */
 function readFlags(count: number, view: Reader) {
   const flags = new Uint8Array(count)
-  const flag = new GlyphFlags()
+  const flag = new GlyfFlags()
 
   for (let i = 0; i < count;) {
     flag.value = flags[i++] = view.u8()
@@ -153,7 +151,7 @@ function readFlags(count: number, view: Reader) {
 function readPoints(flags: Uint8Array, view: Reader) {
   const count = flags.length
   const points = new Array<Point>(count)
-  const flag = new GlyphFlags()
+  const flag = new GlyfFlags()
 
   let x = 0
   for (let i = 0; i < count; ++i) {
@@ -186,13 +184,13 @@ function readPoints(flags: Uint8Array, view: Reader) {
   return points
 }
 
-function readCompositeGlyph(view: Reader) {
-  const components: GlyphCompositeComponent[] = []
-  let component!: GlyphCompositeComponent
+function readGlyfComposite(view: Reader) {
+  const components: GlyfComponent[] = []
+  let component!: GlyfComponent
   let weHaveInstructions = false
 
   do {
-    component = readCompositeGlyphComponent(view)
+    component = readGlyfComponent(view)
     components.push(component)
     weHaveInstructions ||= component.flags.weHaveInstructions
   } while (component.flags.moreComponents)

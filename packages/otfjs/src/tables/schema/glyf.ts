@@ -3,7 +3,7 @@
 import { s } from '@otfjs/buffer-gen/schema'
 
 // The flag byte stored for each point of a simple glyph
-export const GlyphFlags = s.flags('GlyphFlags', s.u8(), {
+export const GlyfFlags = s.flags('GlyfFlags', s.u8(), {
   onCurvePoint: 0,
   xShortVector: 1,
   yShortVector: 2,
@@ -14,7 +14,7 @@ export const GlyphFlags = s.flags('GlyphFlags', s.u8(), {
 })
 
 // The flags on each component of a composite glyph
-export const GlyphCompositeFlags = s.flags('GlyphCompositeFlags', s.u16(), {
+export const GlyfCompositeFlags = s.flags('GlyfCompositeFlags', s.u16(), {
   arg1And2AreWords: 0,
   argsAreXYValues: 1,
   roundXYToGrid: 2,

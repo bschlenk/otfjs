@@ -2,9 +2,9 @@ import type { Matrix } from '@bschlenk/mat'
 import type { Vector } from '@bschlenk/vec'
 
 import type { Extend } from './enums.js'
-import type { GlyphCompositeFlags } from './tables/glyf.gen.js'
+import type { GlyfCompositeFlags } from './tables/glyf.gen.js'
 
-interface GlyphBase<T extends string> {
+interface GlyfBase<T extends string> {
   type: T
   xMin: number
   yMin: number
@@ -13,20 +13,20 @@ interface GlyphBase<T extends string> {
   instructions: Uint8Array
 }
 
-export interface GlyphSimple extends GlyphBase<'simple'> {
+export interface GlyfSimple extends GlyfBase<'simple'> {
   endPtsOfContours: number[]
   points: Point[]
   contoursOverlap: boolean
 }
 
-export interface GlyphComposite extends GlyphBase<'composite'> {
-  components: GlyphCompositeComponent[]
+export interface GlyfComposite extends GlyfBase<'composite'> {
+  components: GlyfComponent[]
 }
 
-export type Glyph = GlyphSimple | GlyphComposite
+export type Glyf = GlyfSimple | GlyfComposite
 
-export interface GlyphCompositeComponent {
-  flags: GlyphCompositeFlags
+export interface GlyfComponent {
+  flags: GlyfCompositeFlags
   glyphIndex: number
   arg1: number
   arg2: number
@@ -46,7 +46,11 @@ export interface RGBA {
   a: number
 }
 
-export interface GlyphEnriched extends GlyphSimple {
+/**
+ * A glyph as `getGlyph` returns it, independent of the table it came from.
+ * For now that is always a glyf outline, with composites flattened.
+ */
+export interface Glyph extends GlyfSimple {
   id: number
   advanceWidth: number
 }

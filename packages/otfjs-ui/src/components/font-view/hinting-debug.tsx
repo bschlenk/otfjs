@@ -11,8 +11,8 @@ import {
   disassemble,
   Font,
   getGlyphIndex,
-  GlyphEnriched,
-  GlyphSimple,
+  GlyfSimple,
+  Glyph,
   glyphToSvgPath,
   VirtualMachine,
 } from 'otfjs'
@@ -49,14 +49,14 @@ interface PhaseSetup {
   inst: Uint8Array
   initialCvt: number[]
   /** Scaled glyph (pixel space) at the start of the phase — used as the "original" overlay */
-  originalGlyph: GlyphSimple | null
+  originalGlyph: GlyfSimple | null
   scale: number
   numGlyphPoints: number
 }
 
 function buildPhase(
   font: Font,
-  glyph: GlyphSimple | null,
+  glyph: GlyfSimple | null,
   fontSize: number,
   upem: number,
   phase: Phase,
@@ -85,7 +85,7 @@ function buildPhase(
     let lsbFU = glyph.xMin
     try {
       const hmtx = font.getTable('hmtx')
-      const id = (glyph as GlyphEnriched).id ?? 0
+      const id = (glyph as Glyph).id ?? 0
       const rec =
         hmtx.longHorMetrics[id] ??
         hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
@@ -625,7 +625,7 @@ function InstructionPanel({
 // ---------------------------------------------------------------------------
 
 interface StepperCanvasProps {
-  originalGlyph: GlyphSimple
+  originalGlyph: GlyfSimple
   currentZone1: { x: number; y: number; onCurve: boolean }[]
   currentZone0: { x: number; y: number; onCurve: boolean }[]
   gs: GS | null
@@ -720,7 +720,7 @@ function StepperCanvas({
     const { w: cW, h: cH, ppu } = container
     if (cW === 0 || cH === 0 || ppu <= 0) return
 
-    const currentGlyph: GlyphSimple = {
+    const currentGlyph: GlyfSimple = {
       ...originalGlyph,
       points: currentPoints,
     }

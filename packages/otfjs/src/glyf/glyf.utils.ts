@@ -1,9 +1,9 @@
 import * as mat from '@bschlenk/mat'
 
-import type { Glyph, GlyphCompositeComponent, GlyphSimple } from '../types.js'
+import type { Glyf, GlyfComponent, GlyfSimple } from '../types.js'
 import { EMPTY_U8_ARRAY } from '../utils/utils.js'
 
-export function emptyGlyph(): GlyphSimple {
+export function emptyGlyf(): GlyfSimple {
   return {
     type: 'simple',
     xMin: 0,
@@ -22,7 +22,7 @@ export function emptyGlyph(): GlyphSimple {
  * the space character) take no bytes in the glyf table: their loca
  * offset equals the next glyph's.
  */
-export function isEmptyGlyph(glyph: Glyph): boolean {
+export function isEmptyGlyf(glyph: Glyf): boolean {
   return (
     glyph.type === 'simple' &&
     glyph.endPtsOfContours.length === 0 &&
@@ -30,12 +30,12 @@ export function isEmptyGlyph(glyph: Glyph): boolean {
   )
 }
 
-export function compositeGlyphComponentMatrix({
+export function glyfComponentMatrix({
   flags,
   arg1,
   arg2,
   extra,
-}: GlyphCompositeComponent) {
+}: GlyfComponent) {
   const xAndYAreScaled =
     flags.scaledComponentOffset && !flags.unscaledComponentOffset
 

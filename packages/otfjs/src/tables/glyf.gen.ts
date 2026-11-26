@@ -2,7 +2,7 @@
 // Run `pnpm generate` to regenerate. Do not edit manually.
 import { type Reader } from '@otfjs/buffer'
 
-export class GlyphCompositeFlags {
+export class GlyfCompositeFlags {
   value: number
 
   constructor(value = 0) {
@@ -124,11 +124,11 @@ export class GlyphCompositeFlags {
   }
 }
 
-export function readGlyphCompositeFlags(r: Reader): GlyphCompositeFlags {
-  return new GlyphCompositeFlags(r.u16())
+export function readGlyfCompositeFlags(r: Reader): GlyfCompositeFlags {
+  return new GlyfCompositeFlags(r.u16())
 }
 
-export class GlyphFlags {
+export class GlyfFlags {
   value: number
 
   constructor(value = 0) {
@@ -205,6 +205,6 @@ export class GlyphFlags {
   }
 }
 
-export function readGlyphFlags(r: Reader): GlyphFlags {
-  return new GlyphFlags(r.u8())
+export function readGlyfFlags(r: Reader): GlyfFlags {
+  return new GlyfFlags(r.u8())
 }
