@@ -117,11 +117,10 @@ function generatePreview(font: Font): string | null {
   const viewBox = `${xMin - padding} ${upem - yMax - padding} ${xMax - xMin + padding * 2} ${yMax - yMin + padding * 2}`
 
   const body = placed
-    .map(({ x, paths }) =>
-      x === 0 ?
-        nodesToSvg(paths)
-      : `<g transform="translate(${x} 0)">${nodesToSvg(paths)}</g>`,
-    )
+    .map(({ x, paths }) => {
+      const svg = nodesToSvg(paths)
+      return x === 0 ? svg : `<g transform="translate(${x} 0)">${svg}</g>`
+    })
     .join('\n    ')
 
   return `\
