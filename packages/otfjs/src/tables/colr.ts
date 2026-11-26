@@ -254,6 +254,20 @@ export class ColrTable {
     return null
   }
 
+  /**
+   * A transform paint: a child paint offset, then whatever fields
+   * `readMatrix` reads to build the matrix.
+   */
+  private visitTransform(
+    view: Reader,
+    readMatrix: (view: Reader) => mat.Matrix,
+  ): ColorLayer[] {
+    const paintOffset = view.u24()
+    const matrix = readMatrix(view)
+    const children = this.visitLayer(view.subtable(paintOffset))
+    return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
+  }
+
   private visitLayer(view: Reader): ColorLayer[] {
     const format = view.u8()
 
@@ -342,53 +356,66 @@ export class ColrTable {
         return this.colorGlyph(glyphId) ?? []
       }
 
+      // Transforms: a child paint offset, then the fields for the matrix.
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-12-and-13-painttransform-paintvartransform
-      case 12: {
-        const paintOffset = view.u24()
-        const transformOffset = view.u24()
-        const matrix = readAffine2x3(view.subtable(transformOffset))
-
-        const children = this.visitLayer(view.subtable(paintOffset))
-
-        return [layer(format, { matrix }, children)]
-      }
+      case 12:
+        return this.visitTransform(view, (v) =>
+          readAffine2x3(v.subtable(v.u24())),
+        )
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-14-and-15-painttranslate-paintvartranslate
-      case 14: {
-        const paintOffset = view.u24()
-        const dx = view.i16()
-        const dy = view.i16()
-        const matrix = mat.translate(dx, dy)
-
-        const children = this.visitLayer(view.subtable(paintOffset))
-
-        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
-      }
+      case 14:
+        return this.visitTransform(view, (v) => mat.translate(v.i16(), v.i16()))
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-16-to-23-paintscale-and-variant-scaling-formats
-      case 16: {
-        const paintOffset = view.u24()
-        const scaleX = view.f2dot14()
-        const scaleY = view.f2dot14()
-        const matrix = mat.scale(scaleX, scaleY)
+      case 16:
+        return this.visitTransform(view, (v) =>
+          mat.scale(v.f2dot14(), v.f2dot14()),
+        )
 
-        const children = this.visitLayer(view.subtable(paintOffset))
+      case 18:
+        return this.visitTransform(view, (v) =>
+          mat.scaleAt(v.f2dot14(), v.f2dot14(), v.i16(), v.i16()),
+        )
 
-        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
-      }
+      case 20:
+        return this.visitTransform(view, (v) => mat.scale(v.f2dot14()))
 
-      case 18: {
-        const paintOffset = view.u24()
-        const scaleX = view.f2dot14()
-        const scaleY = view.f2dot14()
-        const centerX = view.i16()
-        const centerY = view.i16()
-        const matrix = mat.scaleAt(scaleX, scaleY, centerX, centerY)
+      case 22:
+        return this.visitTransform(view, (v) => {
+          const scale = v.f2dot14()
+          return mat.scaleAt(scale, scale, v.i16(), v.i16())
+        })
 
-        const children = this.visitLayer(view.subtable(paintOffset))
+      // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-24-to-27-paintrotate-paintvarrotate-paintrotatearoundcenter-paintvarrotatearoundcenter
+      // Angles are counter-clockwise half turns (1.0 is 180°).
+      case 24:
+        return this.visitTransform(view, (v) =>
+          mat.rotate(v.f2dot14() * Math.PI),
+        )
 
-        return [layer(ColorRecordType.TRANSFORM, { matrix }, children)]
-      }
+      case 26:
+        return this.visitTransform(view, (v) =>
+          mat.rotateAt(v.f2dot14() * Math.PI, v.i16(), v.i16()),
+        )
+
+      // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#formats-28-to-31-paintskew-paintvarskew-paintskewaroundcenter-paintvarskewaroundcenter
+      // Angles are counter-clockwise half turns. A positive x angle tilts the
+      // y axis counter-clockwise, which is a negative CSS-style skew, so it's
+      // negated, as fontTools does in `PaintSkew.getTransform`.
+      case 28:
+        return this.visitTransform(view, (v) => {
+          const x = -v.f2dot14() * Math.PI
+          const y = v.f2dot14() * Math.PI
+          return mat.skew(x, y)
+        })
+
+      case 30:
+        return this.visitTransform(view, (v) => {
+          const x = -v.f2dot14() * Math.PI
+          const y = v.f2dot14() * Math.PI
+          return mat.skewAt(x, y, v.i16(), v.i16())
+        })
 
       // https://learn.microsoft.com/en-us/typography/opentype/spec/colr#format-32-paintcomposite
       case 32: {

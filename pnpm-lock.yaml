@@ -33,8 +33,8 @@ importers:
   packages/otfjs:
     dependencies:
       '@bschlenk/mat':
-        specifier: ^0.0.12
-        version: 0.0.12
+        specifier: ^0.0.14
+        version: 0.0.14
       '@bschlenk/vec':
         specifier: ^0.0.8
         version: 0.0.8
@@ -116,8 +116,8 @@ importers:
   packages/otfjs-cli:
     dependencies:
       '@bschlenk/mat':
-        specifier: ^0.0.12
-        version: 0.0.12
+        specifier: ^0.0.14
+        version: 0.0.14
       '@bschlenk/vec':
         specifier: ^0.0.8
         version: 0.0.8
@@ -150,8 +150,8 @@ importers:
   packages/otfjs-ui:
     dependencies:
       '@bschlenk/mat':
-        specifier: ^0.0.12
-        version: 0.0.12
+        specifier: ^0.0.14
+        version: 0.0.14
       '@bschlenk/vec':
         specifier: ^0.0.8
         version: 0.0.8
@@ -368,11 +368,14 @@ packages:
     peerDependencies:
       eslint: '>= 9'
 
-  '@bschlenk/mat@0.0.12':
-    resolution: {integrity: sha512-9sBpdRSkGHyyxQDDC0BgeL3FmZkCbu5ngQIdkz5poyyqVFTD6LW4ueqyMZHrtLvcmmbYAg3XMza6D5zVhTmHeg==}
+  '@bschlenk/mat@0.0.14':
+    resolution: {integrity: sha512-1BQsVEQ8sO9PRWFMZDgLklJy29HI8D97DnkKJlWaC4Ee2Ighckxc2lrzIllWrEWjDM07QYgvZvp3n6vHYaH0KA==}
 
   '@bschlenk/util@0.0.3':
     resolution: {integrity: sha512-Drl0cviWwWIRhrqvGfuzVGR81UfBLGdj+62XDwsRcgVAI7ydqGibAcyHAWqDKPC13QU/EShSKKFFZlwyTr+I/g==}
+
+  '@bschlenk/util@0.0.4':
+    resolution: {integrity: sha512-UOt9vEocG+FeMhM8IqAGe2QpuRj7M+AfOMFLLvVOSz4d+293IkKbmy50nxoxTYYXPUyNPDLQOkZBsj7DX+TYTQ==}
 
   '@bschlenk/vec@0.0.8':
     resolution: {integrity: sha512-UzE+IxHayKNZJKK0QeBosY/5dV/5UzxQ0gWtS6lZq6PCR30rcWVhW6cKaOJDzY7V8/eAtDMBXkOhYWhounia+g==}
@@ -2933,11 +2936,13 @@ snapshots:
       - supports-color
       - typescript
 
-  '@bschlenk/mat@0.0.12':
+  '@bschlenk/mat@0.0.14':
     dependencies:
-      '@bschlenk/util': 0.0.3
+      '@bschlenk/util': 0.0.4
 
   '@bschlenk/util@0.0.3': {}
+
+  '@bschlenk/util@0.0.4': {}
 
   '@bschlenk/vec@0.0.8':
     dependencies:

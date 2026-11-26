@@ -12,7 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@bschlenk/mat": "^0.0.12",
+    "@bschlenk/mat": "^0.0.14",
     "@bschlenk/vec": "^0.0.8",
     "@tanstack/react-router": "^1.135.2",
     "@tanstack/react-router-devtools": "^1.135.2",

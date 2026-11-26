@@ -22,7 +22,7 @@
     "test": "vitest --passWithNoTests"
   },
   "dependencies": {
-    "@bschlenk/mat": "^0.0.12",
+    "@bschlenk/mat": "^0.0.14",
     "@bschlenk/vec": "^0.0.8",
     "dom-serializer": "^2.0.0",
     "domhandler": "^5.0.3",

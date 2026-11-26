@@ -128,8 +128,10 @@ function nodesToSvg(nodes: Node[]) {
 
   function walk(node: Node) {
     const attrs = []
-    for (const [k, v] of Object.entries(node.props)) {
-      if (v != null) attrs.push(`${k}="${v}"`)
+    const props = Object.entries(node.props) as [string, AttrValue][]
+    for (const [k, v] of props) {
+      if (v == null) continue
+      attrs.push(`${k}="${typeof v === 'object' ? styleToCss(v) : v}"`)
     }
 
     out += `<${node.type} ${attrs.join(' ')}`
@@ -146,4 +148,17 @@ function nodesToSvg(nodes: Node[]) {
   nodes.forEach(walk)
 
   return out
+}
+
+/** An SVG node prop: an attribute value, or a `style` object. */
+type AttrValue = string | number | Record<string, string> | null | undefined
+
+/** `{ mixBlendMode: 'screen' }` to `mix-blend-mode: screen`. */
+function styleToCss(style: Record<string, string>) {
+  return Object.entries(style)
+    .map(
+      ([name, value]) =>
+        `${name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}: ${value}`,
+    )
+    .join('; ')
 }
