@@ -4,19 +4,19 @@ import { describe, expect, it } from 'vitest'
 import { compileGlyfLoca } from '../fns/compile-glyf-loca.js'
 import { buildFont } from '../font-builder.js'
 import { FontHandle } from '../font-handle.js'
-import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
-import { GlyphCompositeFlags } from './glyf.gen.js'
+import type { Glyf, GlyfComposite, GlyfSimple } from '../types.js'
+import { GlyfCompositeFlags } from './glyf.gen.js'
 import {
-  emptyGlyph,
+  emptyGlyf,
   GlyfTableWriter,
   GlyfTag,
-  isEmptyGlyph,
+  isEmptyGlyf,
   readGlyf,
   writeGlyfTableWithOffsets,
 } from './glyf.js'
 import { LocaTableReader } from './loca.js'
 
-const simple: GlyphSimple = {
+const simple: GlyfSimple = {
   type: 'simple',
   xMin: -300,
   yMin: 0,
@@ -37,7 +37,7 @@ const simple: GlyphSimple = {
   ],
 }
 
-const composite: GlyphComposite = {
+const composite: GlyfComposite = {
   type: 'composite',
   xMin: 0,
   yMin: -10,
@@ -54,13 +54,13 @@ const composite: GlyphComposite = {
 
 describe('writeGlyfTableWithOffsets', () => {
   it('round-trips simple, composite, and empty glyphs', () => {
-    const glyphs = [emptyGlyph(), simple, composite]
+    const glyphs = [emptyGlyf(), simple, composite]
     expect(roundTrip(glyphs)).toEqual(glyphs)
   })
 
   it('writes glyphs with instructions but no contours', () => {
-    const glyph = { ...emptyGlyph(), instructions: new Uint8Array([1]) }
-    expect(isEmptyGlyph(glyph)).toBe(false)
+    const glyph = { ...emptyGlyf(), instructions: new Uint8Array([1]) }
+    expect(isEmptyGlyf(glyph)).toBe(false)
     expect(roundTrip([glyph])).toEqual([glyph])
   })
 
@@ -71,8 +71,8 @@ describe('writeGlyfTableWithOffsets', () => {
       y: 0,
       onCurve: true,
     }))
-    const glyph: GlyphSimple = {
-      ...emptyGlyph(),
+    const glyph: GlyfSimple = {
+      ...emptyGlyf(),
       xMin: 1,
       xMax: 300,
       endPtsOfContours: [points.length - 1],
@@ -84,7 +84,7 @@ describe('writeGlyfTableWithOffsets', () => {
   it('writes each glyph at a 4-byte aligned offset', () => {
     const { offsets } = writeGlyfTableWithOffsets([
       simple,
-      emptyGlyph(),
+      emptyGlyf(),
       composite,
     ])
     expect(offsets).toHaveLength(4)
@@ -103,7 +103,7 @@ describe('writeGlyfTableWithOffsets', () => {
 })
 
 describe('compileGlyfLoca', () => {
-  const glyphs = [emptyGlyph(), simple, composite]
+  const glyphs = [emptyGlyf(), simple, composite]
 
   it.each([0, 1] as const)(
     'round-trips through a font with loca format %i',
@@ -144,7 +144,7 @@ describe('compileGlyfLoca', () => {
   })
 })
 
-function roundTrip(glyphs: Glyph[]) {
+function roundTrip(glyphs: Glyf[]) {
   const { data, offsets } = writeGlyfTableWithOffsets(glyphs)
   return glyphs.map((_, i) =>
     readGlyf(new Reader(data.subarray(offsets[i], offsets[i + 1]))),
@@ -171,7 +171,7 @@ function head(indexToLocFormat: number) {
 
 function component(flags: number, glyphIndex: number, extra: number[] = []) {
   return {
-    flags: new GlyphCompositeFlags(flags),
+    flags: new GlyfCompositeFlags(flags),
     glyphIndex,
     arg1: flags & 1 ? -1000 : -5,
     arg2: flags & 1 ? 2000 : 7,

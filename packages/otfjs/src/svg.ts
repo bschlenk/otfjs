@@ -5,7 +5,7 @@ import { rgbaToCss } from './color.js'
 import { Extend } from './enums.js'
 import { getGlyph } from './fns/get-glyph.js'
 import type { FontHandle } from './font-handle.js'
-import { walkGlyphPath } from './glyph/glyph.path.js'
+import { walkGlyfPath } from './glyf/glyf.path.js'
 import { SvgPathBuilder } from './path-builder.js'
 import {
   type ColorLayer,
@@ -15,7 +15,7 @@ import {
 import { ColrTableReader } from './tables/colr.js'
 import { CpalTableReader } from './tables/cpal.js'
 import { HeadTableReader } from './tables/head.js'
-import type { Glyph, GlyphEnriched } from './types.js'
+import type { GlyfSimple, Glyph } from './types.js'
 
 // The gradient coords of a color glyph are always relative to the em square
 const gradientUnits = 'userSpaceOnUse'
@@ -24,9 +24,9 @@ const gradientUnits = 'userSpaceOnUse'
 // layer glyphs heavily: Noto Color Emoji paints 38k glyphs 130k times.
 const layerPaths = new WeakMap<FontHandle, Map<number, string>>()
 
-export function glyphToSvgPath(glyph: Glyph) {
+export function glyphToSvgPath(glyph: GlyfSimple) {
   const path = new SvgPathBuilder()
-  walkGlyphPath(glyph, path)
+  walkGlyfPath(glyph, path)
   return path.toString()
 }
 
@@ -52,7 +52,7 @@ export interface Node {
  * TODO: allow scoping ids?
  */
 export function glyphToColorSvg(
-  glyph: GlyphEnriched,
+  glyph: Glyph,
   font: FontHandle,
   paletteIdx: number,
 ): { paths: Node[]; defs: Node[] } {

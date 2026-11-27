@@ -7,14 +7,14 @@ import {
   useState,
 } from 'react'
 import * as vec from '@bschlenk/vec'
-import { GlyphSimple, glyphToSvgPath, renderGlyphToCanvas } from 'otfjs'
+import { GlyfSimple, glyphToSvgPath, renderGlyphToCanvas } from 'otfjs'
 
 import { useOriginScale } from '../../hooks/use-origin-scale'
 
 import styles from './glyph-editor.module.css'
 
 export interface GlyphEditorProps {
-  glyph: GlyphSimple
+  glyph: GlyfSimple
   upem: number
 }
 
@@ -139,7 +139,7 @@ function useSize(ref: RefObject<Element | null>) {
 
 const MARGIN = 32
 
-function centeredGlyph(glyph: GlyphSimple, size: vec.Vector, upem: number) {
+function centeredGlyph(glyph: GlyfSimple, size: vec.Vector, upem: number) {
   const left = Math.min(0, glyph.xMin)
   const right = Math.max(upem, glyph.xMax)
   const top = Math.max(upem, glyph.yMax)
@@ -184,7 +184,7 @@ interface RenderGlyphOptions {
 }
 
 function renderGlyph(
-  glyph: GlyphSimple,
+  glyph: GlyfSimple,
   { scale = 1, antialias = false }: RenderGlyphOptions,
 ) {
   const canvas = document.createElement('canvas')

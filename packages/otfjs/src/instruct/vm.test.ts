@@ -76,7 +76,7 @@ function run(
   return vm
 }
 
-/** Make a minimal GlyphSimple mock for testing. */
+/** Make a minimal GlyfSimple mock for testing. */
 function makeGlyph(
   points: { x: number; y: number; onCurve: boolean }[],
   contours?: number[],

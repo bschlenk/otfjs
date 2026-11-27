@@ -1,9 +1,9 @@
 import * as vec from '@bschlenk/vec'
 import { Reader } from '@otfjs/buffer'
 
-import { readCompositeGlyphComponent } from '../glyph/glyph.read.js'
-import { emptyGlyph } from '../glyph/glyph.utils.js'
-import type { Glyph, GlyphCompositeComponent, Point } from '../types.js'
+import { readGlyfComponent } from '../glyf/glyf.read.js'
+import { emptyGlyf } from '../glyf/glyf.utils.js'
+import type { Glyf, GlyfComponent, Point } from '../types.js'
 import { high12, highNibble, low12, lowNibble, readBit } from '../utils/bit.js'
 import { assert, EMPTY_U8_ARRAY } from '../utils/utils.js'
 
@@ -31,7 +31,7 @@ export function decodeGlyfTransform0(buff: Uint8Array) {
     yMax: bboxStream.i16(),
   })
 
-  const glyphs: Glyph[] = []
+  const glyphs: Glyf[] = []
 
   for (let i = 0; i < numGlyphs; i++) {
     const numContours = nContourStream.i16()
@@ -41,7 +41,7 @@ export function decodeGlyfTransform0(buff: Uint8Array) {
       // empty glyph
       case 0: {
         assert(!hasBBox, 'Empty glyph should not have explicit bbox')
-        glyphs.push(emptyGlyph())
+        glyphs.push(emptyGlyf())
         break
       }
 
@@ -49,12 +49,12 @@ export function decodeGlyfTransform0(buff: Uint8Array) {
       case -1: {
         assert(hasBBox, 'Composite glyph must have explicit bbox')
 
-        const components: GlyphCompositeComponent[] = []
-        let component!: GlyphCompositeComponent
+        const components: GlyfComponent[] = []
+        let component!: GlyfComponent
         let weHaveInstructions = false
 
         do {
-          component = readCompositeGlyphComponent(compositeStream)
+          component = readGlyfComponent(compositeStream)
           components.push(component)
           weHaveInstructions ||= component.flags.weHaveInstructions
         } while (component.flags.moreComponents)

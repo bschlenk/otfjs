@@ -5,7 +5,7 @@ import {
   Font,
   getGlyphIndex,
   getSampleText,
-  GlyphEnriched,
+  Glyph,
   glyphToColorSvg,
   type Node,
 } from 'otfjs'
@@ -73,7 +73,7 @@ function generatePreview(font: Font): string | null {
   const text = getSampleText(font)
   if (!text) return null
 
-  let glyphs: GlyphEnriched[]
+  let glyphs: Glyph[]
   try {
     glyphs = [...text].map((char) =>
       font.getGlyph(getGlyphIndex(font, char.codePointAt(0)!)),
@@ -146,7 +146,7 @@ ${
  * paint everything through COLR, so those use the advance and em height
  * instead, the same box glyphToColorSvg fills unclipped paints with.
  */
-function inkBounds(glyph: GlyphEnriched, upem: number) {
+function inkBounds(glyph: Glyph, upem: number) {
   const empty = glyph.xMax <= glyph.xMin && glyph.yMax <= glyph.yMin
   if (!empty) return glyph
   return { xMin: 0, xMax: glyph.advanceWidth, yMin: 0, yMax: upem }

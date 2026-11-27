@@ -2,8 +2,8 @@ import { createElement, type JSX, type ReactElement, useState } from 'react'
 import clsx from 'clsx'
 import {
   Font,
-  GlyphEnriched,
-  GlyphSimple,
+  GlyfSimple,
+  Glyph,
   glyphToColorSvg,
   type Node as SvgNode,
 } from 'otfjs'
@@ -27,7 +27,7 @@ export function GlyfView({ font }: { font: Font }) {
     return <AllGlyfView font={font} onClick={(i) => setGlyfId(i)} />
   }
 
-  const glyph = font.getGlyph(glyfId) as GlyphSimple
+  const glyph = font.getGlyph(glyfId) as GlyfSimple
 
   return (
     <div className={glyfStyles.glyphDetail}>
@@ -168,7 +168,7 @@ function SvgGlyph({
   height,
   palette,
 }: {
-  glyph: GlyphEnriched
+  glyph: Glyph
   font: Font
   height: number
   palette: number

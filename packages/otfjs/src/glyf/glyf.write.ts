@@ -4,18 +4,18 @@
 import * as vec from '@bschlenk/vec'
 import { Writer } from '@otfjs/buffer'
 
-import { GlyphFlags } from '../tables/glyf.gen.js'
+import { GlyfFlags } from '../tables/glyf.gen.js'
 import type { LocaTable } from '../tables/loca.js'
-import type { Glyph, GlyphComposite, GlyphSimple } from '../types.js'
+import type { Glyf, GlyfComposite, GlyfSimple } from '../types.js'
 import { assert } from '../utils/utils.js'
-import { isEmptyGlyph } from './glyph.utils.js'
+import { isEmptyGlyf } from './glyf.utils.js'
 
 /**
  * Write the glyf table, also returning the loca offsets of each glyph.
  * When building a font, use this (or `compileGlyfLoca`) so loca matches
  * the glyf table it indexes into.
  */
-export function writeGlyfTableWithOffsets(glyphs: Glyph[]): {
+export function writeGlyfTableWithOffsets(glyphs: Glyf[]): {
   data: Uint8Array
   offsets: LocaTable
 } {
@@ -27,10 +27,10 @@ export function writeGlyfTableWithOffsets(glyphs: Glyph[]): {
 
     switch (glyph.type) {
       case 'simple':
-        writeSimpleGlyph(writer, glyph)
+        writeGlyfSimple(writer, glyph)
         break
       case 'composite':
-        writeCompositeGlyph(writer, glyph)
+        writeGlyfComposite(writer, glyph)
         break
     }
 
@@ -42,12 +42,12 @@ export function writeGlyfTableWithOffsets(glyphs: Glyph[]): {
   return { data: writer.toBuffer(), offsets }
 }
 
-export function writeGlyfTable(glyphs: Glyph[]): Uint8Array {
+export function writeGlyfTable(glyphs: Glyf[]): Uint8Array {
   return writeGlyfTableWithOffsets(glyphs).data
 }
 
-function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
-  if (isEmptyGlyph(glyph)) return
+function writeGlyfSimple(writer: Writer, glyph: GlyfSimple) {
+  if (isEmptyGlyf(glyph)) return
 
   writer.i16(glyph.endPtsOfContours.length)
   writeMinMax(writer, glyph)
@@ -57,14 +57,14 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
   writer.u16(glyph.instructions.length)
   writer.buffer(glyph.instructions)
 
-  const flagsArray: GlyphFlags[] = []
+  const flagsArray: GlyfFlags[] = []
   const xCoordinates: number[] = []
   const yCoordinates: number[] = []
 
   let lastPoint = vec.ZERO
 
   for (const [i, point] of glyph.points.entries()) {
-    const flag = new GlyphFlags()
+    const flag = new GlyfFlags()
     flag.onCurvePoint = point.onCurve
     // The spec says OVERLAP_SIMPLE should only be set on the first flag
     flag.contoursOverlap = i === 0 && glyph.contoursOverlap
@@ -102,7 +102,7 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
     lastPoint = point
   }
 
-  const flagGroups: { flags: GlyphFlags; repeat: number }[] = []
+  const flagGroups: { flags: GlyfFlags; repeat: number }[] = []
 
   for (const flags of flagsArray) {
     const lastGroup = flagGroups[flagGroups.length - 1]
@@ -133,7 +133,7 @@ function writeSimpleGlyph(writer: Writer, glyph: GlyphSimple) {
   yCoordinates.forEach(writeCoord)
 }
 
-function writeCompositeGlyph(writer: Writer, glyph: GlyphComposite) {
+function writeGlyfComposite(writer: Writer, glyph: GlyfComposite) {
   writer.i16(-1)
   writeMinMax(writer, glyph)
 
@@ -193,7 +193,7 @@ function writeCompositeGlyph(writer: Writer, glyph: GlyphComposite) {
   }
 }
 
-function writeMinMax(writer: Writer, glyph: Glyph) {
+function writeMinMax(writer: Writer, glyph: Glyf) {
   writer.i16(glyph.xMin)
   writer.i16(glyph.yMin)
   writer.i16(glyph.xMax)

@@ -18,7 +18,7 @@ import type { TableReader } from './table-reader.js'
 import { GlyfTag } from './tables/glyf.js'
 import { HeadTableReader } from './tables/head.js'
 import { MaxpTableReader } from './tables/maxp.js'
-import type { GlyphEnriched } from './types.js'
+import type { Glyph } from './types.js'
 
 export type TableType<T extends string> =
   T extends keyof TableMap ? TableMap[T] : unknown
@@ -82,15 +82,15 @@ export class Font extends FontHandle {
     return getGlyphIndex(this, codePoint)
   }
 
-  public getGlyph(id: number): GlyphEnriched {
+  public getGlyph(id: number): Glyph {
     return getGlyph(this, id)
   }
 
-  public getGlyphByCodePoint(codePoint: number): GlyphEnriched {
+  public getGlyphByCodePoint(codePoint: number): Glyph {
     return getGlyphByCodePoint(this, codePoint)
   }
 
-  public *glyphs(): Generator<GlyphEnriched> {
+  public *glyphs(): Generator<Glyph> {
     yield* glyphs(this)
   }
 

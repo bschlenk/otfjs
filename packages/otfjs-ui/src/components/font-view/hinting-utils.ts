@@ -1,12 +1,12 @@
 import {
   Font,
-  GlyphEnriched,
-  GlyphSimple,
+  GlyfSimple,
+  Glyph,
   renderGlyphToCanvas,
   VirtualMachine,
 } from 'otfjs'
 
-export function scaleGlyph(glyph: GlyphSimple, scale: number): GlyphSimple {
+export function scaleGlyph(glyph: GlyfSimple, scale: number): GlyfSimple {
   return {
     ...glyph,
     xMin: glyph.xMin * scale,
@@ -19,7 +19,7 @@ export function scaleGlyph(glyph: GlyphSimple, scale: number): GlyphSimple {
 
 export interface HintingResult {
   /** Hinted glyph — coordinates in pixel space (same as scaled input). */
-  glyph: GlyphSimple
+  glyph: GlyfSimple
   error: string | null
 }
 
@@ -30,7 +30,7 @@ export interface HintingResult {
  */
 export function runHintingVM(
   font: Font,
-  glyph: GlyphSimple,
+  glyph: GlyfSimple,
   fontSize: number,
   upem: number,
   phaseX = 0,
@@ -43,7 +43,7 @@ export function runHintingVM(
   let lsbFU = glyph.xMin
   try {
     const hmtx = font.getTable('hmtx')
-    const glyphId = 'id' in glyph ? (glyph as GlyphEnriched).id : 0
+    const glyphId = 'id' in glyph ? (glyph as Glyph).id : 0
     const record =
       hmtx.longHorMetrics[glyphId] ??
       hmtx.longHorMetrics[hmtx.longHorMetrics.length - 1]
@@ -74,7 +74,7 @@ export function runHintingVM(
  * Returns null if the glyph has no points.
  */
 export function renderGlyphToOffscreen(
-  glyph: GlyphSimple,
+  glyph: GlyfSimple,
   scale: number,
   antiAlias = false,
   subPixelX = 0,

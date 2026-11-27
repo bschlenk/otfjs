@@ -103,7 +103,7 @@ Each free function imports only the readers it actually needs:
 import { HmtxTableReader } from '../tables/hmtx.js'
 import { LocaTableReader } from '../tables/loca.js'
 
-export function getGlyph(font: FontHandle, id: number): GlyphEnriched {
+export function getGlyph(font: FontHandle, id: number): Glyph {
   const loca = font.readTable(LocaTableReader)
   const hmtx = font.readTable(HmtxTableReader)
   ...

@@ -83,7 +83,7 @@ Generated code plugs into the existing `TableReader` / `TableWriter` layer: buff
 
 ### glyf and loca
 
-- `GlyfTable` is `Glyph[]`, the raw form with composite glyphs intact; it's what the glyf writers take. `getGlyph` stays the way to read glyphs: one at a time, returning flattened `GlyphEnriched` glyphs.
+- `GlyfTable` is `Glyf[]`, the raw form with composite glyphs intact; it's what the glyf writers take. `getGlyph` stays the way to read glyphs: one at a time, returning flattened `Glyph`s.
 - There is no `GlyfTableReader` for now. Decoding every glyph up front is the wrong default when nearly every caller wants a few glyphs, and `Font.getTable('glyf')` would make that easy to do by accident. The planned replacement is a lazy, cached reader: `GlyfTable` becomes `{ numGlyphs, get(id) }`, keeping the raw bytes and decoding a glyph only when it's asked for, as fontTools does. `getGlyph` would then use it and gain per-glyph caching, and the writer could pass through the bytes of glyphs that were never decoded.
 - `GlyfTableWriter` fits `TableWriter<Glyph[]>`. 0002 originally said glyf couldn't fit `write(data: T)`. That was a statement about the old `writeGlyfTable(glyphs, loca)` signature, not about the table.
 - `LocaTable` stays `number[]` (byte offsets). The format is an encoding detail derived from the offsets, as in fontTools: `LocaTableWriter` uses the short format whenever the offsets allow it, and `locaFormatFor(offsets)` tells callers what to put in `head.indexToLocFormat`. Code that must keep a specific format, such as WOFF2 decoding, calls `writeLocaTable(offsets, format)` directly.

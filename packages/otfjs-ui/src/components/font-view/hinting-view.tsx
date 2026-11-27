@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Font, getGlyphIndex, GlyphSimple } from 'otfjs'
+import { Font, getGlyphIndex, GlyfSimple } from 'otfjs'
 
 import { renderGlyphToOffscreen, runHintingVM } from './hinting-utils'
 
@@ -203,7 +203,7 @@ export function HintingView({
 
 interface GlyphPanelProps {
   label: string
-  glyph: GlyphSimple
+  glyph: GlyfSimple
   pixels: HTMLCanvasElement | null
   scale: number
   subPixelX: number
@@ -380,7 +380,7 @@ function GlyphPanel({
 
 function drawOutline(
   ctx: CanvasRenderingContext2D,
-  glyph: GlyphSimple,
+  glyph: GlyfSimple,
   scale: number,
   zoom: number,
 ) {

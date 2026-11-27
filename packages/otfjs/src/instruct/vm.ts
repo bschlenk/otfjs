@@ -1,13 +1,13 @@
 import * as vec from '@bschlenk/vec'
 
 import type { FontHandle } from '../font-handle.js'
-import { emptyGlyph } from '../glyph/glyph.utils.js'
+import { emptyGlyf } from '../glyf/glyf.utils.js'
 import { CvtTableReader } from '../tables/cvt.js'
 import { FpgmTableReader } from '../tables/fpgm.js'
 import { HeadTableReader } from '../tables/head.js'
 import { MaxpTable10, MaxpTableReader } from '../tables/maxp.js'
 import { PrepTableReader } from '../tables/prep.js'
-import type { GlyphSimple, Point } from '../types.js'
+import type { GlyfSimple, Point } from '../types.js'
 import { symmetricCeil, symmetricFloor, symmetricRound } from '../utils/math.js'
 import { assert, debug, error, range, toHex } from '../utils/utils.js'
 import { disassemble } from './disassemble.js'
@@ -54,7 +54,7 @@ export class VirtualMachine {
   fns: Fdef[] = []
   idefs: Record<number, Fdef> = {}
 
-  glyph!: GlyphSimple
+  glyph!: GlyfSimple
   zones!: Point[][]
   zonesOriginal!: Point[][]
   touched!: Set<Touched>[]
@@ -94,7 +94,7 @@ export class VirtualMachine {
   }
 
   setGlyph(
-    glyph: GlyphSimple | null,
+    glyph: GlyfSimple | null,
     advanceWidth = 0,
     lsb = 0,
     phaseX = 0,
@@ -105,7 +105,7 @@ export class VirtualMachine {
     this.gs = makeGraphicsState()
 
     if (!glyph) {
-      this.glyph = emptyGlyph()
+      this.glyph = emptyGlyf()
       this.zones = [[], []]
       this.zonesOriginal = this.zones
       this.touched = [new Set(), new Set()]
