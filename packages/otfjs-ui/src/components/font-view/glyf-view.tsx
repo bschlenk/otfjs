@@ -1,12 +1,6 @@
 import { createElement, type JSX, type ReactElement, useState } from 'react'
 import clsx from 'clsx'
-import {
-  Font,
-  GlyfSimple,
-  Glyph,
-  glyphToColorSvg,
-  type Node as SvgNode,
-} from 'otfjs'
+import { Font, Glyph, glyphToColorSvg, type Node as SvgNode } from 'otfjs'
 import { CpalTable } from 'otfjs/tables/cpal'
 
 import { GlyphEditor } from './glyph-editor'
@@ -27,7 +21,34 @@ export function GlyfView({ font }: { font: Font }) {
     return <AllGlyfView font={font} onClick={(i) => setGlyfId(i)} />
   }
 
-  const glyph = font.getGlyph(glyfId) as GlyfSimple
+  const glyph = font.getGlyph(glyfId)
+
+  // CFF outlines have no TrueType points or instructions to edit or hint
+  if (glyph.type === 'cff') {
+    return (
+      <div className={glyfStyles.glyphDetail}>
+        <div className={glyfStyles.glyphDetailHeader}>
+          <button
+            className={glyfStyles.backButton}
+            onClick={() => setGlyfId(null)}
+          >
+            ← Back
+          </button>
+        </div>
+        <div
+          className={glyfStyles.glyphDetailBody}
+          style={{ '--glyph-height': '400px' }}
+        >
+          <SvgGlyph
+            glyph={glyph}
+            font={font}
+            height={head.unitsPerEm}
+            palette={0}
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={glyfStyles.glyphDetail}>
@@ -98,8 +119,6 @@ export function AllGlyfView({
   const height = head.unitsPerEm
 
   for (const glyph of font.glyphs()) {
-    if (!glyph.points) continue
-
     svgs.push(
       <button
         key={glyph.id}

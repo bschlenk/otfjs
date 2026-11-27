@@ -36,7 +36,7 @@ describe('tree-shaking', () => {
     expect(code).not.toContain('defaultReaders')
   })
 
-  it('getGlyph pulls in only glyf, loca, hmtx, and their dependencies', async () => {
+  it('getGlyph pulls in only glyf, CFF, loca, hmtx, and their dependencies', async () => {
     const code = await bundle(`
       import { FontHandle, getGlyph } from './src/index.ts'
       export default (data) => getGlyph(new FontHandle(data), 0)
@@ -45,6 +45,7 @@ describe('tree-shaking', () => {
     expectOnly(
       code,
       [
+        'readCffTable',
         'readGlyfTable',
         'readLocaTable',
         'readHmtxTable',

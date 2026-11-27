@@ -1,70 +1,110 @@
-import { type Reader } from '@otfjs/buffer'
+// https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
 
+import { Reader } from '@otfjs/buffer'
+
+import {
+  type CffDict,
+  PRIVATE_DICT_OPERATORS,
+  readCffDict,
+  TOP_DICT_OPERATORS,
+} from '../cff/cff.dict.js'
+import { type CffIndex, readCffIndex } from '../cff/cff.index.js'
 import type { TableReader } from '../table-reader.js'
-import { highNibble, lowNibble } from '../utils/bit.js'
 import { utf8Decoder } from '../utils/text.js'
-import { assert, error } from '../utils/utils.js'
+import { assert } from '../utils/utils.js'
 
-export type CffTable = ReturnType<typeof readCffTable>
+export type { CffDict } from '../cff/cff.dict.js'
+export type { CffIndex } from '../cff/cff.index.js'
 
-const INVALID_DICT_VALUES = new Set([22, 23, 24, 25, 26, 27, 31, 255])
+/**
+ * The CFF table, with what's needed to draw its glyphs. An OpenType font's
+ * CFF table holds exactly one font.
+ */
+export interface CffTable {
+  major: number
+  minor: number
+  /** The PostScript name of each font. */
+  names: string[]
+  /** The font's Top DICT. Strings are SIDs into `strings`. */
+  topDict: CffDict
+  /** Strings past the 391 standard ones: SID 391 is `strings[0]`. */
+  strings: string[]
+  globalSubrs: CffIndex
+  /** Each glyph's charstring, by glyph id. */
+  charStrings: CffIndex
+  /**
+   * The Private DICT glyphs use. CID-keyed fonts have one per Font DICT,
+   * chosen for each glyph by `fdSelect`; other fonts have one.
+   */
+  privateDicts: CffPrivateDict[]
+  /** For CID-keyed fonts, each glyph's index into `privateDicts`. */
+  fdSelect: Uint8Array | null
+}
 
-export function readCffTable(view: Reader) {
+export interface CffPrivateDict {
+  dict: CffDict
+  /** The Private DICT's own subroutines, if it has any. */
+  subrs: CffIndex | null
+  defaultWidthX: number
+  nominalWidthX: number
+}
+
+export function readCffTable(view: Reader): CffTable {
   const major = view.u8()
   const minor = view.u8()
   const hdrSize = view.u8()
-  const offSize = view.u8()
+  view.u8() // offSize, which nothing uses
+
+  assert(major === 1, `Unsupported CFF version ${major}.${minor}`)
 
   view.skip(hdrSize - 4)
+  const names = readStrings(readCffIndex(view))
+  const topDicts = readCffIndex(view)
+  const strings = readStrings(readCffIndex(view))
+  const globalSubrs = readCffIndex(view)
 
-  const names = readIndex(view, (data) => utf8Decoder.decode(data.data))
+  assert(topDicts.count >= 1, 'CFF table has no fonts')
+  const topDict = readCffDict(new Reader(topDicts.get(0)), TOP_DICT_OPERATORS)
 
-  const topDicts = readIndex(view, (data) => {
-    const entries: [string, number[]][] = []
-    let values: number[] = []
+  const charstringType = topDict.CharstringType?.[0] ?? 2
+  assert(charstringType === 2, `Unsupported charstring type ${charstringType}`)
 
-    while (!data.done()) {
-      const b0 = data.u8()
-      let r = 0
+  assert(topDict.CharStrings !== undefined, 'CFF font has no CharStrings')
+  const charStrings = readCffIndex(view.subtable(topDict.CharStrings[0]))
 
-      assert(!INVALID_DICT_VALUES.has(b0), 'Reserved dict value')
+  let privateDicts: CffPrivateDict[]
+  let fdSelect: Uint8Array | null = null
 
-      if (b0 <= 21) {
-        // operator
-        const op = readOperator(data, b0)
-        entries.push([op, values])
-        values = []
-        continue
-      } else if (b0 === 28) {
-        r = data.i16()
-      } else if (b0 === 29) {
-        r = data.i32()
-      } else if (b0 === 30) {
-        // real number
-        r = readRealNumber(data)
-      } else if (b0 <= 246) {
-        r = b0 - 139
-      } else if (b0 <= 250) {
-        const b1 = data.u8()
-        r = (b0 - 247) * 256 + b1 + 108
-      }
+  if (topDict.FDArray) {
+    // CID-keyed: each Font DICT has its own Private DICT
+    const fontDicts = readCffIndex(view.subtable(topDict.FDArray[0]))
+    privateDicts = Array.from({ length: fontDicts.count }, (_, i) => {
+      const fontDict = readCffDict(
+        new Reader(fontDicts.get(i)),
+        TOP_DICT_OPERATORS,
+      )
+      return readPrivateDict(view, fontDict.Private)
+    })
 
-      values.push(r)
-    }
-
-    return Object.fromEntries(entries)
-  })
-
-  const strings = readIndex(view, (data) => utf8Decoder.decode(data.data))
+    assert(topDict.FDSelect !== undefined, 'CID-keyed CFF font has no FDSelect')
+    fdSelect = readFdSelect(
+      view.subtable(topDict.FDSelect[0]),
+      charStrings.count,
+    )
+  } else {
+    privateDicts = [readPrivateDict(view, topDict.Private)]
+  }
 
   return {
     major,
     minor,
-    hdrSize,
-    offSize,
     names,
-    topDicts,
+    topDict,
     strings,
+    globalSubrs,
+    charStrings,
+    privateDicts,
+    fdSelect,
   }
 }
 
@@ -75,129 +115,51 @@ export const CffTableReader: TableReader<CffTable> = {
   read: readCffTable,
 }
 
-function readIndex<T>(view: Reader, fn: (data: Reader) => T): T[] | null {
-  const count = view.u16()
-  if (count === 0) return null
-
-  const items: T[] = []
-
-  const offSize = view.u8() as ByteSize
-  const offsets = view.array(count + 1, () => readBytes(view, offSize))
-
-  const dStart = view.offset - 1
-
-  for (let i = 0; i < count; ++i) {
-    const start = offsets[i]
-    const size = offsets[i + 1] - start
-    const data = view.subtable(dStart + start, size)
-    items.push(fn(data))
-  }
-
-  view.skip(offsets[offsets.length - 1] - 1)
-
-  return items
+function readStrings(index: CffIndex) {
+  return Array.from({ length: index.count }, (_, i) =>
+    utf8Decoder.decode(index.get(i)),
+  )
 }
 
-type ByteSize = 1 | 2 | 3 | 4
+/** `Private` is the DICT's size and its offset from the CFF table start. */
+function readPrivateDict(
+  view: Reader,
+  location: number[] | undefined,
+): CffPrivateDict {
+  if (!location) {
+    return { dict: {}, subrs: null, defaultWidthX: 0, nominalWidthX: 0 }
+  }
 
-function readBytes(view: Reader, size: ByteSize) {
-  switch (size) {
-    case 1:
-      return view.u8()
-    case 2:
-      return view.u16()
-    case 3:
-      return view.u24()
-    case 4:
-      return view.u32()
+  const [size, offset] = location
+  const dict = readCffDict(view.subtable(offset, size), PRIVATE_DICT_OPERATORS)
+
+  // Subrs is an offset from the start of the Private DICT
+  const subrs =
+    dict.Subrs ? readCffIndex(view.subtable(offset + dict.Subrs[0])) : null
+
+  return {
+    dict,
+    subrs,
+    defaultWidthX: dict.defaultWidthX?.[0] ?? 0,
+    nominalWidthX: dict.nominalWidthX?.[0] ?? 0,
   }
 }
 
-function readOperator(view: Reader, b0: number) {
-  // prettier-ignore
-  switch (b0) {
-    case 0: return 'version'
-    case 1: return 'Notice'
-    case 2: return 'FullName'
-    case 3: return 'FamilyName'
-    case 4: return 'Weight'
-    case 5: return 'FontBBox'
+/** Each glyph's Font DICT, in format 0 (one byte per glyph) or 3 (ranges). */
+function readFdSelect(view: Reader, numGlyphs: number): Uint8Array {
+  const format = view.u8()
+  if (format === 0) return view.u8Array(numGlyphs)
 
-    case 12: {
-      const b1 = view.u8()
+  assert(format === 3, `Unsupported CFF FDSelect format ${format}`)
 
-      switch (b1) {
-        case 0: return 'Copyright'
-        case 1: return 'isFixedPitch'
-        case 2: return 'ItalicAngle'
-        case 3: return 'UnderlinePosition'
-        case 4: return 'UnderlineThickness'
-        case 5: return 'PaintType'
-        case 6: return 'CharstringType'
-        case 7: return 'FontMatrix'
-        case 8: return 'StrokeWidth'
-        case 20: return 'SyntheticBase'
-        case 21: return 'PostScript'
-        case 22: return 'BaseFontName'
-        case 23: return 'BaseFontBlend'
-        default: error('Reserved')
-      }
-
-      break
-    }
-
-    case 13: return 'UniqueID'
-    case 14: return 'XUID'
-    case 15: return 'charset'
-    case 16: return 'Encoding'
-    case 17: return 'CharStrings'
-    case 18: return 'Private'
-    default: error('Reserved')
+  const fds = new Uint8Array(numGlyphs)
+  const nRanges = view.u16()
+  let first = view.u16()
+  for (let i = 0; i < nRanges; ++i) {
+    const fd = view.u8()
+    const next = view.u16()
+    fds.fill(fd, first, Math.min(next, numGlyphs))
+    first = next
   }
-}
-
-function readRealNumber(view: Reader) {
-  function takeValue(v: number) {
-    switch (v) {
-      case 0xa:
-        return '.'
-      case 0xb:
-        return 'e'
-      case 0xc:
-        return 'e-'
-      case 0xd:
-        error('Reserved')
-        break
-      case 0xe:
-        return '-'
-      case 0xf:
-        return null
-      default:
-        return v.toString()
-    }
-  }
-
-  let v = ''
-
-  while (true) {
-    const b = view.u8()
-    const high = highNibble(b)
-    const low = lowNibble(b)
-
-    const h = takeValue(high)
-    const l = takeValue(low)
-
-    if (h != null) {
-      v += h
-
-      if (l != null) {
-        v += l
-        continue
-      }
-    } else {
-      assert(l === null, 'Invalid real number')
-    }
-
-    return parseFloat(v)
-  }
+  return fds
 }
