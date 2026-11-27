@@ -5,6 +5,7 @@ import { ColrTableReader } from './tables/colr.js'
 import { CpalTableReader } from './tables/cpal.js'
 import { CvtTableReader } from './tables/cvt.js'
 import { FpgmTableReader } from './tables/fpgm.js'
+import { GlyfTableReader } from './tables/glyf.js'
 import { GposTableReader } from './tables/gpos.js'
 import { HeadTableReader } from './tables/head.js'
 import { HheaTableReader } from './tables/hhea.js'
@@ -30,6 +31,7 @@ export const defaultReaders = {
   CPAL: CpalTableReader,
   'cvt ': CvtTableReader,
   fpgm: FpgmTableReader,
+  glyf: GlyfTableReader,
   GPOS: GposTableReader,
   head: HeadTableReader,
   hhea: HheaTableReader,

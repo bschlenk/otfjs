@@ -15,7 +15,6 @@ import { glyphs } from './fns/glyphs.js'
 import { validate } from './fns/validate.js'
 import { FontHandle } from './font-handle.js'
 import type { TableReader } from './table-reader.js'
-import { GlyfTag } from './tables/glyf.js'
 import { HeadTableReader } from './tables/head.js'
 import { MaxpTableReader } from './tables/maxp.js'
 import type { Glyph } from './types.js'
@@ -59,11 +58,6 @@ export class Font extends FontHandle {
     if (!this.hasTable(tag)) return null
 
     if (!Object.hasOwn(defaultReaders, tag)) {
-      if (tag === GlyfTag) {
-        throw new Error(
-          'call getGlyph instead of reading the glyf table directly',
-        )
-      }
       throw new Error(`no built-in reader for the "${tag}" table`)
     }
 

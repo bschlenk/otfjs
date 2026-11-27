@@ -91,6 +91,15 @@ describe('getGlyph', () => {
     ])
   })
 
+  it('throws when components form a cycle', () => {
+    const composite = compositeGlyf([
+      component({ argsAreXYValues: true }, 1, 0, 0),
+    ])
+    expect(() => getGlyph(fontWith([composite]), 1)).toThrow(
+      'its components may form a cycle',
+    )
+  })
+
   it('throws when a matched point doesn’t exist', () => {
     const composite = compositeGlyf([component({}, 1, 0, 0)])
     expect(() => getGlyph(fontWith([square, composite]), 2)).toThrow(
