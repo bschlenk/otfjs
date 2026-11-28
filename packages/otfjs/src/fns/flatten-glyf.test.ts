@@ -4,14 +4,10 @@ import { buildFont } from '../font-builder.js'
 import { FontHandle } from '../font-handle.js'
 import { emptyGlyf } from '../glyf/glyf.utils.js'
 import { GlyfCompositeFlags } from '../tables/glyf.gen.js'
-import { HeadFlags, MacStyle } from '../tables/head.gen.js'
-import { HeadTableWriter } from '../tables/head.js'
-import { HheaTableWriter } from '../tables/hhea.js'
-import { HmtxTableWriter } from '../tables/hmtx.js'
-import { MaxpTableWriter } from '../tables/maxp.js'
+import { headTable, hheaTable, hmtxTable, maxpTable } from '../test-utils.js'
 import type { Glyf, GlyfComponent, GlyfSimple } from '../types.js'
 import { compileGlyfLoca } from './compile-glyf-loca.js'
-import { getGlyph } from './get-glyph.js'
+import { flattenGlyf } from './flatten-glyf.js'
 
 const square = simpleGlyf([
   [0, 0],
@@ -27,11 +23,9 @@ const dot = simpleGlyf([
   [0, 10],
 ])
 
-describe('getGlyph', () => {
-  it('returns simple glyphs with their id and advance', () => {
-    const glyph = getGlyph(fontWith([square]), 1)
-    expect(glyph).toMatchObject({ id: 1, advanceWidth: 500, type: 'simple' })
-    expect(glyph.points).toEqual(square.points)
+describe('flattenGlyf', () => {
+  it('returns simple glyphs as they are', () => {
+    expect(flattenGlyf(fontWith([square]), 1)).toEqual(square)
   })
 
   it('keeps a composite glyph’s own instructions', () => {
@@ -42,7 +36,7 @@ describe('getGlyph', () => {
       ],
       [1, 2, 3],
     )
-    const glyph = getGlyph(fontWith([square, dot, composite]), 3)
+    const glyph = flattenGlyf(fontWith([square, dot, composite]), 3)
     expect(glyph.instructions).toEqual(new Uint8Array([1, 2, 3]))
   })
 
@@ -51,7 +45,7 @@ describe('getGlyph', () => {
       component({ argsAreXYValues: true, moreComponents: true }, 1, 0, 0),
       component({ argsAreXYValues: true }, 2, 50, -20),
     ])
-    const glyph = getGlyph(fontWith([square, dot, composite]), 3)
+    const glyph = flattenGlyf(fontWith([square, dot, composite]), 3)
     expect(glyph.endPtsOfContours).toEqual([3, 7])
     expect(xys(glyph.points.slice(4))).toEqual([
       [50, -20],
@@ -67,7 +61,7 @@ describe('getGlyph', () => {
       component({ argsAreXYValues: true, moreComponents: true }, 1, 0, 0),
       component({}, 2, 2, 0),
     ])
-    const glyph = getGlyph(fontWith([square, dot, composite]), 3)
+    const glyph = flattenGlyf(fontWith([square, dot, composite]), 3)
     expect(xys(glyph.points.slice(4))).toEqual([
       [100, 100],
       [110, 100],
@@ -82,7 +76,7 @@ describe('getGlyph', () => {
       component({ argsAreXYValues: true, moreComponents: true }, 1, 0, 0),
       component({ weHaveAScale: true }, 2, 0, 2, [1.5]),
     ])
-    const glyph = getGlyph(fontWith([square, dot, composite]), 3)
+    const glyph = flattenGlyf(fontWith([square, dot, composite]), 3)
     expect(xys(glyph.points.slice(4))).toEqual([
       [-15, -15],
       [0, -15],
@@ -95,14 +89,14 @@ describe('getGlyph', () => {
     const composite = compositeGlyf([
       component({ argsAreXYValues: true }, 1, 0, 0),
     ])
-    expect(() => getGlyph(fontWith([composite]), 1)).toThrow(
+    expect(() => flattenGlyf(fontWith([composite]), 1)).toThrow(
       'its components may form a cycle',
     )
   })
 
   it('throws when a matched point doesn’t exist', () => {
     const composite = compositeGlyf([component({}, 1, 0, 0)])
-    expect(() => getGlyph(fontWith([square, composite]), 2)).toThrow(
+    expect(() => flattenGlyf(fontWith([square, composite]), 2)).toThrow(
       "matches point 0 to component point 0, which doesn't exist",
     )
   })
@@ -112,20 +106,15 @@ describe('getGlyph', () => {
 function fontWith(glyphs: Glyf[]) {
   const all = [emptyGlyf(), ...glyphs]
   const { glyf, loca, indexToLocFormat } = compileGlyfLoca(all)
-  const hmtx = HmtxTableWriter.write({
-    longHorMetrics: [{ advanceWidth: 500, leftSideBearing: 0 }],
-    leftSideBearings: all.slice(1).map(() => 0),
-  })
-
   return new FontHandle(
     buildFont({
       tables: {
         glyf,
         loca,
-        hmtx,
-        head: head(indexToLocFormat),
-        hhea: hhea(1),
-        maxp: maxp(all.length),
+        hmtx: hmtxTable(all.length, 500),
+        head: headTable(indexToLocFormat),
+        hhea: hheaTable(1),
+        maxp: maxpTable(all.length),
       },
     }),
   )
@@ -178,44 +167,4 @@ function component(
 
 function xys(points: { x: number; y: number }[]) {
   return points.map((p) => [p.x, p.y])
-}
-
-function head(indexToLocFormat: number) {
-  return HeadTableWriter.write({
-    fontRevision: 0,
-    checksumAdjustment: 0,
-    flags: new HeadFlags(),
-    unitsPerEm: 1000,
-    created: new Date(0),
-    modified: new Date(0),
-    xMin: 0,
-    yMin: 0,
-    xMax: 0,
-    yMax: 0,
-    macStyle: new MacStyle(),
-    lowestRecPpem: 0,
-    indexToLocFormat,
-  })
-}
-
-function hhea(numberOfHMetrics: number) {
-  return HheaTableWriter.write({
-    version: 0x00010000,
-    ascent: 0,
-    descent: 0,
-    lineGap: 0,
-    advanceWidthMax: 0,
-    minLeftSideBearing: 0,
-    minRightSideBearing: 0,
-    xMaxExtent: 0,
-    caretSlopeRise: 0,
-    caretSlopeRun: 0,
-    caretOffset: 0,
-    metricDataFormat: 0,
-    numberOfHMetrics,
-  })
-}
-
-function maxp(numGlyphs: number) {
-  return MaxpTableWriter.write({ version: 0x00005000, numGlyphs })
 }

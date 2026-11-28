@@ -79,7 +79,7 @@ function generatePreview(font: Font): string | null {
       font.getGlyph(getGlyphIndex(font, char.codePointAt(0)!)),
     )
   } catch {
-    // font doesn't have glyf table (cff or cff2 instead?)
+    // font has no outlines getGlyph can read, like CFF2 ones
     // just return an empty svg for now
     return `<svg viewBox="0 0 100 100" height="100" width="100" fill="black" xmlns="http://www.w3.org/2000/svg"></svg>`
   }

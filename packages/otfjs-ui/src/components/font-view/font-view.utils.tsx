@@ -8,7 +8,7 @@ import { GlyfView } from './glyf-view'
 import styles from './font-view.module.css'
 
 export const TABLE_MAP: Record<string, React.ComponentType<{ font: Font }>> = {
-  'CFF ': jsonView('CFF '),
+  'CFF ': GlyfView,
   cmap: CmapView,
   COLR: jsonView('COLR'),
   CPAL: CpalView,
