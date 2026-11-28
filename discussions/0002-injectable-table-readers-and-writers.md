@@ -53,7 +53,7 @@ An unused object literal has no side effects, so bundlers drop it without any an
 
 There is no combined reader-and-writer object. Each table module is published as its own entry point, `otfjs/tables/<name>`, so a consumer who wants everything for a table can write `import * as Hmtx from 'otfjs/tables/hmtx'`. Bundlers still drop whichever of `Hmtx.HmtxTableReader` / `Hmtx.HmtxTableWriter` is unused, since static member access on a namespace import is tree-shaken like a named import.
 
-Tables don't need both halves. Read-only tables (`CFF `, `COLR`, `CPAL`, `GPOS`, `cvt `, `fpgm`, `prep`) export just `XTag` and `XTableReader`. `glyf` has a writer but no reader object: glyphs are read one at a time with `getGlyph`. glyf and loca must be written together so loca matches glyf; that cross-table step lives in a separate layer (see 0004 and `compileGlyfLoca`).
+Tables don't need both halves. Read-only tables (`CFF `, `COLR`, `CPAL`, `GPOS`, `cvt `, `fpgm`, `prep`) export just `XTag` and `XTableReader`. `glyf` originally had a writer but no reader object, with glyphs read one at a time through `getGlyph`; it now has a lazy reader (see 0004). glyf and loca must be written together so loca matches glyf; that cross-table step lives in a separate layer (see 0004 and `compileGlyfLoca`).
 
 The generated tables (`head`, `hhea`, `maxp`, `OS/2`, `post`, `MATH`) define their reader/writer objects in the hand-written wrapper module (`tables/head.ts`) that re-exports the generated code, rather than in the generated file itself. `@otfjs/buffer-gen` is a generic binary codegen and shouldn't know about `FontHandle` or `TableReader`.
 

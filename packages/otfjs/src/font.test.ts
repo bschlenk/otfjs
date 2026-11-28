@@ -22,11 +22,10 @@ describe('Font.getTable', () => {
   })
 
   it('throws for tables without a built-in reader', () => {
-    const font = makeFont({ GSUB: [0, 0, 0, 0], glyf: [0, 0, 0, 0] })
+    const font = makeFont({ GSUB: [0, 0, 0, 0] })
     expect(() => font.getTable('GSUB')).toThrow(
       'no built-in reader for the "GSUB" table',
     )
-    expect(() => font.getTable('glyf')).toThrow('call getGlyph')
   })
 })
 

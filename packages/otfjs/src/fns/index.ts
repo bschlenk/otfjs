@@ -1,4 +1,5 @@
 export { type CompiledGlyfLoca, compileGlyfLoca } from './compile-glyf-loca.js'
+export { flattenGlyf } from './flatten-glyf.js'
 export { getGlyph } from './get-glyph.js'
 export { getGlyphByCodePoint } from './get-glyph-by-code-point.js'
 export { getGlyphIndex } from './get-glyph-index.js'

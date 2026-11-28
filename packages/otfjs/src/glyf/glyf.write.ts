@@ -8,33 +8,38 @@ import { GlyfFlags } from '../tables/glyf.gen.js'
 import type { LocaTable } from '../tables/loca.js'
 import type { Glyf, GlyfComposite, GlyfSimple } from '../types.js'
 import { assert } from '../utils/utils.js'
+import { isStoredGlyfSource, storedGlyfBytes } from './glyf.stored.js'
 import { isEmptyGlyf } from './glyf.utils.js'
 
 /**
  * Write the glyf table, also returning the loca offsets of each glyph.
  * When building a font, use this (or `compileGlyfLoca`) so loca matches
  * the glyf table it indexes into.
+ *
+ * Glyphs from a glyf table read from a font that were never decoded are
+ * copied as they were stored.
  */
-export function writeGlyfTableWithOffsets(glyphs: Glyf[]): {
+export function writeGlyfTableWithOffsets(glyphs: Iterable<Glyf>): {
   data: Uint8Array
   offsets: LocaTable
 } {
   const writer = new Writer()
   const offsets: LocaTable = []
 
-  for (const glyph of glyphs) {
-    offsets.push(writer.length)
-
-    switch (glyph.type) {
-      case 'simple':
-        writeGlyfSimple(writer, glyph)
-        break
-      case 'composite':
-        writeGlyfComposite(writer, glyph)
-        break
+  if (isStoredGlyfSource(glyphs)) {
+    for (let id = 0; id < glyphs.numGlyphs; ++id) {
+      offsets.push(writer.length)
+      const stored = glyphs[storedGlyfBytes](id)
+      if (stored) writer.buffer(stored)
+      else writeGlyf(writer, glyphs.get(id))
+      writer.pad(4)
     }
-
-    writer.pad(4)
+  } else {
+    for (const glyph of glyphs) {
+      offsets.push(writer.length)
+      writeGlyf(writer, glyph)
+      writer.pad(4)
+    }
   }
 
   offsets.push(writer.length)
@@ -42,8 +47,13 @@ export function writeGlyfTableWithOffsets(glyphs: Glyf[]): {
   return { data: writer.toBuffer(), offsets }
 }
 
-export function writeGlyfTable(glyphs: Glyf[]): Uint8Array {
+export function writeGlyfTable(glyphs: Iterable<Glyf>): Uint8Array {
   return writeGlyfTableWithOffsets(glyphs).data
+}
+
+function writeGlyf(writer: Writer, glyph: Glyf) {
+  if (glyph.type === 'simple') writeGlyfSimple(writer, glyph)
+  else writeGlyfComposite(writer, glyph)
 }
 
 function writeGlyfSimple(writer: Writer, glyph: GlyfSimple) {

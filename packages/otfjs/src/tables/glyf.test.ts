@@ -2,19 +2,20 @@ import { Reader } from '@otfjs/buffer'
 import { describe, expect, it } from 'vitest'
 
 import { compileGlyfLoca } from '../fns/compile-glyf-loca.js'
+import { Font } from '../font.js'
 import { buildFont } from '../font-builder.js'
 import { FontHandle } from '../font-handle.js'
 import type { Glyf, GlyfComposite, GlyfSimple } from '../types.js'
 import { GlyfCompositeFlags } from './glyf.gen.js'
 import {
   emptyGlyf,
+  GlyfTableReader,
   GlyfTableWriter,
-  GlyfTag,
   isEmptyGlyf,
   readGlyf,
   writeGlyfTableWithOffsets,
 } from './glyf.js'
-import { LocaTableReader } from './loca.js'
+import { LocaTableReader, writeLocaTable } from './loca.js'
 
 const simple: GlyfSimple = {
   type: 'simple',
@@ -102,6 +103,61 @@ describe('writeGlyfTableWithOffsets', () => {
   })
 })
 
+describe('GlyfTableReader', () => {
+  const glyphs = [emptyGlyf(), simple, composite]
+
+  it('reads each glyph once, when first asked for', () => {
+    const glyf = fontWith(glyphs).readTable(GlyfTableReader)
+    expect(glyf.numGlyphs).toBe(3)
+    expect(glyf.get(1)).toEqual(simple)
+    expect(glyf.get(1)).toBe(glyf.get(1))
+  })
+
+  it('iterates every glyph in id order', () => {
+    expect([...fontWith(glyphs).readTable(GlyfTableReader)]).toEqual(glyphs)
+  })
+
+  it('throws for ids outside the table', () => {
+    const glyf = fontWith(glyphs).readTable(GlyfTableReader)
+    expect(() => glyf.get(3)).toThrow('Glyph id 3 is out of range')
+    expect(() => glyf.get(-1)).toThrow('Glyph id -1 is out of range')
+  })
+
+  it('is what Font.getTable returns', () => {
+    const font = new Font(fontBytes(glyphs))
+    expect(font.getTable('glyf')).toBe(font.readTable(GlyfTableReader))
+  })
+})
+
+describe('writing a glyf table read from a font', () => {
+  // Stored with 4 bytes of trailing padding, which re-encoding would drop
+  const stored = writeGlyfTableWithOffsets([emptyGlyf(), simple]).data
+  const padded = new Uint8Array([...stored, 0, 0, 0, 0])
+  const fontData = buildFont({
+    tables: {
+      glyf: padded,
+      loca: writeLocaTable([0, 0, padded.length], 1),
+      head: head(1),
+      maxp: maxp(2),
+    },
+  })
+
+  it('copies glyphs that were never decoded as they were stored', () => {
+    const glyf = new FontHandle(fontData).readTable(GlyfTableReader)
+    expect(compileGlyfLoca(glyf).glyf).toEqual(padded)
+  })
+
+  it('re-encodes decoded glyphs, including edits', () => {
+    const glyf = new FontHandle(fontData).readTable(GlyfTableReader)
+    glyf.get(1).instructions = new Uint8Array([9])
+
+    const { data, offsets } = writeGlyfTableWithOffsets(glyf)
+    expect(readGlyf(new Reader(data.subarray(offsets[1], offsets[2])))).toEqual(
+      { ...simple, instructions: new Uint8Array([9]) },
+    )
+  })
+})
+
 describe('compileGlyfLoca', () => {
   const glyphs = [emptyGlyf(), simple, composite]
 
@@ -180,11 +236,21 @@ function component(flags: number, glyphIndex: number, extra: number[] = []) {
 }
 
 function readAllGlyphs(font: FontHandle) {
-  const offsets = font.readTable(LocaTableReader)
-  const glyf = font.getTableView(GlyfTag)
-  return offsets
-    .slice(0, -1)
-    .map((offset, i) =>
-      readGlyf(glyf.subtable(offset, offsets[i + 1] - offset)),
-    )
+  return [...font.readTable(GlyfTableReader)]
+}
+
+function fontWith(glyphs: Glyf[]) {
+  return new FontHandle(fontBytes(glyphs))
+}
+
+function fontBytes(glyphs: Glyf[]) {
+  const { glyf, loca, indexToLocFormat } = compileGlyfLoca(glyphs)
+  return buildFont({
+    tables: {
+      glyf,
+      loca,
+      head: head(indexToLocFormat),
+      maxp: maxp(glyphs.length),
+    },
+  })
 }
