@@ -26,26 +26,20 @@ export function writeGlyfTableWithOffsets(glyphs: Iterable<Glyf>): {
   const writer = new Writer()
   const offsets: LocaTable = []
 
-  const write = (glyph: Glyf | Uint8Array) => {
-    offsets.push(writer.length)
-
-    if (glyph instanceof Uint8Array) {
-      writer.buffer(glyph)
-    } else if (glyph.type === 'simple') {
-      writeGlyfSimple(writer, glyph)
-    } else {
-      writeGlyfComposite(writer, glyph)
-    }
-
-    writer.pad(4)
-  }
-
   if (isStoredGlyfSource(glyphs)) {
     for (let id = 0; id < glyphs.numGlyphs; ++id) {
-      write(glyphs[storedGlyfBytes](id) ?? glyphs.get(id))
+      offsets.push(writer.length)
+      const stored = glyphs[storedGlyfBytes](id)
+      if (stored) writer.buffer(stored)
+      else writeGlyf(writer, glyphs.get(id))
+      writer.pad(4)
     }
   } else {
-    for (const glyph of glyphs) write(glyph)
+    for (const glyph of glyphs) {
+      offsets.push(writer.length)
+      writeGlyf(writer, glyph)
+      writer.pad(4)
+    }
   }
 
   offsets.push(writer.length)
@@ -55,6 +49,11 @@ export function writeGlyfTableWithOffsets(glyphs: Iterable<Glyf>): {
 
 export function writeGlyfTable(glyphs: Iterable<Glyf>): Uint8Array {
   return writeGlyfTableWithOffsets(glyphs).data
+}
+
+function writeGlyf(writer: Writer, glyph: Glyf) {
+  if (glyph.type === 'simple') writeGlyfSimple(writer, glyph)
+  else writeGlyfComposite(writer, glyph)
 }
 
 function writeGlyfSimple(writer: Writer, glyph: GlyfSimple) {
